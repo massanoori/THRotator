@@ -54,7 +54,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <OutputFile>$(OutDir)..\..\..\..\..\..\..\game\上海アリス幻樂団\東方神霊廟\$(TargetName)$(TargetExt)</OutputFile>
+      <OutputFile>$(ProjectDir)..\..\..\..\..\..\..\game\上海アリス幻樂団\東方風神録\$(TargetName)$(TargetExt)</OutputFile>
       <ModuleDefinitionFile>my_d3d9.def</ModuleDefinitionFile>
       <AdditionalManifestDependencies>
       </AdditionalManifestDependencies>

@@ -1669,6 +1669,7 @@ public:
 			NULL, D3DX_FILTER_NONE, 0 );
 		m_pd3dDev->SetRenderTarget( m_pBackBuffer, NULL );
 		m_pd3dDev->Clear( 0, NULL, D3DCLEAR_TARGET, 0x00000000, 1.f, 0 );
+
 		/*if( SUCCEEDED( m_pd3dDev->BeginScene() ) )
 		{*/
 			if( SUCCEEDED( m_pSprite->Begin(/* D3DXSPRITE_ALPHABLEND */) ) )
@@ -1749,7 +1750,7 @@ public:
 
 						if( m_rot % 2 == 0 )
 						{
-							if( m_d3dpp.BackBufferHeight*4 > m_d3dpp.BackBufferWidth*3 )
+							if( m_d3dpp.BackBufferHeight*3 > m_d3dpp.BackBufferWidth*4 )
 								mat._42 += 0.5f*m_d3dpp.BackBufferHeight-320.f*m_d3dpp.BackBufferWidth/480;
 							else
 								mat._41 += 0.5f*m_d3dpp.BackBufferWidth-240.f*m_d3dpp.BackBufferHeight/640;
@@ -1802,16 +1803,10 @@ public:
 						rc.bottom = m_prWidth*4/3;
 					}
 					rc.top -= m_yOffset;
-					if( m_d3dpp.BackBufferHeight*4 > m_d3dpp.BackBufferWidth*3 )
-					{
-						scaleFactor =
-							m_rot%2==0 ? (float)m_d3dpp.BackBufferWidth/rc.right : (float)m_d3dpp.BackBufferWidth/rc.bottom;
-					}
-					else
-					{
-						scaleFactor =
-							m_rot%2==0 ? (float)m_d3dpp.BackBufferHeight/rc.bottom : (float)m_d3dpp.BackBufferHeight/rc.right;
-					}
+					scaleFactor =
+						m_rot%2==0 ?
+						min((float)m_d3dpp.BackBufferHeight/rc.bottom,(float)m_d3dpp.BackBufferWidth/rc.right):
+						min((float)m_d3dpp.BackBufferWidth/rc.bottom,(float)m_d3dpp.BackBufferHeight/rc.right);
 					RECT rcDest;
 					rcDest.left = rcDest.top = 0;
 					rcDest.right = rc.right;
@@ -2416,6 +2411,39 @@ HRESULT WINAPI MyDirect3D8::CreateDevice(          UINT Adapter,
 	IDirect3DDevice8** ppReturnedDeviceInterface )
 {
 	D3DPRESENT_PARAMETERS d3dpp = *pPresentationParameters;
+
+	D3DDISPLAYMODE d3ddm;
+	UINT count = m_pd3d->GetAdapterModeCount( Adapter );
+	std::vector<D3DDISPLAYMODE> availableModes;
+
+	//	ディスプレイの最大解像度を探す＆60Hzの解像度を列挙
+	for( UINT i = 0; i < count; ++i )
+	{
+		m_pd3d->EnumAdapterModes( Adapter, i, &d3ddm );
+		if( d3ddm.RefreshRate == 60 )
+		{
+			availableModes.push_back( d3ddm );
+			if( FullScreenWidth*FullScreenHeight < d3ddm.Width*d3ddm.Height )
+			{
+				FullScreenWidth = d3ddm.Width;
+				FullScreenHeight = d3ddm.Height;
+			}
+		}
+	}
+
+	//	最大解像度と同じアスペクト比で、できるだけ低い解像度を選ぶ
+	for( std::vector<D3DDISPLAYMODE>::const_iterator itr = availableModes.cbegin();
+		 itr != availableModes.cend(); ++itr )
+	{
+		if( FullScreenWidth*itr->Height == FullScreenHeight*itr->Width &&
+			FullScreenWidth > itr->Width && FullScreenHeight > itr->Height &&
+			itr->Width >= 640 && itr->Height >= 640 )
+		{
+			FullScreenWidth = itr->Width;
+			FullScreenHeight = itr->Height;
+		}
+	}
+
 	if( pPresentationParameters->Windowed == FALSE )
 	{
 		d3dpp.BackBufferHeight = FullScreenHeight;
@@ -2483,16 +2511,6 @@ BOOL APIENTRY DllMain(HANDLE hModule,
     case DLL_PROCESS_ATTACH:
 		FullScreenWidth = GetSystemMetrics( SM_CXSCREEN );
 		FullScreenHeight = GetSystemMetrics( SM_CYSCREEN );
-		if( FullScreenWidth*3 >= FullScreenHeight*4 )
-		{
-			FullScreenWidth = 1024;
-			FullScreenHeight = 768;
-		}
-		else if( FullScreenWidth*4 <= FullScreenHeight*3 )
-		{
-			FullScreenWidth = 768;
-			FullScreenHeight = 1024;
-		}
 		g_hModule = hModule;
 		{
 			TCHAR sysDir[MAX_PATH];

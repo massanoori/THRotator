@@ -2,6 +2,7 @@
 #include <CommCtrl.h>
 #include <d3d9.h>
 #include <map>
+#include <set>
 #include <vector>
 #include <iostream>
 #include <iomanip>
@@ -217,6 +218,12 @@ class MyDirect3DDevice9 : public IDirect3DDevice9
 	LPDIRECT3DSURFACE9 m_pBackBuffer, m_pTexSurface, m_pRenderTarget;
 	D3DPRESENT_PARAMETERS m_d3dpp;
 	D3DTEXTUREFILTERTYPE m_filterType;
+#ifdef _DEBUG
+	LARGE_INTEGER m_freq, m_cur, m_prev;
+	LPD3DXFONT m_pFont;
+	float m_FPSNew, m_FPS;
+	int m_fpsCount;
+#endif
 
 	DWORD m_prLeft, m_prTop, m_prWidth, m_prHeight;
 	int m_yOffset;
@@ -1082,6 +1089,11 @@ public:
 		m_bInitialized = false;
 		m_judgeCount = 0;
 		m_judgeCountPrev = 0;
+#ifdef _DEBUG
+		m_pFont = NULL;
+		m_FPSNew = 60.f;
+		m_fpsCount = 0;
+#endif
 		if( ms_hHook == NULL )
 		{
 			ms_hHook = SetWindowsHookEx( WH_GETMESSAGE, CallWndHook, NULL, GetCurrentThreadId() );
@@ -1107,6 +1119,11 @@ public:
 			}
 		}
 		ms_refCnt++;
+
+#ifdef _DEBUG
+		QueryPerformanceFrequency( &m_freq );
+		ZeroMemory( &m_prev, sizeof(m_prev) );
+#endif
 	}
 
 	MyDirect3DDevice9( const MyDirect3DDevice9& dev )
@@ -1130,6 +1147,13 @@ public:
 		m_pRenderTarget = dev.m_pRenderTarget;
 		m_yOffset = dev.m_yOffset;
 		m_bInitialized = dev.m_bInitialized;
+#ifdef _DEBUG
+		m_freq = dev.m_freq;
+		m_prev = dev.m_prev;
+		m_pFont = dev.m_pFont;
+		m_FPSNew = 60.f;
+		m_fpsCount = 0;
+#endif
 
 		if( m_pBackBuffer ) m_pBackBuffer->AddRef();
 		if( m_pSprite ) m_pSprite->AddRef();
@@ -1137,6 +1161,9 @@ public:
 		if( m_pTexSurface ) m_pTexSurface->AddRef();
 		if( m_pTex ) m_pTex->AddRef();
 		if( m_pRenderTarget ) m_pRenderTarget->AddRef();
+#ifdef _DEBUG
+		if( m_pFont ) m_pFont->AddRef();
+#endif
 
 		ms_refCnt++;
 	}
@@ -1198,7 +1225,7 @@ public:
 		while( v > 90. )
 			v /= 10.;
 
-		if( v > 12.1 && en == 0 && retSize > 0 )
+		if( v > 12.3 && en == 0 && retSize > 0 )
 		{
 			m_workingDir = boost::filesystem::path(path)/"ShanghaiAlice"/pth.filename();
 			boost::filesystem::create_directory( m_workingDir );
@@ -1281,6 +1308,8 @@ public:
 			MessageBox( NULL, _T("ダイアログの作成に失敗"), NULL, MB_ICONSTOP );
 		}
 
+		D3DERR_DEVICELOST;
+
 		SetVisibility( m_bVisible );
 
 		m_judgeCount = 0;
@@ -1315,6 +1344,21 @@ public:
 			return false;
 		}
 
+#ifdef _DEBUG
+		if( FAILED( D3DXCreateFont( pd3dDev,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, "Arial", &m_pFont ) ) )
+		{
+			m_pSprite->Release();
+			m_pTexSurface->Release();
+			m_pTex->Release();
+			m_pTexSurface = NULL;
+			m_pTex = NULL;
+			m_pSprite = NULL;
+			m_pFont = NULL;
+			return false;
+		}
+#endif
+
 		pd3dDev->GetBackBuffer( 0, 0, D3DBACKBUFFER_TYPE_MONO, &m_pBackBuffer );
 		pd3dDev->SetRenderTarget( 0, m_pRenderTarget );
 
@@ -1336,6 +1380,8 @@ public:
 	{
 #ifdef _DEBUG
 		MessageBox( NULL, _T("RELEASE"), NULL, 0 );
+		if( m_pFont != NULL )
+			m_pFont->Release();
 #endif
 		if( m_pRenderTarget != NULL )
 			m_pRenderTarget->Release();
@@ -1345,7 +1391,8 @@ public:
 			m_pTex->Release();
 		if( m_pSprite != NULL )
 			m_pSprite->Release();
-		m_pBackBuffer->Release();
+		if( m_pBackBuffer )
+			m_pBackBuffer->Release();
 		ULONG ret = m_pd3dDev->Release();
 
 		return ret;
@@ -1592,12 +1639,13 @@ public:
 		D3DXLoadSurfaceFromSurface( m_pTexSurface,
 			NULL, NULL, m_pRenderTarget, NULL, NULL, D3DX_FILTER_NONE, 0 );
 		m_pd3dDev->SetRenderTarget( 0, m_pBackBuffer );
-
 		m_pd3dDev->Clear( 0, NULL, D3DCLEAR_TARGET, 0x00000000, 1.f, 0 );
 		/*if( SUCCEEDED( m_pd3dDev->BeginScene() ) )
 		{*/
 			if( SUCCEEDED( m_pSprite->Begin( D3DXSPRITE_ALPHABLEND ) ) )
 			{
+				D3DXMATRIX mmmm;
+				m_pd3dDev->GetTransform( D3DTS_VIEW, &mmmm );
 				m_pd3dDev->SetSamplerState( 0, D3DSAMP_MAGFILTER, m_filterType );
 				m_pd3dDev->SetSamplerState( 0, D3DSAMP_MINFILTER, m_filterType );
 
@@ -1673,7 +1721,7 @@ public:
 
 						if( m_rot % 2 == 0 )
 						{
-							if( m_d3dpp.BackBufferHeight*4 > m_d3dpp.BackBufferWidth*3 )
+							if( m_d3dpp.BackBufferHeight*3 > m_d3dpp.BackBufferWidth*4 )
 								mat._42 += 0.5f*m_d3dpp.BackBufferHeight-320.f*m_d3dpp.BackBufferWidth/480;
 							else
 								mat._41 += 0.5f*m_d3dpp.BackBufferWidth-240.f*m_d3dpp.BackBufferHeight/640;
@@ -1709,16 +1757,10 @@ public:
 						rc.bottom = m_prWidth*4/3;
 					}
 					rc.top -= m_yOffset;
-					if( m_d3dpp.BackBufferHeight*4 > m_d3dpp.BackBufferWidth*3 )
-					{
-						scaleFactor =
-							m_rot%2==0 ? (float)m_d3dpp.BackBufferWidth/rc.right : (float)m_d3dpp.BackBufferWidth/rc.bottom;
-					}
-					else
-					{
-						scaleFactor =
-							m_rot%2==0 ? (float)m_d3dpp.BackBufferHeight/rc.bottom : (float)m_d3dpp.BackBufferHeight/rc.right;
-					}
+					scaleFactor =
+						m_rot%2==0 ?
+						min((float)m_d3dpp.BackBufferHeight/rc.bottom,(float)m_d3dpp.BackBufferWidth/rc.right):
+						min((float)m_d3dpp.BackBufferWidth/rc.bottom,(float)m_d3dpp.BackBufferHeight/rc.right);
 					RECT rcDest;
 					rcDest.left = rcDest.top = 0;
 					rcDest.right = rc.right;
@@ -1796,6 +1838,18 @@ public:
 			}
 			/*m_pd3dDev->EndScene();
 		}*/
+
+#ifdef _DEBUG
+			RECT rcText;
+			rcText.right = m_d3dpp.BackBufferWidth;
+			rcText.left = rcText.right - 128;
+			rcText.bottom = m_d3dpp.BackBufferHeight;
+			rcText.top = rcText.bottom - 24;
+			TCHAR text[64];
+			_stprintf( text, _T("%5.2f fps"), m_FPS );
+			m_pFont->DrawText( NULL, text, -1, &rcText, 0, D3DCOLOR_XRGB(0xff,(unsigned)(0xff*max(0,m_FPS-30.f)/30.f),(unsigned)(0xff*max(0,m_FPS-30.f)/30.f)) );
+#endif
+
 		m_pd3dDev->SetRenderTarget( 0, m_pRenderTarget );
 		return m_pd3dDev->EndScene();
 	}
@@ -2104,8 +2158,26 @@ public:
 #ifdef _DEBUG
 		//std::cout << "present" << m_count << std::endl;
 #endif
-		return m_pd3dDev->Present( pSourceRect, pDestRect,
+		HRESULT ret = m_pd3dDev->Present( pSourceRect, pDestRect,
 			hDestWindowOverride, pDirtyRegion );
+
+#ifdef _DEBUG
+		QueryPerformanceCounter( &m_cur );
+		float FPS = float(m_freq.QuadPart)/float(m_cur.QuadPart - m_prev.QuadPart);
+		if( FPS < m_FPSNew )
+			m_FPSNew = FPS;
+
+		if( m_fpsCount % 30 == 0 )
+		{
+			m_FPS = m_FPSNew;
+			m_FPSNew = 60.f;
+		}
+		m_fpsCount++;
+
+		m_prev = m_cur;
+
+#endif
+		return ret;
 	}
 
 	HRESULT WINAPI ProcessVertices(          UINT SrcStartIndex,
@@ -2466,14 +2538,6 @@ int MyDirect3DDevice9::ms_refCnt = 0;
 std::map<HWND,MyDirect3DDevice9*> MyDirect3DDevice9::hwnd2devMap;
 std::map<HWND,HWND> MyDirect3DDevice9::th_hwnd2hwndMap;
 
-int gcd( int a, int b )
-{
-	if( b == 0 )
-		return a;
-	else
-		return gcd( b, a%b );
-}
-
 
 HRESULT WINAPI MyDirect3D9::CreateDevice(          UINT Adapter,
 	D3DDEVTYPE DeviceType,
@@ -2483,6 +2547,39 @@ HRESULT WINAPI MyDirect3D9::CreateDevice(          UINT Adapter,
 	IDirect3DDevice9** ppReturnedDeviceInterface )
 {
 	D3DPRESENT_PARAMETERS d3dpp = *pPresentationParameters;
+
+	D3DDISPLAYMODE d3ddm;
+	UINT count = m_pd3d->GetAdapterModeCount( Adapter, d3dpp.BackBufferFormat );
+	std::vector<D3DDISPLAYMODE> availableModes;
+
+	//	ディスプレイの最大解像度を探す＆60Hzの解像度を列挙
+	for( UINT i = 0; i < count; ++i )
+	{
+		m_pd3d->EnumAdapterModes( Adapter, d3dpp.BackBufferFormat, i, &d3ddm );
+		if( d3ddm.RefreshRate == 60 )
+		{
+			availableModes.push_back( d3ddm );
+			if( FullScreenWidth*FullScreenHeight < d3ddm.Width*d3ddm.Height )
+			{
+				FullScreenWidth = d3ddm.Width;
+				FullScreenHeight = d3ddm.Height;
+			}
+		}
+	}
+
+	//	最大解像度と同じアスペクト比で、できるだけ低い解像度を選ぶ
+	for( std::vector<D3DDISPLAYMODE>::const_iterator itr = availableModes.cbegin();
+		 itr != availableModes.cend(); ++itr )
+	{
+		if( FullScreenWidth*itr->Height == FullScreenHeight*itr->Width &&
+			FullScreenWidth > itr->Width && FullScreenHeight > itr->Height &&
+			itr->Width >= 640 && itr->Height >= 640 )
+		{
+			FullScreenWidth = itr->Width;
+			FullScreenHeight = itr->Height;
+		}
+	}
+
 	if( pPresentationParameters->Windowed == FALSE )
 	{
 		d3dpp.BackBufferHeight = FullScreenHeight;
@@ -2557,16 +2654,6 @@ BOOL APIENTRY DllMain(HANDLE hModule,
     case DLL_PROCESS_ATTACH:
 		FullScreenWidth = GetSystemMetrics( SM_CXSCREEN );
 		FullScreenHeight = GetSystemMetrics( SM_CYSCREEN );
-		if( FullScreenWidth*3 >= FullScreenHeight*4 )
-		{
-			FullScreenWidth = 1024;
-			FullScreenHeight = 768;
-		}
-		else if( FullScreenWidth*4 <= FullScreenHeight*3 )
-		{
-			FullScreenWidth = 768;
-			FullScreenHeight = 1024;
-		}
 		{
 			INITCOMMONCONTROLSEX InitCtrls;
 			InitCtrls.dwSize = sizeof(InitCtrls);
