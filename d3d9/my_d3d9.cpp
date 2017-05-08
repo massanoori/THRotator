@@ -1644,10 +1644,10 @@ public:
 		{*/
 			if( SUCCEEDED( m_pSprite->Begin( D3DXSPRITE_ALPHABLEND ) ) )
 			{
-				D3DXMATRIX mmmm;
-				m_pd3dDev->GetTransform( D3DTS_VIEW, &mmmm );
 				m_pd3dDev->SetSamplerState( 0, D3DSAMP_MAGFILTER, m_filterType );
 				m_pd3dDev->SetSamplerState( 0, D3DSAMP_MINFILTER, m_filterType );
+
+				m_pd3dDev->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
 
 				bool aspectLessThan133;
 				if( m_rot%2 == 0 )
