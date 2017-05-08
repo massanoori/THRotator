@@ -1,4 +1,4 @@
-LIBRARY my_d3d9
+LIBRARY d3d9
 EXPORTS
     Direct3DShaderValidatorCreate9=d_Direct3DShaderValidatorCreate9 @ 1
     PSGPError=d_PSGPError @ 2

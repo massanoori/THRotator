@@ -1212,16 +1212,16 @@ public:
 		*strrchr( fname, '.' ) = '\0';
 		boost::filesystem::path pth( fname );
 
-		m_appName = std::string("THRotator_") + pth.filename();
+		m_appName = std::string("THRotator_") + pth.filename().generic_string();
 		char path[MAX_PATH];
 		size_t retSize;
 		errno_t en = getenv_s( &retSize, path, "APPDATA" );
 
 		char dummy[128]; double v = 0.; double l;
-		if( pth.filename().compare( "“Œ•ûg–‚‹½" ) == 0 )
+		if( pth.filename().generic_string().compare( "“Œ•ûg–‚‹½" ) == 0 )
 			v = 6.;
 		else
-			sscanf( pth.filename().c_str(), "th%lf%s", &v, dummy );
+			sscanf( pth.filename().generic_string().c_str(), "th%lf%s", &v, dummy );
 		while( v > 90. )
 			v /= 10.;
 
