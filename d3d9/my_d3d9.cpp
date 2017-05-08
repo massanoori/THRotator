@@ -1247,7 +1247,7 @@ public:
 		m_rot = GetPrivateProfileIntA( m_appName.c_str(), "Rot", 0, m_iniPath.c_str() );
 		m_filterType = (D3DTEXTUREFILTERTYPE)GetPrivateProfileIntA( m_appName.c_str(), "Filter", D3DTEXF_LINEAR, m_iniPath.c_str() );
 
-		m_hTH = GetFocus();
+		m_hTH = GetActiveWindow();
 
 		int piv = m_pivRot;
 		m_pivRot = 0;
@@ -1294,15 +1294,14 @@ public:
 		m_erdsPrev = m_erds;
 
 		//	メニューを改造
-		HWND hFocusedWnd = GetFocus();
-		HMENU hMenu = GetSystemMenu( hFocusedWnd, FALSE );
+		HMENU hMenu = GetSystemMenu( m_hTH, FALSE );
 		AppendMenu( hMenu, MF_SEPARATOR, 0, NULL );
 		AppendMenu( hMenu, MF_STRING, ms_visID, _T("") );
 
 		m_hSysMenu = hMenu;
 
 		HWND hWnd = m_hDlg = CreateDialogParam( GetModuleHandle(_T("d3d9")), MAKEINTRESOURCE(IDD_MAINDLG), NULL, DlgProc, (LPARAM)this );
-		th_hwnd2hwndMap[hFocusedWnd] = hWnd;
+		th_hwnd2hwndMap[m_hTH] = hWnd;
 		if( hWnd == NULL )
 		{
 			MessageBox( NULL, _T("ダイアログの作成に失敗"), NULL, MB_ICONSTOP );
@@ -2588,7 +2587,7 @@ HRESULT WINAPI MyDirect3D9::CreateDevice(          UINT Adapter,
 	else
 	{
 		RECT rc;
-		GetClientRect( GetFocus(), &rc );
+		GetClientRect( GetActiveWindow(), &rc );
 		d3dpp.BackBufferWidth = rc.right - rc.left;
 		d3dpp.BackBufferHeight = rc.bottom - rc.top;
 		if( d3dpp.BackBufferWidth < 640 )
