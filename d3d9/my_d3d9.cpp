@@ -215,7 +215,7 @@ class MyDirect3DDevice9 : public IDirect3DDevice9
 	friend class MyDirect3D9;
 	LPDIRECT3DDEVICE9 m_pd3dDev;
 	LPD3DXSPRITE m_pSprite;
-	LPDIRECT3DSURFACE9 m_pBackBuffer, m_pTexSurface, m_pRenderTarget;
+	LPDIRECT3DSURFACE9 m_pBackBuffer, m_pTexSurface;
 	D3DPRESENT_PARAMETERS m_d3dpp;
 	D3DTEXTUREFILTERTYPE m_filterType;
 #ifdef _DEBUG
@@ -1085,7 +1085,6 @@ public:
 		m_pTex = NULL;
 		m_pTexSurface = NULL;
 		m_pBackBuffer = NULL;
-		m_pRenderTarget = NULL;
 		m_bInitialized = false;
 		m_judgeCount = 0;
 		m_judgeCountPrev = 0;
@@ -1128,6 +1127,11 @@ public:
 
 	MyDirect3DDevice9( const MyDirect3DDevice9& dev )
 	{
+		*this = dev;
+	}
+
+	MyDirect3DDevice9& operator=(const MyDirect3DDevice9& dev)
+	{
 		m_pd3dDev = dev.m_pd3dDev;
 		m_appName = dev.m_appName;
 		m_bVisible = dev.m_bVisible;
@@ -1144,7 +1148,6 @@ public:
 		m_pSprite = dev.m_pSprite;
 		m_pTex = dev.m_pTex;
 		m_pTexSurface = dev.m_pTexSurface;
-		m_pRenderTarget = dev.m_pRenderTarget;
 		m_yOffset = dev.m_yOffset;
 		m_bInitialized = dev.m_bInitialized;
 #ifdef _DEBUG
@@ -1155,17 +1158,18 @@ public:
 		m_fpsCount = 0;
 #endif
 
-		if( m_pBackBuffer ) m_pBackBuffer->AddRef();
-		if( m_pSprite ) m_pSprite->AddRef();
-		if( m_pd3dDev ) m_pd3dDev->AddRef();
-		if( m_pTexSurface ) m_pTexSurface->AddRef();
-		if( m_pTex ) m_pTex->AddRef();
-		if( m_pRenderTarget ) m_pRenderTarget->AddRef();
+		if (m_pBackBuffer) m_pBackBuffer->AddRef();
+		if (m_pSprite) m_pSprite->AddRef();
+		if (m_pd3dDev) m_pd3dDev->AddRef();
+		if (m_pTexSurface) m_pTexSurface->AddRef();
+		if (m_pTex) m_pTex->AddRef();
 #ifdef _DEBUG
-		if( m_pFont ) m_pFont->AddRef();
+		if (m_pFont) m_pFont->AddRef();
 #endif
 
 		ms_refCnt++;
+
+		return *this;
 	}
 
 	virtual ~MyDirect3DDevice9()
@@ -1313,14 +1317,6 @@ public:
 
 		m_judgeCount = 0;
 
-		if( FAILED( pd3dDev->CreateRenderTarget( 640, 480, m_d3dpp.BackBufferFormat,
-			m_d3dpp.MultiSampleType, m_d3dpp.MultiSampleQuality,
-			TRUE, &m_pRenderTarget, NULL ) ) )
-		{
-			m_pRenderTarget = NULL;
-			return false;
-		}
-
 		if( FAILED( pd3dDev->CreateTexture( 640, 480, 1, 
 		D3DUSAGE_RENDERTARGET, fmt, D3DPOOL_DEFAULT, &m_pTex, NULL ) ) )
 		{
@@ -1359,7 +1355,7 @@ public:
 #endif
 
 		pd3dDev->GetBackBuffer( 0, 0, D3DBACKBUFFER_TYPE_MONO, &m_pBackBuffer );
-		pd3dDev->SetRenderTarget( 0, m_pRenderTarget );
+		pd3dDev->SetRenderTarget( 0, m_pTexSurface );
 
 		m_bInitialized = true;
 		return true;
@@ -1382,8 +1378,6 @@ public:
 		if( m_pFont != NULL )
 			m_pFont->Release();
 #endif
-		if( m_pRenderTarget != NULL )
-			m_pRenderTarget->Release();
 		if( m_pTexSurface != NULL )
 			m_pTexSurface->Release();
 		if( m_pTex != NULL )
@@ -1635,8 +1629,6 @@ public:
 
 	HRESULT WINAPI EndScene(VOID)
 	{
-		D3DXLoadSurfaceFromSurface( m_pTexSurface,
-			NULL, NULL, m_pRenderTarget, NULL, NULL, D3DX_FILTER_NONE, 0 );
 		m_pd3dDev->SetRenderTarget( 0, m_pBackBuffer );
 		m_pd3dDev->Clear( 0, NULL, D3DCLEAR_TARGET, 0x00000000, 1.f, 0 );
 		/*if( SUCCEEDED( m_pd3dDev->BeginScene() ) )
@@ -1849,7 +1841,7 @@ public:
 			m_pFont->DrawText( NULL, text, -1, &rcText, 0, D3DCOLOR_XRGB(0xff,(unsigned)(0xff*max(0,m_FPS-30.f)/30.f),(unsigned)(0xff*max(0,m_FPS-30.f)/30.f)) );
 #endif
 
-		m_pd3dDev->SetRenderTarget( 0, m_pRenderTarget );
+		m_pd3dDev->SetRenderTarget( 0, m_pTexSurface );
 		return m_pd3dDev->EndScene();
 	}
 
@@ -1873,11 +1865,9 @@ public:
 		D3DBACKBUFFER_TYPE Type,
 		IDirect3DSurface9 **ppBackBuffer )
 	{
-		*ppBackBuffer = m_pRenderTarget;
-		m_pRenderTarget->AddRef();
+		*ppBackBuffer = m_pTexSurface;
+		m_pTexSurface->AddRef();
 		return S_OK;
-		return m_pd3dDev->GetBackBuffer( iSwapChain,
-			BackBuffer, Type, ppBackBuffer );
 	}
 
 	HRESULT WINAPI GetClipPlane(          DWORD Index,
@@ -2201,7 +2191,6 @@ public:
 			if( m_pSprite ) m_pSprite->OnLostDevice();
 			if( m_pTexSurface ) m_pTexSurface->Release();
 			if( m_pTex ) m_pTex->Release();
-			if( m_pRenderTarget ) m_pRenderTarget->Release();
 			if( m_pBackBuffer ) m_pBackBuffer->Release();
 		}
 		m_d3dpp = *pPresentationParameters;
@@ -2228,23 +2217,12 @@ public:
 		if( SUCCEEDED(ret) && m_bInitialized )
 		{
 			m_pSprite->OnResetDevice();
-			if( FAILED( m_pd3dDev->CreateRenderTarget( 640, 480, m_d3dpp.BackBufferFormat,
-				m_d3dpp.MultiSampleType, m_d3dpp.MultiSampleQuality,
-				TRUE, &m_pRenderTarget, NULL ) ) )
-			{
-				m_pTex = NULL;
-				m_pTexSurface = NULL;
-				m_pBackBuffer = NULL;
-				m_pRenderTarget = NULL;
-			}
 			if( FAILED( m_pd3dDev->CreateTexture( 640, 480, 1, 
 				D3DUSAGE_RENDERTARGET, pPresentationParameters->BackBufferFormat, D3DPOOL_DEFAULT, &m_pTex, NULL ) ) )
 			{
 				m_pTex = NULL;
 				m_pTexSurface = NULL;
 				m_pBackBuffer = NULL;
-				if( m_pRenderTarget ) m_pRenderTarget->Release();
-				m_pRenderTarget = NULL;
 			}
 			else
 			{
@@ -2257,7 +2235,6 @@ public:
 			m_pTexSurface = NULL;
 			m_pTex = NULL;
 			m_pBackBuffer = NULL;
-			m_pRenderTarget = NULL;
 		}
 
 		return ret;
@@ -2382,7 +2359,7 @@ public:
 		IDirect3DSurface9 *pRenderTarget )
 	{
 		if( pRenderTarget == m_pBackBuffer )
-			pRenderTarget = m_pRenderTarget;
+			pRenderTarget = m_pTexSurface;
 		return m_pd3dDev->SetRenderTarget( RenderTargetIndex,
 			pRenderTarget );
 	}
