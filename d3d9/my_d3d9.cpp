@@ -44,7 +44,6 @@ class MyDirect3D9 : public IDirect3D9
 {
 	friend class MyDirect3DDevice9;
 	LPDIRECT3D9 m_pd3d;
-	std::map<LPDIRECT3DDEVICE9,MyDirect3DDevice9> m_devices;
 	
 public:
 	bool init( UINT v )
@@ -1077,8 +1076,11 @@ class MyDirect3DDevice9 : public IDirect3DDevice9
 
 	bool m_bInitialized;
 
+	ULONG m_referenceCount;
+
 public:
 	MyDirect3DDevice9()
+		: m_referenceCount(1)
 	{
 		m_pd3dDev = NULL;
 		m_pSprite = NULL;
@@ -1125,58 +1127,33 @@ public:
 #endif
 	}
 
-	MyDirect3DDevice9( const MyDirect3DDevice9& dev )
-	{
-		*this = dev;
-	}
-
-	MyDirect3DDevice9& operator=(const MyDirect3DDevice9& dev)
-	{
-		m_pd3dDev = dev.m_pd3dDev;
-		m_appName = dev.m_appName;
-		m_bVisible = dev.m_bVisible;
-		m_iniPath = dev.m_iniPath;
-		m_judgeThreshold = dev.m_judgeThreshold;
-		m_judgeCount = dev.m_judgeCount;
-		m_judgeCountPrev = dev.m_judgeCountPrev;
-		m_orCount = dev.m_orCount;
-		m_pBackBuffer = dev.m_pBackBuffer;
-		m_prHeight = dev.m_prHeight;
-		m_prLeft = dev.m_prLeft;
-		m_prTop = dev.m_prTop;
-		m_prWidth = dev.m_prWidth;
-		m_pSprite = dev.m_pSprite;
-		m_pTex = dev.m_pTex;
-		m_pTexSurface = dev.m_pTexSurface;
-		m_yOffset = dev.m_yOffset;
-		m_bInitialized = dev.m_bInitialized;
-#ifdef _DEBUG
-		m_freq = dev.m_freq;
-		m_prev = dev.m_prev;
-		m_pFont = dev.m_pFont;
-		m_FPSNew = 60.f;
-		m_fpsCount = 0;
-#endif
-
-		if (m_pBackBuffer) m_pBackBuffer->AddRef();
-		if (m_pSprite) m_pSprite->AddRef();
-		if (m_pd3dDev) m_pd3dDev->AddRef();
-		if (m_pTexSurface) m_pTexSurface->AddRef();
-		if (m_pTex) m_pTex->AddRef();
-#ifdef _DEBUG
-		if (m_pFont) m_pFont->AddRef();
-#endif
-
-		ms_refCnt++;
-
-		return *this;
-	}
+	MyDirect3DDevice9(const MyDirect3DDevice9&) = delete;
+	MyDirect3DDevice9& operator=(const MyDirect3DDevice9&) = delete;
 
 	virtual ~MyDirect3DDevice9()
 	{
+#ifdef _DEBUG
+		MessageBox(NULL, _T("RELEASE"), NULL, 0);
+		if (m_pFont != NULL)
+			m_pFont->Release();
+#endif
+		if (m_pTexSurface != NULL)
+			m_pTexSurface->Release();
+		if (m_pTex != NULL)
+			m_pTex->Release();
+		if (m_pSprite != NULL)
+			m_pSprite->Release();
+		if (m_pBackBuffer)
+			m_pBackBuffer->Release();
+		if (m_pd3dDev)
+			m_pd3dDev->Release();
+
 		ms_refCnt--;
-		if( ms_refCnt == 0 && ms_hHook == NULL )
-			UnhookWindowsHookEx( ms_hHook );
+		if (ms_refCnt == 0 && ms_hHook == NULL)
+		{
+			UnhookWindowsHookEx(ms_hHook);
+			ms_hHook = NULL;
+		}
 	}
 
 	void setPivot( int piv )
@@ -1363,7 +1340,7 @@ public:
 
 	ULONG WINAPI AddRef(VOID)
 	{
-		return m_pd3dDev->AddRef();
+		return ++m_referenceCount;
 	}
 
 	HRESULT WINAPI QueryInterface( REFIID riid, LPVOID* ppvObj )
@@ -1373,21 +1350,11 @@ public:
 
 	ULONG WINAPI Release()
 	{
-#ifdef _DEBUG
-		MessageBox( NULL, _T("RELEASE"), NULL, 0 );
-		if( m_pFont != NULL )
-			m_pFont->Release();
-#endif
-		if( m_pTexSurface != NULL )
-			m_pTexSurface->Release();
-		if( m_pTex != NULL )
-			m_pTex->Release();
-		if( m_pSprite != NULL )
-			m_pSprite->Release();
-		if( m_pBackBuffer )
-			m_pBackBuffer->Release();
-		ULONG ret = m_pd3dDev->Release();
-
+		ULONG ret = --m_referenceCount;
+		if (ret == 0)
+		{
+			delete this;
+		}
 		return ret;
 	}
 
@@ -2580,17 +2547,16 @@ HRESULT WINAPI MyDirect3D9::CreateDevice(          UINT Adapter,
 
 	if( FAILED(ret) ) return ret;
 
-	MyDirect3DDevice9 dev;
-	m_devices[pd3dDev] = dev;
-	m_devices[pd3dDev].m_d3dpp = d3dpp;
-	if( !m_devices[pd3dDev].init( pd3dDev, pPresentationParameters->BackBufferFormat ) )
+	auto pRetDev = new MyDirect3DDevice9();
+	pRetDev->m_d3dpp = d3dpp;
+	if (!pRetDev->init(pd3dDev, pPresentationParameters->BackBufferFormat))
 	{
-		m_devices[pd3dDev].Release();
-		m_devices.erase(pd3dDev);
+		pRetDev->Release();
+		pd3dDev->Release();
 		return E_FAIL;
 	}
 
-	*ppReturnedDeviceInterface = &m_devices[pd3dDev];
+	*ppReturnedDeviceInterface = pRetDev;
 
 	return ret;
 }
