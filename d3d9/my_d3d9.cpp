@@ -11,9 +11,12 @@
 #include "resource.h"
 #include <tchar.h>
 #include <ShlObj.h>
+#include <wrl.h>
 
 int FullScreenWidth;
 int FullScreenHeight;
+
+using Microsoft::WRL::ComPtr;
 
 //#pragma comment(lib,"d3d9.lib")
 #pragma comment(lib,"d3dx9.lib")
@@ -43,31 +46,55 @@ class MyDirect3DDevice9;
 class MyDirect3D9 : public IDirect3D9
 {
 	friend class MyDirect3DDevice9;
-	LPDIRECT3D9 m_pd3d;
+	ComPtr<IDirect3D9> m_pd3d;
+	ULONG m_referenceCount;
 	
 public:
+	MyDirect3D9()
+		: m_referenceCount(1)
+	{
+	}
+
+	virtual ~MyDirect3D9()
+	{
+	}
+
 	bool init( UINT v )
 	{
-		//m_pd3d = Direct3DCreate9( D3D_SDK_VERSION );
 		m_pd3d = p_Direct3DCreate9( v );
-		
 		return m_pd3d != NULL;
 	}
 
 	ULONG WINAPI AddRef(VOID)
 	{
-		return m_pd3d->AddRef();
+		return ++m_referenceCount;
 	}
 
 	HRESULT WINAPI QueryInterface( REFIID riid, LPVOID* ppvObj )
 	{
-		return m_pd3d->QueryInterface( riid, ppvObj );
+		if (ppvObj == nullptr)
+		{
+			return E_POINTER;
+		}
+		else if (riid == __uuidof(IDirect3D9) || riid == __uuidof(IUnknown))
+		{
+			AddRef();
+			*ppvObj = this;
+			return S_OK;
+		}
+		else
+		{
+			return E_NOINTERFACE;
+		}
 	}
 
 	ULONG WINAPI Release()
 	{
-		ULONG ret = m_pd3d->Release();
-
+		ULONG ret = --m_referenceCount;
+		if (ret == 0)
+		{
+			delete this;
+		}
 		return ret;
 	}
 
@@ -200,8 +227,6 @@ public:
 	}
 };
 
-static MyDirect3D9 g_d3d;
-
 struct EditRectData
 {
 	RECT rcSrc, rcDest;
@@ -212,14 +237,17 @@ struct EditRectData
 class MyDirect3DDevice9 : public IDirect3DDevice9
 {
 	friend class MyDirect3D9;
-	LPDIRECT3DDEVICE9 m_pd3dDev;
-	LPD3DXSPRITE m_pSprite;
-	LPDIRECT3DSURFACE9 m_pBackBuffer, m_pTexSurface;
+	ComPtr<IDirect3DDevice9> m_pd3dDev;
+	ComPtr<ID3DXSprite> m_pSprite;
+	ComPtr<IDirect3DSurface9> m_pBackBuffer, m_pTexSurface;
+	ComPtr<IDirect3DTexture9> m_pTex;
+	ComPtr<MyDirect3D9> m_pMyD3D;
+
 	D3DPRESENT_PARAMETERS m_d3dpp;
 	D3DTEXTUREFILTERTYPE m_filterType;
 #ifdef _DEBUG
 	LARGE_INTEGER m_freq, m_cur, m_prev;
-	LPD3DXFONT m_pFont;
+	ComPtr<ID3DXFont> m_pFont;
 	float m_FPSNew, m_FPS;
 	int m_fpsCount;
 #endif
@@ -1080,21 +1108,15 @@ class MyDirect3DDevice9 : public IDirect3DDevice9
 
 public:
 	MyDirect3DDevice9()
-		: m_referenceCount(1)
-	{
-		m_pd3dDev = NULL;
-		m_pSprite = NULL;
-		m_pTex = NULL;
-		m_pTexSurface = NULL;
-		m_pBackBuffer = NULL;
-		m_bInitialized = false;
-		m_judgeCount = 0;
-		m_judgeCountPrev = 0;
+		: m_bInitialized(false)
+		, m_referenceCount(1)
+		, m_judgeCount(0)
+		, m_judgeCountPrev(0)
 #ifdef _DEBUG
-		m_pFont = NULL;
-		m_FPSNew = 60.f;
-		m_fpsCount = 0;
+		, m_FPSNew(60.f)
+		, m_fpsCount(0)
 #endif
+	{
 		if( ms_hHook == NULL )
 		{
 			ms_hHook = SetWindowsHookEx( WH_GETMESSAGE, CallWndHook, NULL, GetCurrentThreadId() );
@@ -1134,19 +1156,7 @@ public:
 	{
 #ifdef _DEBUG
 		MessageBox(NULL, _T("RELEASE"), NULL, 0);
-		if (m_pFont != NULL)
-			m_pFont->Release();
 #endif
-		if (m_pTexSurface != NULL)
-			m_pTexSurface->Release();
-		if (m_pTex != NULL)
-			m_pTex->Release();
-		if (m_pSprite != NULL)
-			m_pSprite->Release();
-		if (m_pBackBuffer)
-			m_pBackBuffer->Release();
-		if (m_pd3dDev)
-			m_pd3dDev->Release();
 
 		ms_refCnt--;
 		if (ms_refCnt == 0 && ms_hHook == NULL)
@@ -1186,8 +1196,10 @@ public:
 
 	boost::filesystem::path m_workingDir;
 
-	bool init( LPDIRECT3DDEVICE9 pd3dDev, D3DFORMAT fmt )
+	bool init( ComPtr<IDirect3DDevice9> pd3dDev, MyDirect3D9* pMyD3D, const D3DPRESENT_PARAMETERS& d3dpp)
 	{
+		m_d3dpp = d3dpp;
+
 		char fname[MAX_PATH];
 		GetModuleFileName( NULL, fname, MAX_PATH );
 		*strrchr( fname, '.' ) = '\0';
@@ -1295,10 +1307,8 @@ public:
 		m_judgeCount = 0;
 
 		if( FAILED( pd3dDev->CreateTexture( 640, 480, 1, 
-		D3DUSAGE_RENDERTARGET, fmt, D3DPOOL_DEFAULT, &m_pTex, NULL ) ) )
+			D3DUSAGE_RENDERTARGET, m_d3dpp.BackBufferFormat, D3DPOOL_DEFAULT, &m_pTex, NULL ) ) )
 		{
-			m_pTex = NULL;
-			m_pTexSurface = NULL;
 			return false;
 		}
 		else
@@ -1306,33 +1316,24 @@ public:
 			m_pTex->GetSurfaceLevel( 0, &m_pTexSurface );
 		}
 
-		if( FAILED( D3DXCreateSprite( pd3dDev, &m_pSprite ) ) )
+		if( FAILED( D3DXCreateSprite( pd3dDev.Get(), &m_pSprite ) ) )
 		{
-			m_pTexSurface->Release();
-			m_pTex->Release();
-			m_pTexSurface = NULL;
-			m_pTex = NULL;
-			m_pSprite = NULL;
 			return false;
 		}
 
 #ifdef _DEBUG
-		if( FAILED( D3DXCreateFont( pd3dDev,
+		if( FAILED( D3DXCreateFont( pd3dDev.Get(),
 			0, 0, 0, 0, 0, 0, 0, 0, 0, "Arial", &m_pFont ) ) )
 		{
-			m_pSprite->Release();
-			m_pTexSurface->Release();
-			m_pTex->Release();
-			m_pTexSurface = NULL;
-			m_pTex = NULL;
-			m_pSprite = NULL;
-			m_pFont = NULL;
 			return false;
 		}
 #endif
 
 		pd3dDev->GetBackBuffer( 0, 0, D3DBACKBUFFER_TYPE_MONO, &m_pBackBuffer );
-		pd3dDev->SetRenderTarget( 0, m_pTexSurface );
+		pd3dDev->SetRenderTarget( 0, m_pTexSurface.Get() );
+
+		pMyD3D->AddRef();
+		m_pMyD3D = pMyD3D;
 
 		m_bInitialized = true;
 		return true;
@@ -1345,7 +1346,20 @@ public:
 
 	HRESULT WINAPI QueryInterface( REFIID riid, LPVOID* ppvObj )
 	{
-		return m_pd3dDev->QueryInterface( riid, ppvObj );
+		if (ppvObj == nullptr)
+		{
+			return E_POINTER;
+		}
+		else if (riid == __uuidof(IDirect3DDevice9) || riid == __uuidof(IUnknown))
+		{
+			AddRef();
+			*ppvObj = this;
+			return S_OK;
+		}
+		else
+		{
+			return E_NOINTERFACE;
+		}
 	}
 
 	ULONG WINAPI Release()
@@ -1596,7 +1610,7 @@ public:
 
 	HRESULT WINAPI EndScene(VOID)
 	{
-		m_pd3dDev->SetRenderTarget( 0, m_pBackBuffer );
+		m_pd3dDev->SetRenderTarget( 0, m_pBackBuffer.Get() );
 		m_pd3dDev->Clear( 0, NULL, D3DCLEAR_TARGET, 0x00000000, 1.f, 0 );
 		/*if( SUCCEEDED( m_pd3dDev->BeginScene() ) )
 		{*/
@@ -1696,7 +1710,7 @@ public:
 						RECT rc = rcSrc;
 						rc.right += rc.left;
 						rc.bottom += rc.top;
-						m_pSprite->Draw( m_pTex, &rc, &D3DXVECTOR3( 0, 0, 0 ), NULL, 0xffffffff );
+						m_pSprite->Draw( m_pTex.Get(), &rc, &D3DXVECTOR3( 0, 0, 0 ), NULL, 0xffffffff );
 					};
 					RECT rc;
 					float scaleFactor;
@@ -1789,7 +1803,7 @@ public:
 
 					}
 					m_pSprite->SetTransform ( &mat );
-					m_pSprite->Draw( m_pTex, NULL, &D3DXVECTOR3( 0, 0, 0 ), NULL, 0xffffffff );
+					m_pSprite->Draw( m_pTex.Get(), NULL, &D3DXVECTOR3( 0, 0, 0 ), NULL, 0xffffffff );
 				}
 
 				m_pSprite->End();
@@ -1808,7 +1822,7 @@ public:
 			m_pFont->DrawText( NULL, text, -1, &rcText, 0, D3DCOLOR_XRGB(0xff,(unsigned)(0xff*max(0,m_FPS-30.f)/30.f),(unsigned)(0xff*max(0,m_FPS-30.f)/30.f)) );
 #endif
 
-		m_pd3dDev->SetRenderTarget( 0, m_pTexSurface );
+		m_pd3dDev->SetRenderTarget( 0, m_pTexSurface.Get() );
 		return m_pd3dDev->EndScene();
 	}
 
@@ -1832,8 +1846,8 @@ public:
 		D3DBACKBUFFER_TYPE Type,
 		IDirect3DSurface9 **ppBackBuffer )
 	{
-		*ppBackBuffer = m_pTexSurface;
-		m_pTexSurface->AddRef();
+		*ppBackBuffer = m_pTexSurface.Get();
+		(*ppBackBuffer)->AddRef();
 		return S_OK;
 	}
 
@@ -1870,12 +1884,9 @@ public:
 
 	HRESULT WINAPI GetDirect3D( IDirect3D9** ppD3D9 )
 	{
-		IDirect3D9* dummy;
-		HRESULT ret = m_pd3dDev->GetDirect3D( &dummy );
-
-		*ppD3D9 = &g_d3d;
-
-		return ret;
+		*ppD3D9 = m_pMyD3D.Get();
+		(*ppD3D9)->AddRef();
+		return S_OK;
 	}
 
 	HRESULT WINAPI GetDisplayMode(          UINT iSwapChain,
@@ -2150,16 +2161,21 @@ public:
 
 	HRESULT WINAPI Reset(          D3DPRESENT_PARAMETERS* pPresentationParameters )
 	{
+		assert(m_bInitialized);
+
 #ifdef _DEBUG
 		MessageBox( NULL, _T("RESET"), NULL, 0 );
 #endif
-		if( m_bInitialized )
-		{
-			if( m_pSprite ) m_pSprite->OnLostDevice();
-			if( m_pTexSurface ) m_pTexSurface->Release();
-			if( m_pTex ) m_pTex->Release();
-			if( m_pBackBuffer ) m_pBackBuffer->Release();
-		}
+
+		m_pSprite->OnLostDevice();
+#ifdef _DEBUG
+		m_pFont->OnLostDevice();
+#endif
+
+		m_pTexSurface.Reset();
+		m_pTex.Reset();
+		m_pBackBuffer.Reset();
+
 		m_d3dpp = *pPresentationParameters;
 		if( m_d3dpp.Windowed )
 		{
@@ -2181,27 +2197,19 @@ public:
 			m_d3dpp.BackBufferHeight = FullScreenHeight;
 		}
 		HRESULT ret = m_pd3dDev->Reset( &m_d3dpp );
-		if( SUCCEEDED(ret) && m_bInitialized )
+		if (SUCCEEDED(ret))
 		{
 			m_pSprite->OnResetDevice();
-			if( FAILED( m_pd3dDev->CreateTexture( 640, 480, 1, 
-				D3DUSAGE_RENDERTARGET, pPresentationParameters->BackBufferFormat, D3DPOOL_DEFAULT, &m_pTex, NULL ) ) )
+#ifdef _DEBUG
+			m_pFont->OnResetDevice();
+#endif
+			m_pd3dDev->CreateTexture(640, 480, 1,
+				D3DUSAGE_RENDERTARGET, pPresentationParameters->BackBufferFormat, D3DPOOL_DEFAULT, &m_pTex, NULL);
+			if (m_pTex)
 			{
-				m_pTex = NULL;
-				m_pTexSurface = NULL;
-				m_pBackBuffer = NULL;
+				m_pTex->GetSurfaceLevel(0, &m_pTexSurface);
 			}
-			else
-			{
-				m_pTex->GetSurfaceLevel( 0, &m_pTexSurface );
-			}
-			if( m_pBackBuffer ) m_pd3dDev->GetBackBuffer( 0, 0, D3DBACKBUFFER_TYPE_MONO, &m_pBackBuffer );
-		}
-		else
-		{
-			m_pTexSurface = NULL;
-			m_pTex = NULL;
-			m_pBackBuffer = NULL;
+			m_pd3dDev->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &m_pBackBuffer);
 		}
 
 		return ret;
@@ -2325,8 +2333,6 @@ public:
 	HRESULT WINAPI SetRenderTarget(          DWORD RenderTargetIndex,
 		IDirect3DSurface9 *pRenderTarget )
 	{
-		if( pRenderTarget == m_pBackBuffer )
-			pRenderTarget = m_pTexSurface;
 		return m_pd3dDev->SetRenderTarget( RenderTargetIndex,
 			pRenderTarget );
 	}
@@ -2471,8 +2477,6 @@ public:
 	{
 		return m_pd3dDev->ValidateDevice( pNumPasses );
 	}
-
-	LPDIRECT3DTEXTURE9 m_pTex;
 };
 
 int MyDirect3DDevice9::ms_visID = 12345;
@@ -2540,7 +2544,8 @@ HRESULT WINAPI MyDirect3D9::CreateDevice(          UINT Adapter,
 			d3dpp.BackBufferWidth = 720;
 		}
 	}
-	LPDIRECT3DDEVICE9 pd3dDev;
+
+	ComPtr<IDirect3DDevice9> pd3dDev;
 	HRESULT ret = m_pd3d->CreateDevice( Adapter,
 		DeviceType, hFocusWindow, BehaviorFlags,
 		&d3dpp, &pd3dDev );
@@ -2548,11 +2553,10 @@ HRESULT WINAPI MyDirect3D9::CreateDevice(          UINT Adapter,
 	if( FAILED(ret) ) return ret;
 
 	auto pRetDev = new MyDirect3DDevice9();
-	pRetDev->m_d3dpp = d3dpp;
-	if (!pRetDev->init(pd3dDev, pPresentationParameters->BackBufferFormat))
+	AddRef();
+	if (!pRetDev->init(pd3dDev, this, d3dpp))
 	{
 		pRetDev->Release();
-		pd3dDev->Release();
 		return E_FAIL;
 	}
 
@@ -2577,10 +2581,15 @@ __declspec( naked ) void WINAPI d_DebugSetMute() { _asm{ jmp p_DebugSetMute } }
 
 __declspec( dllexport ) IDirect3D9* WINAPI d_Direct3DCreate9( UINT v )
 {
-	if( g_d3d.init(v) )
-		return &g_d3d;
-	else
-		return NULL;
+	auto pd3d = new MyDirect3D9();
+
+	if (!pd3d->init(v))
+	{
+		pd3d->Release();
+		return nullptr;
+	}
+
+	return pd3d;
 }
 
 __declspec( naked ) void WINAPI d_Direct3DCreate9Ex() { _asm{ jmp p_Direct3DCreate9Ex } }
