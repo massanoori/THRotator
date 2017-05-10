@@ -16,6 +16,9 @@
 int FullScreenWidth;
 int FullScreenHeight;
 
+const UINT BASE_SCREEN_WIDTH = 640u;
+const UINT BASE_SCREEN_HEIGHT = 480u;
+
 using Microsoft::WRL::ComPtr;
 
 //#pragma comment(lib,"d3d9.lib")
@@ -251,6 +254,8 @@ class MyDirect3DDevice9 : public IDirect3DDevice9
 	float m_FPSNew, m_FPS;
 	int m_fpsCount;
 #endif
+
+	float m_requestedWidth, m_requestedHeight;
 
 	DWORD m_prLeft, m_prTop, m_prWidth, m_prHeight;
 	int m_yOffset;
@@ -1112,6 +1117,8 @@ public:
 		, m_referenceCount(1)
 		, m_judgeCount(0)
 		, m_judgeCountPrev(0)
+		, m_requestedWidth(0)
+		, m_requestedHeight(0)
 #ifdef _DEBUG
 		, m_FPSNew(60.f)
 		, m_fpsCount(0)
@@ -1182,10 +1189,11 @@ public:
 			m_d3dpp.BackBufferHeight = rcClient.right - rcClient.left;
 
 			//	640ÇÊÇËè¨Ç≥Ç¢Ç∆âÊñ Ç™ï`âÊÇ≥ÇÍÇ»Ç¢Ç±Ç∆Ç™Ç†ÇÈÇÃÇ≈èCê≥
-			if( m_d3dpp.BackBufferWidth < 640 )
+			if( m_d3dpp.BackBufferWidth < m_d3dpp.BackBufferHeight)
 			{
-				m_d3dpp.BackBufferHeight = 720*m_d3dpp.BackBufferHeight/m_d3dpp.BackBufferWidth;
-				m_d3dpp.BackBufferWidth = 720;
+				auto correctedWidthForVerticalWindow = m_d3dpp.BackBufferHeight * 9 / 8;
+				m_d3dpp.BackBufferHeight = correctedWidthForVerticalWindow * m_d3dpp.BackBufferHeight/m_d3dpp.BackBufferWidth;
+				m_d3dpp.BackBufferWidth = correctedWidthForVerticalWindow;
 			}
 
 			m_pd3dDev->Reset( &m_d3dpp );
@@ -1196,7 +1204,7 @@ public:
 
 	boost::filesystem::path m_workingDir;
 
-	bool init( ComPtr<IDirect3DDevice9> pd3dDev, MyDirect3D9* pMyD3D, const D3DPRESENT_PARAMETERS& d3dpp)
+	bool init( ComPtr<IDirect3DDevice9> pd3dDev, MyDirect3D9* pMyD3D, const D3DPRESENT_PARAMETERS& d3dpp, UINT requestedWidth, UINT requestedHeight)
 	{
 		m_d3dpp = d3dpp;
 
@@ -1306,7 +1314,7 @@ public:
 
 		m_judgeCount = 0;
 
-		if( FAILED( pd3dDev->CreateTexture( 640, 480, 1, 
+		if( FAILED( pd3dDev->CreateTexture(requestedWidth, requestedHeight, 1,
 			D3DUSAGE_RENDERTARGET, m_d3dpp.BackBufferFormat, D3DPOOL_DEFAULT, &m_pTex, NULL ) ) )
 		{
 			return false;
@@ -1334,6 +1342,9 @@ public:
 
 		pMyD3D->AddRef();
 		m_pMyD3D = pMyD3D;
+
+		m_requestedWidth = requestedWidth;
+		m_requestedHeight = requestedHeight;
 
 		m_bInitialized = true;
 		return true;
@@ -1661,19 +1672,19 @@ public:
 						D3DXMatrixRotationZ( &matR, D3DX_PI*0.5f*m_rot );
 
 						mat = mat*matS;
-						mat._41 += rcDest.left - prWidth*0.5f;
-						mat._42 += rcDest.top - prHeight*0.5f;
+						mat._41 += (rcDest.left - prWidth*0.5f) * m_requestedWidth / BASE_SCREEN_WIDTH;
+						mat._42 += (rcDest.top - prHeight*0.5f) * m_requestedHeight / BASE_SCREEN_HEIGHT;
 						mat *= matR;
 						switch( m_rot )
 						{
 						case 0: case 2:
-							mat._41 += prWidth*0.5f;
-							mat._42 += prHeight*0.5f;
+							mat._41 += prWidth*0.5f * m_requestedWidth / BASE_SCREEN_WIDTH;
+							mat._42 += prHeight*0.5f * m_requestedHeight / BASE_SCREEN_HEIGHT;
 							break;
 
 						case 1: case 3:
-							mat._41 += prHeight*0.5f;
-							mat._42 += prWidth*0.5f;
+							mat._41 += prHeight*0.5f * m_requestedWidth / BASE_SCREEN_WIDTH;
+							mat._42 += prWidth*0.5f * m_requestedHeight / BASE_SCREEN_HEIGHT;
 							break;
 						}
 
@@ -1691,25 +1702,29 @@ public:
 							scaleFactor, 1.f );
 						mat *= matS;
 
-						if( m_rot % 2 == 0 )
+						if (m_rot % 2 == 0)
 						{
-							if( m_d3dpp.BackBufferHeight*3 > m_d3dpp.BackBufferWidth*4 )
-								mat._42 += 0.5f*m_d3dpp.BackBufferHeight-320.f*m_d3dpp.BackBufferWidth/480;
+							if (m_d3dpp.BackBufferHeight * 3 > m_d3dpp.BackBufferWidth * 4)
+								mat._42 += 0.5f * (m_d3dpp.BackBufferHeight - m_requestedWidth * m_d3dpp.BackBufferWidth / m_requestedHeight);
 							else
-								mat._41 += 0.5f*m_d3dpp.BackBufferWidth-240.f*m_d3dpp.BackBufferHeight/640;
+								mat._41 += 0.5f * (m_d3dpp.BackBufferWidth - m_requestedHeight * m_d3dpp.BackBufferHeight / m_requestedWidth);
 						}
 						else
 						{
-							if( m_d3dpp.BackBufferHeight*4 > m_d3dpp.BackBufferWidth*3 )
-								mat._42 += 0.5f*m_d3dpp.BackBufferHeight-240.f*m_d3dpp.BackBufferWidth/640;
+							if (m_d3dpp.BackBufferHeight * 4 > m_d3dpp.BackBufferWidth * 3)
+								mat._42 += 0.5f * (m_d3dpp.BackBufferHeight - m_requestedHeight * m_d3dpp.BackBufferWidth / m_requestedWidth);
 							else
-								mat._41 += 0.5f*m_d3dpp.BackBufferWidth-320.f*m_d3dpp.BackBufferHeight/480;
+								mat._41 += 0.5f * (m_d3dpp.BackBufferWidth - m_requestedWidth * m_d3dpp.BackBufferHeight / m_requestedHeight);
 						}
 
 						m_pSprite->SetTransform( &mat );
 						RECT rc = rcSrc;
 						rc.right += rc.left;
 						rc.bottom += rc.top;
+						rc.left = rc.left * m_requestedWidth / BASE_SCREEN_WIDTH;
+						rc.right = rc.right * m_requestedWidth / BASE_SCREEN_WIDTH;
+						rc.top = rc.top * m_requestedHeight / BASE_SCREEN_HEIGHT;
+						rc.bottom = rc.bottom * m_requestedHeight / BASE_SCREEN_HEIGHT;
 						m_pSprite->Draw( m_pTex.Get(), &rc, &D3DXVECTOR3( 0, 0, 0 ), NULL, 0xffffffff );
 					};
 					RECT rc;
@@ -1733,6 +1748,7 @@ public:
 						m_rot%2==0 ?
 						min((float)m_d3dpp.BackBufferHeight/rc.bottom,(float)m_d3dpp.BackBufferWidth/rc.right):
 						min((float)m_d3dpp.BackBufferWidth/rc.bottom,(float)m_d3dpp.BackBufferHeight/rc.right);
+					scaleFactor *= BASE_SCREEN_WIDTH / m_requestedWidth;
 					RECT rcDest;
 					rcDest.left = rcDest.top = 0;
 					rcDest.right = rc.right;
@@ -1757,16 +1773,16 @@ public:
 						break;
 
 					case 1:
-						mat._41 += 480.f;
+						mat._41 += m_requestedHeight;
 						break;
 
 					case 2:
-						mat._41 += 640.f;
-						mat._42 += 480.f;
+						mat._41 += m_requestedWidth;
+						mat._42 += m_requestedHeight;
 						break;
 
 					case 3:
-						mat._42 += 640.f;
+						mat._42 += m_requestedWidth;
 						break;
 					}
 					switch( m_rot%2 )
@@ -1774,13 +1790,13 @@ public:
 					case 0:
 						if( m_d3dpp.BackBufferHeight*4 > m_d3dpp.BackBufferWidth*3 )
 						{
-							D3DXMatrixScaling( &matS, m_d3dpp.BackBufferWidth/640.f, m_d3dpp.BackBufferWidth/640.f, 1.f );
+							D3DXMatrixScaling(&matS, m_d3dpp.BackBufferWidth / m_requestedWidth, m_d3dpp.BackBufferWidth / m_requestedWidth, 1.f);
 							mat *= matS;
 							mat._42 += m_d3dpp.BackBufferHeight*0.5f - 0.5f*m_d3dpp.BackBufferWidth*3.f/4.f;
 						}
 						else
 						{
-							D3DXMatrixScaling( &matS, m_d3dpp.BackBufferHeight/480.f, m_d3dpp.BackBufferHeight/480.f, 1.f );
+							D3DXMatrixScaling(&matS, m_d3dpp.BackBufferHeight / m_requestedHeight, m_d3dpp.BackBufferHeight / m_requestedHeight, 1.f);
 							mat *= matS;
 							mat._41 += m_d3dpp.BackBufferWidth*0.5f - 0.5f*m_d3dpp.BackBufferHeight*4.f/3.f;
 						}
@@ -1789,13 +1805,13 @@ public:
 					case 1:
 						if( m_d3dpp.BackBufferHeight*3 > m_d3dpp.BackBufferWidth*4 )
 						{
-							D3DXMatrixScaling( &matS, m_d3dpp.BackBufferWidth/480.f, m_d3dpp.BackBufferWidth/480.f, 1.f );
+							D3DXMatrixScaling(&matS, m_d3dpp.BackBufferWidth / m_requestedHeight, m_d3dpp.BackBufferWidth / m_requestedHeight, 1.f);
 							mat *= matS;
 							mat._42 += m_d3dpp.BackBufferHeight*0.5f - 0.5f*m_d3dpp.BackBufferWidth*4.f/3.f;
 						}
 						else
 						{
-							D3DXMatrixScaling( &matS, m_d3dpp.BackBufferHeight/640.f, m_d3dpp.BackBufferHeight/640.f, 1.f );
+							D3DXMatrixScaling(&matS, m_d3dpp.BackBufferHeight / m_requestedWidth, m_d3dpp.BackBufferHeight / m_requestedWidth, 1.f);
 							mat *= matS;
 							mat._41 += m_d3dpp.BackBufferWidth*0.5f - 0.5f*m_d3dpp.BackBufferHeight*3.f/4.f;
 						}
@@ -2185,9 +2201,9 @@ public:
 			m_d3dpp.BackBufferHeight = rc.bottom - rc.top;
 
 			//	640ÇÊÇËè¨Ç≥Ç¢Ç∆âÊñ Ç™ï`âÊÇ≥ÇÍÇ»Ç¢Ç±Ç∆Ç™Ç†ÇÈÇÃÇ≈èCê≥
-			if( m_d3dpp.BackBufferWidth < 640 )
+			if (m_d3dpp.BackBufferWidth < 640)
 			{
-				m_d3dpp.BackBufferHeight = 720*m_d3dpp.BackBufferHeight/m_d3dpp.BackBufferWidth;
+				m_d3dpp.BackBufferHeight = 720 * m_d3dpp.BackBufferHeight / m_d3dpp.BackBufferWidth;
 				m_d3dpp.BackBufferWidth = 720;
 			}
 		}
@@ -2203,7 +2219,7 @@ public:
 #ifdef _DEBUG
 			m_pFont->OnResetDevice();
 #endif
-			m_pd3dDev->CreateTexture(640, 480, 1,
+			m_pd3dDev->CreateTexture(m_requestedWidth, m_requestedHeight, 1,
 				D3DUSAGE_RENDERTARGET, pPresentationParameters->BackBufferFormat, D3DPOOL_DEFAULT, &m_pTex, NULL);
 			if (m_pTex)
 			{
@@ -2518,9 +2534,17 @@ HRESULT WINAPI MyDirect3D9::CreateDevice(          UINT Adapter,
 	for( std::vector<D3DDISPLAYMODE>::const_iterator itr = availableModes.cbegin();
 		 itr != availableModes.cend(); ++itr )
 	{
-		if( FullScreenWidth*itr->Height == FullScreenHeight*itr->Width &&
-			FullScreenWidth > itr->Width && FullScreenHeight > itr->Height &&
-			itr->Width >= 640 && itr->Height >= 640 )
+		if (FullScreenWidth * itr->Height != FullScreenHeight * itr->Width)
+		{
+			continue;
+		}
+
+		if (FullScreenWidth <= itr->Width || FullScreenHeight <= itr->Height)
+		{
+			continue;
+		}
+
+		if (itr->Width >= pPresentationParameters->BackBufferWidth && itr->Height >= pPresentationParameters->BackBufferHeight)
 		{
 			FullScreenWidth = itr->Width;
 			FullScreenHeight = itr->Height;
@@ -2538,9 +2562,9 @@ HRESULT WINAPI MyDirect3D9::CreateDevice(          UINT Adapter,
 		GetClientRect( GetActiveWindow(), &rc );
 		d3dpp.BackBufferWidth = rc.right - rc.left;
 		d3dpp.BackBufferHeight = rc.bottom - rc.top;
-		if( d3dpp.BackBufferWidth < 640 )
+		if (d3dpp.BackBufferWidth < 640)
 		{
-			d3dpp.BackBufferHeight = 720*d3dpp.BackBufferHeight/d3dpp.BackBufferWidth;
+			d3dpp.BackBufferHeight = 720 * d3dpp.BackBufferHeight / d3dpp.BackBufferWidth;
 			d3dpp.BackBufferWidth = 720;
 		}
 	}
@@ -2554,7 +2578,7 @@ HRESULT WINAPI MyDirect3D9::CreateDevice(          UINT Adapter,
 
 	auto pRetDev = new MyDirect3DDevice9();
 	AddRef();
-	if (!pRetDev->init(pd3dDev, this, d3dpp))
+	if (!pRetDev->init(pd3dDev, this, d3dpp, pPresentationParameters->BackBufferWidth, pPresentationParameters->BackBufferHeight))
 	{
 		pRetDev->Release();
 		return E_FAIL;
