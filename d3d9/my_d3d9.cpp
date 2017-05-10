@@ -13,8 +13,8 @@
 #include <ShlObj.h>
 #include <wrl.h>
 
-int FullScreenWidth;
-int FullScreenHeight;
+UINT FullScreenWidth;
+UINT FullScreenHeight;
 
 const UINT BASE_SCREEN_WIDTH = 640u;
 const UINT BASE_SCREEN_HEIGHT = 480u;
@@ -255,7 +255,7 @@ class MyDirect3DDevice9 : public IDirect3DDevice9
 	int m_fpsCount;
 #endif
 
-	float m_requestedWidth, m_requestedHeight;
+	UINT m_requestedWidth, m_requestedHeight;
 
 	DWORD m_prLeft, m_prTop, m_prWidth, m_prHeight;
 	int m_yOffset;
@@ -1218,7 +1218,7 @@ public:
 		size_t retSize;
 		errno_t en = getenv_s( &retSize, path, "APPDATA" );
 
-		char dummy[128]; double v = 0.; double l;
+		char dummy[128]; double v = 0.;
 		if( pth.filename().generic_string().compare( "東方紅魔郷" ) == 0 )
 			v = 6.;
 		else
@@ -1637,189 +1637,139 @@ public:
 					aspectLessThan133 = m_d3dpp.BackBufferWidth*3 < m_d3dpp.BackBufferHeight*4;
 				else
 					aspectLessThan133 = m_d3dpp.BackBufferHeight*3 < m_d3dpp.BackBufferWidth*4;
-				if( aspectLessThan133 && m_judgeCount >= m_judgeThreshold )
+
+				bool bNeedsRearrangeHUD = aspectLessThan133 && m_judgeCount >= m_judgeThreshold;
+				float baseSourceRectWidth = bNeedsRearrangeHUD ? static_cast<float>(m_prWidth) : static_cast<float>(BASE_SCREEN_WIDTH);
+				float baseSourceRectHeight = bNeedsRearrangeHUD ? static_cast<float>(m_prHeight) : static_cast<float>(BASE_SCREEN_HEIGHT);
+
+				/***** 変換行列の計算 *****
+
+				 1. テクスチャを東方が要求したバックバッファ解像度から640x480にスケーリング
+				 2. 矩形の中心を原点(0, 0)に移動
+				 3. ユーザが指定した転送元矩形サイズの逆数でスケールをかける
+				 4. ユーザが指定した矩形ごとの回転角度で矩形を回転
+				 5. ユーザが指定した転送先矩形サイズでスケールをかける
+				 6. ユーザが指定した転送先矩形の位置へ移動
+				 7. プレイ領域のサイズがTHRotatorで内部的に確保したバックバッファ解像度へ拡大
+				 8. 現在の画面回転角度で回転
+				 9. 画面全体の中心を原点からバックバッファの中心へ移動
+
+				 2から6は矩形ごとのパラメータが必要。
+				 それより前の1と、後の7-9は事前計算できるので、それぞれpreRectTransform、postRectTransformとして保持
+
+				 *****/
+
+				D3DXMATRIX preRectTransform;
 				{
-					auto drawRect = [this]( const RECT& rcSrc, const RECT& rcDest, int rotation, float scaleFactor, float prWidth, float prHeight )
-					{
-						D3DXMATRIX mat, matS, matR;
-						switch( rotation )
-						{
-						case 0:
-							D3DXMatrixIdentity( &mat );
-							D3DXMatrixScaling( &matS, (float)rcDest.right/rcSrc.right, (float)rcDest.bottom/rcSrc.bottom, 1.f );
-							break;
+					D3DXMATRIX baseSrcScale;
+					D3DXMatrixScaling(&baseSrcScale, BASE_SCREEN_WIDTH / static_cast<float>(m_requestedWidth), BASE_SCREEN_HEIGHT / static_cast<float>(m_requestedHeight), 1.0f);
 
-						case 1:
-							D3DXMatrixRotationZ( &mat, D3DX_PI*0.5f );
-							D3DXMatrixScaling( &matS, (float)rcDest.right/rcSrc.bottom, (float)rcDest.bottom/rcSrc.right, 1.f );
-							mat._41 += rcSrc.bottom;
-							break;
+					preRectTransform = baseSrcScale;
+				}
 
-						case 2:
-							D3DXMatrixRotationZ( &mat, D3DX_PI );
-							D3DXMatrixScaling( &matS, (float)rcDest.right/rcSrc.right, (float)rcDest.bottom/rcSrc.bottom, 1.f );
-							mat._41 += rcSrc.right;
-							mat._42 += rcSrc.bottom;
-							break;
+				D3DXMATRIX postRectTransform;
+				{
+					float baseDestScaleScalar = (m_rot) % 2 == 0 ?
+						(std::min)(m_d3dpp.BackBufferWidth / baseSourceRectWidth, m_d3dpp.BackBufferHeight / baseSourceRectHeight) :
+						(std::min)(m_d3dpp.BackBufferWidth / baseSourceRectHeight, m_d3dpp.BackBufferHeight / baseSourceRectWidth);
+					D3DXMATRIX baseDestScale;
+					D3DXMatrixScaling(&baseDestScale, baseDestScaleScalar, baseDestScaleScalar, 1.0f);
 
-						case 3:
-							D3DXMatrixRotationZ( &mat, -D3DX_PI*0.5f );
-							D3DXMatrixScaling( &matS, (float)rcDest.right/rcSrc.bottom, (float)rcDest.bottom/rcSrc.right, 1.f );
-							mat._42 += rcSrc.right;
-							break;
-						}
+					D3DXMATRIX rotation;
+					D3DXMatrixRotationZ(&rotation, 0.5f * D3DX_PI * m_rot);
 
-						D3DXMatrixRotationZ( &matR, D3DX_PI*0.5f*m_rot );
+					D3DXMATRIX baseDestTranslation;
+					D3DXMatrixTranslation(&baseDestTranslation, 0.5f * m_d3dpp.BackBufferWidth, 0.5f * m_d3dpp.BackBufferHeight, 0.0f);
 
-						mat = mat*matS;
-						mat._41 += (rcDest.left - prWidth*0.5f) * m_requestedWidth / BASE_SCREEN_WIDTH;
-						mat._42 += (rcDest.top - prHeight*0.5f) * m_requestedHeight / BASE_SCREEN_HEIGHT;
-						mat *= matR;
-						switch( m_rot )
-						{
-						case 0: case 2:
-							mat._41 += prWidth*0.5f * m_requestedWidth / BASE_SCREEN_WIDTH;
-							mat._42 += prHeight*0.5f * m_requestedHeight / BASE_SCREEN_HEIGHT;
-							break;
+					D3DXMATRIX temp;
+					D3DXMatrixMultiply(&temp, &baseDestScale, &rotation);
+					D3DXMatrixMultiply(&postRectTransform, &temp, &baseDestTranslation);
+				}
 
-						case 1: case 3:
-							mat._41 += prHeight*0.5f * m_requestedWidth / BASE_SCREEN_WIDTH;
-							mat._42 += prWidth*0.5f * m_requestedHeight / BASE_SCREEN_HEIGHT;
-							break;
-						}
+				auto rectDrawer = [this, &preRectTransform, &postRectTransform](
+					const POINT& srcPos,
+					const SIZE& srcSize,
+					const POINT& destPos,
+					const SIZE& destSize,
+					int rotation)
+				{
+					D3DXMATRIX translateSrcCenterToOrigin;
+					D3DXMatrixTranslation(&translateSrcCenterToOrigin, -0.5f * srcSize.cx, -0.5f * srcSize.cy, 0.0f);
 
-						/*switch( m_rot )
-						{
-						case 1:
-							mat._41 -= 128.f;
-							break;
+					D3DXMATRIX rectScaleSrcInv;
+					D3DXMatrixScaling(&rectScaleSrcInv, 1.0f / srcSize.cx, 1.0f / srcSize.cy, 1.0f);
 
-						case 3:
-							mat._42 -= 96.f;
-							break;
-						}*/
-						D3DXMatrixScaling( &matS, scaleFactor,
-							scaleFactor, 1.f );
-						mat *= matS;
+					D3DXMATRIX rectRotation;
+					D3DXMatrixRotationZ(&rectRotation, 0.5f * D3DX_PI * rotation);
 
-						if (m_rot % 2 == 0)
-						{
-							if (m_d3dpp.BackBufferHeight * 3 > m_d3dpp.BackBufferWidth * 4)
-								mat._42 += 0.5f * (m_d3dpp.BackBufferHeight - m_requestedWidth * m_d3dpp.BackBufferWidth / m_requestedHeight);
-							else
-								mat._41 += 0.5f * (m_d3dpp.BackBufferWidth - m_requestedHeight * m_d3dpp.BackBufferHeight / m_requestedWidth);
-						}
-						else
-						{
-							if (m_d3dpp.BackBufferHeight * 4 > m_d3dpp.BackBufferWidth * 3)
-								mat._42 += 0.5f * (m_d3dpp.BackBufferHeight - m_requestedHeight * m_d3dpp.BackBufferWidth / m_requestedWidth);
-							else
-								mat._41 += 0.5f * (m_d3dpp.BackBufferWidth - m_requestedWidth * m_d3dpp.BackBufferHeight / m_requestedHeight);
-						}
+					D3DXMATRIX rectScaleDest;
+					D3DXMatrixScaling(&rectScaleDest, static_cast<float>(destSize.cx), static_cast<float>(destSize.cy), 1.0f);
 
-						m_pSprite->SetTransform( &mat );
-						RECT rc = rcSrc;
-						rc.right += rc.left;
-						rc.bottom += rc.top;
-						rc.left = rc.left * m_requestedWidth / BASE_SCREEN_WIDTH;
-						rc.right = rc.right * m_requestedWidth / BASE_SCREEN_WIDTH;
-						rc.top = rc.top * m_requestedHeight / BASE_SCREEN_HEIGHT;
-						rc.bottom = rc.bottom * m_requestedHeight / BASE_SCREEN_HEIGHT;
-						m_pSprite->Draw( m_pTex.Get(), &rc, &D3DXVECTOR3( 0, 0, 0 ), NULL, 0xffffffff );
-					};
-					RECT rc;
-					float scaleFactor;
-					rc.left = m_prLeft;
-					rc.right = m_prWidth;
-					rc.top = m_prTop;
-					rc.bottom = m_prHeight;
-					if( m_prWidth*4 < m_prHeight*3 )
-					{
-						rc.left = (LONG)m_prLeft + ((LONG)m_prWidth - (LONG)m_prHeight*3/4)/2;
-						rc.right = m_prHeight*3/4;
-					}
-					else if( m_prWidth*4 > m_prHeight*3 )
-					{
-						rc.top = (LONG)m_prTop + ((LONG)m_prHeight - (LONG)m_prWidth*4/3)/2;
-						rc.bottom = m_prWidth*4/3;
-					}
-					rc.top -= m_yOffset;
-					scaleFactor =
-						m_rot%2==0 ?
-						min((float)m_d3dpp.BackBufferHeight/rc.bottom,(float)m_d3dpp.BackBufferWidth/rc.right):
-						min((float)m_d3dpp.BackBufferWidth/rc.bottom,(float)m_d3dpp.BackBufferHeight/rc.right);
-					scaleFactor *= BASE_SCREEN_WIDTH / m_requestedWidth;
-					RECT rcDest;
-					rcDest.left = rcDest.top = 0;
-					rcDest.right = rc.right;
-					rcDest.bottom = rc.bottom;
+					D3DXMATRIX rectTranslation;
+					D3DXMatrixTranslation(&rectTranslation, static_cast<float>(destPos.x), static_cast<float>(destPos.y), 0.0f);
 
-					drawRect( rc, rcDest, 0, scaleFactor, (float)rc.right, (float)rc.bottom );
+					D3DXMATRIX finalTransform, temp;
+					D3DXMatrixMultiply(&temp, &preRectTransform, &translateSrcCenterToOrigin);
+					D3DXMatrixMultiply(&finalTransform, &temp, &rectScaleSrcInv);
+					D3DXMatrixMultiply(&temp, &finalTransform, &rectRotation);
+					D3DXMatrixMultiply(&finalTransform, &temp, &rectScaleDest);
+					D3DXMatrixMultiply(&temp, &finalTransform, &rectTranslation);
+					D3DXMatrixMultiply(&finalTransform, &temp, &postRectTransform);
 
-					for( std::vector<EditRectData>::const_iterator itr = m_erdsPrev.begin(); itr != m_erdsPrev.end(); ++itr )
-					{
-						if( itr->rcSrc.right == 0 || itr->rcSrc.bottom == 0 || itr->rcDest.right == 0 || itr->rcDest.bottom == 0 )
-							continue;
-						drawRect( itr->rcSrc, itr->rcDest, itr->rotation, scaleFactor, (float)rc.right, (float)rc.bottom );
-					}
+					RECT scaledSourceRect;
+					float scaleFactorForSourceX = static_cast<float>(m_requestedWidth) / BASE_SCREEN_WIDTH;
+					float scaleFactorForSourceY = static_cast<float>(m_requestedHeight) / BASE_SCREEN_HEIGHT;
+					scaledSourceRect.left = static_cast<LONG>(srcPos.x * scaleFactorForSourceX);
+					scaledSourceRect.right = static_cast<LONG>((srcPos.x + srcSize.cx) * scaleFactorForSourceX);
+					scaledSourceRect.top = static_cast<LONG>(srcPos.y * scaleFactorForSourceY);
+					scaledSourceRect.bottom = static_cast<LONG>((srcPos.y + srcSize.cy) * scaleFactorForSourceY);
+
+					m_pSprite->SetTransform(&finalTransform);
+					m_pSprite->Draw(m_pTex.Get(), &scaledSourceRect, &D3DXVECTOR3(0, 0, 0), NULL, 0xffffffff);
+				};
+
+				if (!bNeedsRearrangeHUD)
+				{
+					rectDrawer(
+						POINT{ 0, 0 }, SIZE{ BASE_SCREEN_WIDTH, BASE_SCREEN_HEIGHT },
+						POINT{ 0, 0 }, SIZE{ BASE_SCREEN_WIDTH, BASE_SCREEN_HEIGHT }, 0);
 				}
 				else
 				{
-					D3DXMATRIX mat, matS;
-					D3DXMatrixRotationZ( &mat, D3DX_PI*m_rot*0.5f );
-					switch( m_rot )
+					POINT prPosition{ static_cast<LONG>(m_prLeft), static_cast<LONG>(m_prTop) };
+					SIZE prSize{ static_cast<LONG>(m_prWidth), static_cast<LONG>(m_prHeight) };
+					if (m_prWidth * 4 < m_prHeight * 3)
 					{
-					case 0:
-						break;
-
-					case 1:
-						mat._41 += m_requestedHeight;
-						break;
-
-					case 2:
-						mat._41 += m_requestedWidth;
-						mat._42 += m_requestedHeight;
-						break;
-
-					case 3:
-						mat._42 += m_requestedWidth;
-						break;
+						prPosition.x = (LONG)m_prLeft + ((LONG)m_prWidth - (LONG)m_prHeight * 3 / 4) / 2;
+						prSize.cx = m_prHeight * 3 / 4;
 					}
-					switch( m_rot%2 )
+					else if (m_prWidth * 4 > m_prHeight * 3)
 					{
-					case 0:
-						if( m_d3dpp.BackBufferHeight*4 > m_d3dpp.BackBufferWidth*3 )
-						{
-							D3DXMatrixScaling(&matS, m_d3dpp.BackBufferWidth / m_requestedWidth, m_d3dpp.BackBufferWidth / m_requestedWidth, 1.f);
-							mat *= matS;
-							mat._42 += m_d3dpp.BackBufferHeight*0.5f - 0.5f*m_d3dpp.BackBufferWidth*3.f/4.f;
-						}
-						else
-						{
-							D3DXMatrixScaling(&matS, m_d3dpp.BackBufferHeight / m_requestedHeight, m_d3dpp.BackBufferHeight / m_requestedHeight, 1.f);
-							mat *= matS;
-							mat._41 += m_d3dpp.BackBufferWidth*0.5f - 0.5f*m_d3dpp.BackBufferHeight*4.f/3.f;
-						}
-						break;
-
-					case 1:
-						if( m_d3dpp.BackBufferHeight*3 > m_d3dpp.BackBufferWidth*4 )
-						{
-							D3DXMatrixScaling(&matS, m_d3dpp.BackBufferWidth / m_requestedHeight, m_d3dpp.BackBufferWidth / m_requestedHeight, 1.f);
-							mat *= matS;
-							mat._42 += m_d3dpp.BackBufferHeight*0.5f - 0.5f*m_d3dpp.BackBufferWidth*4.f/3.f;
-						}
-						else
-						{
-							D3DXMatrixScaling(&matS, m_d3dpp.BackBufferHeight / m_requestedWidth, m_d3dpp.BackBufferHeight / m_requestedWidth, 1.f);
-							mat *= matS;
-							mat._41 += m_d3dpp.BackBufferWidth*0.5f - 0.5f*m_d3dpp.BackBufferHeight*3.f/4.f;
-						}
-						break;
-
+						prPosition.y = (LONG)m_prTop + ((LONG)m_prHeight - (LONG)m_prWidth * 4 / 3) / 2;
+						prSize.cy = m_prWidth * 4 / 3;
 					}
-					m_pSprite->SetTransform ( &mat );
-					m_pSprite->Draw( m_pTex.Get(), NULL, &D3DXVECTOR3( 0, 0, 0 ), NULL, 0xffffffff );
+
+					prPosition.y -= m_yOffset;
+
+					rectDrawer(prPosition, prSize, POINT{ 0, 0 }, prSize, 0);
+
+					for (const auto& rectData : m_erdsPrev)
+					{
+						if (rectData.rcSrc.right == 0 || rectData.rcSrc.bottom == 0)
+						{
+							continue;
+						}
+
+						if (rectData.rcDest.right == 0 || rectData.rcDest.bottom == 0)
+						{
+							continue;
+						}
+
+						rectDrawer(
+							POINT{ rectData.rcSrc.left, rectData.rcSrc.top }, SIZE{ rectData.rcSrc.right, rectData.rcSrc.bottom },
+							POINT{ rectData.rcDest.left, rectData.rcDest.top }, SIZE{ rectData.rcDest.right, rectData.rcDest.bottom },
+							rectData.rotation);
+					}
 				}
 
 				m_pSprite->End();
@@ -2522,7 +2472,7 @@ HRESULT WINAPI MyDirect3D9::CreateDevice(          UINT Adapter,
 		if( d3ddm.RefreshRate == 60 )
 		{
 			availableModes.push_back( d3ddm );
-			if( FullScreenWidth*FullScreenHeight < d3ddm.Width*d3ddm.Height )
+			if (FullScreenWidth*FullScreenHeight < d3ddm.Width*d3ddm.Height)
 			{
 				FullScreenWidth = d3ddm.Width;
 				FullScreenHeight = d3ddm.Height;
