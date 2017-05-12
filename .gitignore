@@ -1,0 +1,27 @@
+# ignore all files
+*
+
+# scan all dirs
+!*/
+
+# C/C++
+!*.cpp
+!*.c
+!*.h
+!*.vcxproj
+!*.vcxproj.filters
+!*.def
+!*.lib
+!*.rc
+
+# Documents
+!*.html
+!*.png
+
+# Sample .ini files
+!/sample_ini/*.ini
+
+!*.txt
+!*.md
+
+!.gitignore
