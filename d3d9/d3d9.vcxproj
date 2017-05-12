@@ -42,15 +42,13 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>J:\game\上海アリス幻樂団\東方紺珠伝体験版\</OutDir>
-    <TargetName>d3d9</TargetName>
+    <OutDir>J:\game\上海アリス幻樂団\東方風神録\</OutDir>
     <IncludePath>$(ProjectDir)d3dx\include;C:\boost\boost_1_60_0;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)d3dx\lib_x86;C:\boost\boost_1_60_0\stage\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>J:\game\上海アリス幻樂団\東方紺珠伝体験版\</OutDir>
-    <TargetName>d3d9</TargetName>
+    <OutDir>J:\game\上海アリス幻樂団\東方風神録\</OutDir>
     <IncludePath>$(ProjectDir)d3dx\include;C:\boost\boost_1_60_0;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)d3dx\lib_x86;C:\boost\boost_1_60_0\stage\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
@@ -105,16 +103,16 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="my_d3d9.cpp" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="my_d3d9.def" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="resource.h" />
+    <ClCompile Include="..\common\THRotator.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="d3d9.rc" />
+    <ClInclude Include="..\common\resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\common\THRotator.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

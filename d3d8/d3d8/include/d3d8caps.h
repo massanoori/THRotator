@@ -1,6 +1,6 @@
 /*==========================================================================;
  *
- *  Copyright (C) 1995-2000 Microsoft Corporation.  All Rights Reserved.
+ *  Copyright (C) Microsoft Corporation.  All Rights Reserved.
  *
  *  File:       d3d8caps.h
  *  Content:    Direct3D capabilities include file
@@ -17,7 +17,9 @@
 // include this file content only if compiling for DX8 interfaces
 #if(DIRECT3D_VERSION >= 0x0800)
 
+#if defined(_X86_) || defined(_IA64_)
 #pragma pack(4)
+#endif
 
 typedef struct _D3DCAPS8
 {
@@ -112,11 +114,18 @@ typedef struct _D3DCAPS8
 #define D3DCAPS2_CANRENDERWINDOWED      0x00080000L
 #define D3DCAPS2_CANCALIBRATEGAMMA      0x00100000L
 #define D3DCAPS2_RESERVED               0x02000000L
+#define D3DCAPS2_CANMANAGERESOURCE      0x10000000L
+#define D3DCAPS2_DYNAMICTEXTURES        0x20000000L
 
 //
 // Caps3
 //
 #define D3DCAPS3_RESERVED               0x8000001fL
+
+// Indicates that the device can respect the ALPHABLENDENABLE render state
+// when fullscreen while using the FLIP or DISCARD swap effect.
+// COPY and COPYVSYNC swap effects work whether or not this flag is set.
+#define D3DCAPS3_ALPHA_FULLSCREEN_FLIP_OR_DISCARD   0x00000020L
 
 //
 // PresentationIntervals
@@ -173,6 +182,7 @@ typedef struct _D3DCAPS8
 #define D3DPMISCCAPS_CLIPTLVERTS        0x00000200L /* device will clip post-transformed vertex primitives */
 #define D3DPMISCCAPS_TSSARGTEMP         0x00000400L /* device supports D3DTA_TEMP for temporary register */
 #define D3DPMISCCAPS_BLENDOP            0x00000800L /* device supports D3DRS_BLENDOP */
+#define D3DPMISCCAPS_NULLREFERENCE      0x00001000L /* Reference Device that doesnt render */
 
 //
 // LineCaps
@@ -351,3 +361,4 @@ typedef struct _D3DCAPS8
 
 #endif /* (DIRECT3D_VERSION >= 0x0800) */
 #endif /* _D3D8CAPS_H_ */
+

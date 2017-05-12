@@ -1,4 +1,4 @@
-LIBRARY my_d3d8
+LIBRARY d3d8
 EXPORTS
     ValidatePixelShader=d_ValidatePixelShader @ 1
     ValidateVertexShader=d_ValidateVertexShader @ 2

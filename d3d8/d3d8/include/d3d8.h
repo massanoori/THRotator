@@ -1,5 +1,6 @@
 /*==========================================================================;
  *
+ *  Copyright (C) Microsoft Corporation.  All Rights Reserved.
  *
  *  File:   d3d8.h
  *  Content:    Direct3D include file
@@ -23,7 +24,7 @@
  * to be rebuilt. If the version doesn't match, Direct3DCreate8 will fail.
  * (The number itself has no meaning.)*/
 
-#define D3D_SDK_VERSION 120
+#define D3D_SDK_VERSION 220
 
 
 #include <stdlib.h>
@@ -259,7 +260,7 @@ DECLARE_INTERFACE_(IDirect3DDevice8, IUnknown)
     STDMETHOD(GetDisplayMode)(THIS_ D3DDISPLAYMODE* pMode) PURE;
     STDMETHOD(GetCreationParameters)(THIS_ D3DDEVICE_CREATION_PARAMETERS *pParameters) PURE;
     STDMETHOD(SetCursorProperties)(THIS_ UINT XHotSpot,UINT YHotSpot,IDirect3DSurface8* pCursorBitmap) PURE;
-    STDMETHOD_(void, SetCursorPosition)(THIS_ UINT XScreenSpace,UINT YScreenSpace,DWORD Flags) PURE;
+    STDMETHOD_(void, SetCursorPosition)(THIS_ int X,int Y,DWORD Flags) PURE;
     STDMETHOD_(BOOL, ShowCursor)(THIS_ BOOL bShow) PURE;
     STDMETHOD(CreateAdditionalSwapChain)(THIS_ D3DPRESENT_PARAMETERS* pPresentationParameters,IDirect3DSwapChain8** pSwapChain) PURE;
     STDMETHOD(Reset)(THIS_ D3DPRESENT_PARAMETERS* pPresentationParameters) PURE;
@@ -1183,6 +1184,8 @@ typedef struct IDirect3DVolume8 *LPDIRECT3DVOLUME8, *PDIRECT3DVOLUME8;
 #define D3DCREATE_HARDWARE_VERTEXPROCESSING     0x00000040L
 #define D3DCREATE_MIXED_VERTEXPROCESSING        0x00000080L
 
+#define D3DCREATE_DISABLE_DRIVER_MANAGEMENT     0x00000100L
+
 
 /****************************************************************************
  *
@@ -1273,3 +1276,4 @@ typedef struct IDirect3DVolume8 *LPDIRECT3DVOLUME8, *PDIRECT3DVOLUME8;
 
 #endif /* (DIRECT3D_VERSION >= 0x0800) */
 #endif /* _D3D_H_ */
+
