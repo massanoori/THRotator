@@ -1960,8 +1960,31 @@ public:
 					const SIZE& playRegionSize,
 					int rotation)
 				{
+					POINT correctedSrcPos = srcPos;
+					SIZE correctedSrcSize = srcSize;
+
+					SIZE srcRectTopLeftOffset{ 0, 0 };
+#ifdef TOUHOU_ON_D3D8
+					// 負の座標値がある場合、D3DX8では描画が行われないため、クランプ
+					if (correctedSrcPos.x < 0)
+					{
+						srcRectTopLeftOffset.cx = -correctedSrcPos.x;
+						correctedSrcPos.x = 0;
+						correctedSrcSize.cx -= srcRectTopLeftOffset.cx;
+					}
+
+					if (correctedSrcPos.y < 0)
+					{
+						srcRectTopLeftOffset.cy = -correctedSrcPos.y;
+						correctedSrcPos.y = 0;
+						correctedSrcSize.cy -= srcRectTopLeftOffset.cy;
+					}
+#endif
+
 					D3DXMATRIX translateSrcCenterToOrigin;
-					D3DXMatrixTranslation(&translateSrcCenterToOrigin, -0.5f * srcSize.cx, -0.5f * srcSize.cy, 0.0f);
+					D3DXMatrixTranslation(&translateSrcCenterToOrigin,
+						-0.5f * srcSize.cx + srcRectTopLeftOffset.cx,
+						-0.5f * srcSize.cy + srcRectTopLeftOffset.cy, 0.0f);
 
 					D3DXMATRIX rectScaleSrcInv;
 					D3DXMatrixScaling(&rectScaleSrcInv, 1.0f / srcSize.cx, 1.0f / srcSize.cy, 1.0f);
@@ -1988,20 +2011,10 @@ public:
 					RECT scaledSourceRect;
 					float scaleFactorForSourceX = static_cast<float>(m_requestedWidth) / BASE_SCREEN_WIDTH;
 					float scaleFactorForSourceY = static_cast<float>(m_requestedHeight) / BASE_SCREEN_HEIGHT;
-					scaledSourceRect.left = static_cast<LONG>(srcPos.x * scaleFactorForSourceX);
-					scaledSourceRect.right = static_cast<LONG>((srcPos.x + srcSize.cx) * scaleFactorForSourceX);
-					scaledSourceRect.top = static_cast<LONG>(srcPos.y * scaleFactorForSourceY);
-					scaledSourceRect.bottom = static_cast<LONG>((srcPos.y + srcSize.cy) * scaleFactorForSourceY);
-
-#ifdef TOUHOU_ON_D3D8
-					// 負の座標値がある場合、D3DX8では描画が行われないため、クランプ
-
-					auto compensatedSourceRectX = std::max<LONG>(0, scaledSourceRect.left);
-					auto compensatedSourceRectY = std::max<LONG>(0, scaledSourceRect.top);
-
-					scaledSourceRect.left = compensatedSourceRectX;
-					scaledSourceRect.top = compensatedSourceRectY;
-#endif
+					scaledSourceRect.left = static_cast<LONG>(correctedSrcPos.x * scaleFactorForSourceX);
+					scaledSourceRect.right = static_cast<LONG>((correctedSrcPos.x + correctedSrcSize.cx) * scaleFactorForSourceX);
+					scaledSourceRect.top = static_cast<LONG>(correctedSrcPos.y * scaleFactorForSourceY);
+					scaledSourceRect.bottom = static_cast<LONG>((correctedSrcPos.y + correctedSrcSize.cy) * scaleFactorForSourceY);
 
 #ifdef TOUHOU_ON_D3D8
 					m_pSprite->DrawTransform(m_pTex.Get(), &scaledSourceRect, &finalTransform, 0xffffffff);
@@ -3196,6 +3209,7 @@ extern "C" {
 }
 
 HINSTANCE h_original;
+
 BOOL APIENTRY DllMain(HANDLE hModule,
 	DWORD  ul_reason_for_call,
 	LPVOID lpReserved)
@@ -3258,24 +3272,16 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 		p_Direct3DCreate9 = reinterpret_cast<DIRECT3DCREATE9PROC>(GetProcAddress(h_original, "Direct3DCreate9"));
 		p_Direct3DCreate9Ex = GetProcAddress(h_original, "Direct3DCreate9Ex");
 #endif
-#ifdef _DEBUG
-		if (AllocConsole())
-		{
-			/*freopen( "CONOUT$", "w", stdout );
-			freopen( "CONOUT$", "w", stderr );
-			freopen( "CONIN$", "r", stdin );*/
-		}
+		break;
 
-		MessageBox(NULL, _T("PIPE"), NULL, 0);
-#endif
-		break;
 	case DLL_THREAD_ATTACH:
-		break;
 	case DLL_THREAD_DETACH:
 		break;
+
 	case DLL_PROCESS_DETACH:
 		FreeLibrary(h_original);
 		break;
+
 	default:
 		break;
 	}
