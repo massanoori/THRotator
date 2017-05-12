@@ -1198,12 +1198,14 @@ class THRotatorDirect3DDevice : public Direct3DDeviceBase
 
 
 	bool m_bInitialized;
+	bool m_bResetQueued;
 
 	ULONG m_referenceCount;
 
 public:
 	THRotatorDirect3DDevice()
 		: m_bInitialized(false)
+		, m_bResetQueued(false)
 		, m_referenceCount(1)
 		, m_judgeCount(0)
 		, m_judgeCountPrev(0)
@@ -1275,18 +1277,7 @@ public:
 				(rcWindow.right - rcWindow.left) - (rcClient.right - rcClient.left) + (rcClient.bottom - rcClient.top),
 				(rcWindow.bottom - rcWindow.top) - (rcClient.bottom - rcClient.top) + (rcClient.right - rcClient.left), TRUE);
 
-			m_d3dpp.BackBufferWidth = rcClient.bottom - rcClient.top;
-			m_d3dpp.BackBufferHeight = rcClient.right - rcClient.left;
-
-			//	640ÇÊÇËè¨Ç≥Ç¢Ç∆âÊñ Ç™ï`âÊÇ≥ÇÍÇ»Ç¢Ç±Ç∆Ç™Ç†ÇÈÇÃÇ≈èCê≥
-			if (m_d3dpp.BackBufferWidth < m_d3dpp.BackBufferHeight)
-			{
-				auto correctedWidthForVerticalWindow = m_d3dpp.BackBufferHeight * 9 / 8;
-				m_d3dpp.BackBufferHeight = correctedWidthForVerticalWindow * m_d3dpp.BackBufferHeight / m_d3dpp.BackBufferWidth;
-				m_d3dpp.BackBufferWidth = correctedWidthForVerticalWindow;
-			}
-
-			m_pd3dDev->Reset(&m_d3dpp);
+			m_bResetQueued = m_pd3dDev;
 		}
 		SendDlgItemMessage(m_hDlg, IDC_VERTICALWINDOW, BM_SETCHECK, piv ? BST_CHECKED : BST_UNCHECKED, 0);
 		m_pivRot = piv;
@@ -1294,7 +1285,9 @@ public:
 
 	boost::filesystem::path m_workingDir;
 
-	bool init(ComPtr<Direct3DDeviceBase> pd3dDev, THRotatorDirect3D* pMyD3D, const D3DPRESENT_PARAMETERS& d3dpp, UINT requestedWidth, UINT requestedHeight)
+	HRESULT init(UINT Adapter, THRotatorDirect3D* pMyD3D, D3DDEVTYPE DeviceType, HWND hFocusWindow,
+		DWORD BehaviorFlags, const D3DPRESENT_PARAMETERS& d3dpp,
+		UINT requestedWidth, UINT requestedHeight)
 	{
 		m_d3dpp = d3dpp;
 
@@ -1324,8 +1317,6 @@ public:
 		else
 			m_workingDir = boost::filesystem::current_path();
 		m_iniPath = (m_workingDir / "throt.ini").string();
-
-		m_pd3dDev = pd3dDev;
 
 		m_judgeThreshold = GetPrivateProfileIntA(m_appName.c_str(), "JC", 999, m_iniPath.c_str());
 		m_prLeft = GetPrivateProfileIntA(m_appName.c_str(), "PL", 32, m_iniPath.c_str());
@@ -1404,13 +1395,38 @@ public:
 			MessageBox(NULL, _T("É_ÉCÉAÉçÉOÇÃçÏê¨Ç…é∏îs"), NULL, MB_ICONSTOP);
 		}
 
-		D3DERR_DEVICELOST;
-
 		SetVisibility(m_bVisible);
+
+		UpdateBackBufferResolution();
 
 		m_judgeCount = 0;
 
-		HRESULT hr = pd3dDev->CreateTexture(requestedWidth, requestedHeight, 1,
+		HRESULT ret = pMyD3D->m_pd3d->CreateDevice(Adapter,
+			DeviceType, hFocusWindow, BehaviorFlags,
+			&m_d3dpp, &m_pd3dDev);
+		if (FAILED(ret))
+		{
+			return ret;
+		}
+
+		m_requestedWidth = requestedWidth;
+		m_requestedHeight = requestedHeight;
+
+		ret = InitResources();
+		if (FAILED(ret))
+		{
+			return ret;
+		}
+
+		m_pMyD3D = pMyD3D;
+
+		m_bInitialized = true;
+		return S_OK;
+	}
+
+	HRESULT InitResources()
+	{
+		HRESULT hr = m_pd3dDev->CreateTexture(m_requestedWidth, m_requestedHeight, 1,
 			D3DUSAGE_RENDERTARGET, m_d3dpp.BackBufferFormat, D3DPOOL_DEFAULT,
 #ifdef TOUHOU_ON_D3D8
 			&m_pTex);
@@ -1419,23 +1435,29 @@ public:
 #endif
 		if (FAILED(hr))
 		{
-			return false;
-		}
-		else
-		{
-			m_pTex->GetSurfaceLevel(0, &m_pTexSurface);
+			return hr;
 		}
 
-		if (FAILED(D3DXCreateSprite(pd3dDev.Get(), &m_pSprite)))
+		m_pTex->GetSurfaceLevel(0, &m_pTexSurface);
+
+		if (m_pSprite && FAILED(hr = m_pSprite->OnResetDevice()))
 		{
-			return false;
+			return hr;
+		}
+		else if (FAILED(hr = D3DXCreateSprite(m_pd3dDev.Get(), &m_pSprite)))
+		{
+			return hr;
 		}
 
 #if defined(_DEBUG) && !defined(TOUHOU_ON_D3D8)
-		if (FAILED(D3DXCreateFont(pd3dDev.Get(),
+		if (m_pFont && FAILED(hr = m_pFont->OnResetDevice()))
+		{
+			return hr;
+		}
+		else if (FAILED(hr = D3DXCreateFont(m_pd3dDev.Get(),
 			0, 0, 0, 0, 0, 0, 0, 0, 0, "Arial", &m_pFont)))
 		{
-			return false;
+			return hr;
 		}
 #endif
 
@@ -1443,28 +1465,90 @@ public:
 		ComPtr<Direct3DSurfaceBase> pSurf;
 
 		//	ê[Ç≥ÉoÉbÉtÉ@ÇÃçÏê¨
-		if (SUCCEEDED(m_pd3dDev->GetDepthStencilSurface(&pSurf)))
+		if (FAILED(hr = m_pd3dDev->GetDepthStencilSurface(&pSurf)))
 		{
-			pSurf->GetDesc(&m_surfDesc);
-			m_pd3dDev->CreateDepthStencilSurface(640, 480,
-				m_surfDesc.Format, m_surfDesc.MultiSampleType, &m_pDepthStencil);
+			return hr;
 		}
 
-		pd3dDev->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &m_pBackBuffer);
-		pd3dDev->SetRenderTarget(m_pTexSurface.Get(), m_pDepthStencil.Get());
+		if (FAILED(hr = pSurf->GetDesc(&m_surfDesc)))
+		{
+			return hr;
+		}
+
+		if (FAILED(hr = m_pd3dDev->CreateDepthStencilSurface(m_requestedWidth, m_requestedHeight,
+			m_surfDesc.Format, m_surfDesc.MultiSampleType, &m_pDepthStencil)))
+		{
+			return hr;
+		}
+
+		if (FAILED(hr = m_pd3dDev->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &m_pBackBuffer)))
+		{
+			return hr;
+		}
+
+		if (FAILED(hr = m_pd3dDev->SetRenderTarget(m_pTexSurface.Get(), m_pDepthStencil.Get())))
+		{
+			return hr;
+		}
 #else
-		pd3dDev->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &m_pBackBuffer);
-		pd3dDev->SetRenderTarget(0, m_pTexSurface.Get());
+		if (FAILED(hr = m_pd3dDev->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &m_pBackBuffer)))
+		{
+			return hr;
+		}
+
+		if (FAILED(hr = m_pd3dDev->SetRenderTarget(0, m_pTexSurface.Get())))
+		{
+			return hr;
+		}
 #endif
 
-		pMyD3D->AddRef();
-		m_pMyD3D = pMyD3D;
+		return S_OK;
+	}
 
-		m_requestedWidth = requestedWidth;
-		m_requestedHeight = requestedHeight;
+	void ReleaseResources()
+	{
+#if TOUHOU_ON_D3D8
+		m_pSprite.Reset();
+		m_pDepthStencil.Reset();
+#else
+		if (m_pSprite)
+		{
+			m_pSprite->OnLostDevice();
+		}
+#ifdef _DEBUG
+		if (m_pFont)
+		{
+			m_pFont->OnLostDevice();
+		}
+#endif
+#endif
 
-		m_bInitialized = true;
-		return true;
+		m_pTexSurface.Reset();
+		m_pTex.Reset();
+		m_pBackBuffer.Reset();
+	}
+
+	void UpdateBackBufferResolution()
+	{
+		if (m_d3dpp.Windowed)
+		{
+			RECT rc;
+			GetClientRect(m_hTH, &rc);
+			m_d3dpp.BackBufferWidth = rc.right - rc.left;
+			m_d3dpp.BackBufferHeight = rc.bottom - rc.top;
+
+			//	640ÇÊÇËè¨Ç≥Ç¢Ç∆âÊñ Ç™ï`âÊÇ≥ÇÍÇ»Ç¢Ç±Ç∆Ç™Ç†ÇÈÇÃÇ≈èCê≥
+			if (m_d3dpp.BackBufferWidth < 640)
+			{
+				m_d3dpp.BackBufferHeight = 720 * m_d3dpp.BackBufferHeight / m_d3dpp.BackBufferWidth;
+				m_d3dpp.BackBufferWidth = 720;
+			}
+		}
+		else
+		{
+			m_d3dpp.BackBufferWidth = FullScreenWidth;
+			m_d3dpp.BackBufferHeight = FullScreenHeight;
+		}
 	}
 
 	ULONG WINAPI AddRef(VOID) override
@@ -2033,6 +2117,8 @@ public:
 				}
 				else
 				{
+					// ÉGÉlÉ~Å[É}Å[ÉJÅ[Ç∆é¸àÕÇÃògÇ™ï\é¶Ç≥ÇÍÇÈÇÊÇ§ÅAÉQÅ[ÉÄâÊñ ÇÃãÈå`Çägí£
+
 					POINT prPosition{ static_cast<LONG>(m_prLeft), static_cast<LONG>(m_prTop) };
 					SIZE prSize{ static_cast<LONG>(m_prWidth), static_cast<LONG>(m_prHeight) };
 					if (m_prWidth * 4 < m_prHeight * 3)
@@ -2165,7 +2251,7 @@ public:
 
 	HRESULT WINAPI GetDepthStencilSurface(Direct3DSurfaceBase ** ppZStencilSurface) override
 	{
-		return m_pd3dDev->GetDepthStencilSurface( ppZStencilSurface );
+		return m_pd3dDev->GetDepthStencilSurface(ppZStencilSurface);
 	}
 
 	HRESULT WINAPI GetDeviceCaps(
@@ -2549,6 +2635,15 @@ public:
 #endif
 		HRESULT ret = m_pd3dDev->Present(pSourceRect, pDestRect,
 			hDestWindowOverride, pDirtyRegion);
+		if (FAILED(ret))
+		{
+			return ret;
+		}
+
+		if (m_bResetQueued)
+		{
+			return D3DERR_DEVICELOST;
+		}
 
 #ifdef _DEBUG
 		QueryPerformanceCounter(&m_cur);
@@ -2591,77 +2686,33 @@ public:
 		assert(m_bInitialized);
 
 #ifdef _DEBUG
-		MessageBox(NULL, _T("RESET"), NULL, 0);
+		::OutputDebugStringA("Resetting D3D device\n");
 #endif
-
-#if TOUHOU_ON_D3D8
-		m_pSprite.Reset();
-		m_pDepthStencil.Reset();
-#else
-		m_pSprite->OnLostDevice();
-#ifdef _DEBUG
-		m_pFont->OnLostDevice();
-#endif
-#endif
-
-		m_pTexSurface.Reset();
-		m_pTex.Reset();
-		m_pBackBuffer.Reset();
+		ReleaseResources();
 
 		m_d3dpp = *pPresentationParameters;
-		if (m_d3dpp.Windowed)
-		{
-			RECT rc;
-			GetClientRect(m_hTH, &rc);
-			m_d3dpp.BackBufferWidth = rc.right - rc.left;
-			m_d3dpp.BackBufferHeight = rc.bottom - rc.top;
 
-			//	640ÇÊÇËè¨Ç≥Ç¢Ç∆âÊñ Ç™ï`âÊÇ≥ÇÍÇ»Ç¢Ç±Ç∆Ç™Ç†ÇÈÇÃÇ≈èCê≥
-			if (m_d3dpp.BackBufferWidth < 640)
-			{
-				m_d3dpp.BackBufferHeight = 720 * m_d3dpp.BackBufferHeight / m_d3dpp.BackBufferWidth;
-				m_d3dpp.BackBufferWidth = 720;
-			}
-		}
-		else
+		if (m_d3dpp.BackBufferWidth != 0)
 		{
-			m_d3dpp.BackBufferWidth = FullScreenWidth;
-			m_d3dpp.BackBufferHeight = FullScreenHeight;
+			m_requestedWidth = m_d3dpp.BackBufferWidth;
 		}
+
+		if (m_d3dpp.BackBufferHeight != 0)
+		{
+			m_requestedHeight = m_d3dpp.BackBufferHeight;
+		}
+
+		UpdateBackBufferResolution();
+
 		HRESULT ret = m_pd3dDev->Reset(&m_d3dpp);
-		if (SUCCEEDED(ret))
+
+		if (FAILED(ret))
 		{
-#ifdef TOUHOU_ON_D3D8
-			D3DXCreateSprite(m_pd3dDev.Get(), &m_pSprite);
-			m_pd3dDev->CreateDepthStencilSurface(640, 480, m_surfDesc.Format, m_surfDesc.MultiSampleType,
-				&m_pDepthStencil);
-#else
-			m_pSprite->OnResetDevice();
-#ifdef _DEBUG
-			m_pFont->OnResetDevice();
-#endif
-#endif
-			m_pd3dDev->CreateTexture(m_requestedWidth, m_requestedHeight, 1,
-				D3DUSAGE_RENDERTARGET, pPresentationParameters->BackBufferFormat, D3DPOOL_DEFAULT,
-#ifdef TOUHOU_ON_D3D8
-				&m_pTex);
-#else
-				&m_pTex, NULL);
-#endif
-			if (m_pTex)
-			{
-				m_pTex->GetSurfaceLevel(0, &m_pTexSurface);
-			}
-#ifdef TOUHOU_ON_D3D8
-			m_pd3dDev->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &m_pBackBuffer);
-			m_pd3dDev->SetRenderTarget(m_pTexSurface.Get(), m_pDepthStencil.Get());
-#else
-			m_pd3dDev->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &m_pBackBuffer);
-			m_pd3dDev->SetRenderTarget(0, m_pTexSurface.Get());
-#endif
+			return ret;
 		}
 
-		return ret;
+		m_bResetQueued = false;
+		return InitResources();
 	}
 
 	HRESULT WINAPI SetClipPlane(DWORD Index,
@@ -3069,7 +3120,6 @@ int THRotatorDirect3DDevice::ms_refCnt = 0;
 std::map<HWND,THRotatorDirect3DDevice*> THRotatorDirect3DDevice::hwnd2devMap;
 std::map<HWND,HWND> THRotatorDirect3DDevice::th_hwnd2hwndMap;
 
-
 HRESULT WINAPI THRotatorDirect3D::CreateDevice(UINT Adapter,
 	D3DDEVTYPE DeviceType,
 	HWND hFocusWindow,
@@ -3133,34 +3183,16 @@ HRESULT WINAPI THRotatorDirect3D::CreateDevice(UINT Adapter,
 		d3dpp.BackBufferHeight = FullScreenHeight;
 		d3dpp.BackBufferWidth = FullScreenWidth;
 	}
-	else
-	{
-		RECT rc;
-		GetClientRect(GetActiveWindow(), &rc);
-		d3dpp.BackBufferWidth = rc.right - rc.left;
-		d3dpp.BackBufferHeight = rc.bottom - rc.top;
-		if (d3dpp.BackBufferWidth < 640)
-		{
-			d3dpp.BackBufferHeight = 720 * d3dpp.BackBufferHeight / d3dpp.BackBufferWidth;
-			d3dpp.BackBufferWidth = 720;
-		}
-	}
-
-	ComPtr<Direct3DDeviceBase> pd3dDev;
-	HRESULT ret = m_pd3d->CreateDevice(Adapter,
-		DeviceType, hFocusWindow, BehaviorFlags,
-		&d3dpp, &pd3dDev);
-
-	if (FAILED(ret)) return ret;
 
 	auto pRetDev = new THRotatorDirect3DDevice();
-	AddRef();
-	if (!pRetDev->init(pd3dDev, this, d3dpp, pPresentationParameters->BackBufferWidth, pPresentationParameters->BackBufferHeight))
+	HRESULT ret = pRetDev->init(Adapter, this, DeviceType, hFocusWindow, BehaviorFlags,
+		d3dpp, pPresentationParameters->BackBufferWidth, pPresentationParameters->BackBufferHeight);
+
+	if (FAILED(ret))
 	{
 		pRetDev->Release();
-		return E_FAIL;
+		return ret;
 	}
-
 	*ppReturnedDeviceInterface = pRetDev;
 
 	return ret;
