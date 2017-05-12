@@ -44,13 +44,13 @@
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(ProjectDir)d3d8\include;C:\boost\boost_1_60_0;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)d3d8\lib;C:\boost\boost_1_60_0\stage\lib;$(LibraryPath)</LibraryPath>
-    <OutDir>J:\game\上海アリス幻樂団\東方妖々夢\</OutDir>
+    <OutDir>J:\game\上海アリス幻樂団\東方紅魔郷\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(ProjectDir)d3d8\include;C:\boost\boost_1_60_0;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)d3d8\lib;C:\boost\boost_1_60_0\stage\lib;$(LibraryPath)</LibraryPath>
-    <OutDir>J:\game\上海アリス幻樂団\東方妖々夢\</OutDir>
+    <OutDir>J:\game\上海アリス幻樂団\東方紅魔郷\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -93,6 +93,7 @@
       <IgnoreSpecificDefaultLibraries>libci.lib</IgnoreSpecificDefaultLibraries>
       <UACExecutionLevel>AsInvoker</UACExecutionLevel>
       <EnableUAC>false</EnableUAC>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

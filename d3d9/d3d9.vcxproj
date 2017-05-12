@@ -42,13 +42,13 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>J:\game\上海アリス幻樂団\東方風神録\</OutDir>
+    <OutDir>J:\game\上海アリス幻樂団\東方紺珠伝体験版\</OutDir>
     <IncludePath>$(ProjectDir)d3dx\include;C:\boost\boost_1_60_0;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)d3dx\lib_x86;C:\boost\boost_1_60_0\stage\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>J:\game\上海アリス幻樂団\東方風神録\</OutDir>
+    <OutDir>J:\game\上海アリス幻樂団\東方紺珠伝体験版\</OutDir>
     <IncludePath>$(ProjectDir)d3dx\include;C:\boost\boost_1_60_0;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)d3dx\lib_x86;C:\boost\boost_1_60_0\stage\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
