@@ -87,17 +87,22 @@ class THRotatorDirect3DDevice;
 class THRotatorDirect3D : public Direct3DBase
 {
 	friend class THRotatorDirect3DDevice;
-	ComPtr<Direct3DBase> m_pd3d;
+	Direct3DBase* m_pd3d;
 	ULONG m_referenceCount;
 	
 public:
 	THRotatorDirect3D()
-		: m_referenceCount(1)
+		: m_pd3d(nullptr)
+		, m_referenceCount(1)
 	{
 	}
 
 	virtual ~THRotatorDirect3D()
 	{
+		if (m_pd3d)
+		{
+			m_pd3d->Release();
+		}
 	}
 
 	bool init( UINT v )
@@ -252,13 +257,13 @@ public:
 		return m_pd3d->GetAdapterCount();
 	}
 
-	HRESULT WINAPI GetAdapterDisplayMode(          UINT Adapter,
-		D3DDISPLAYMODE *pMode ) override
+	HRESULT WINAPI GetAdapterDisplayMode(UINT Adapter,
+		D3DDISPLAYMODE *pMode) override
 	{
-		return m_pd3d->GetAdapterDisplayMode( Adapter, pMode );
+		return m_pd3d->GetAdapterDisplayMode(Adapter, pMode);
 	}
 
-	HRESULT WINAPI GetAdapterIdentifier(          UINT Adapter,
+	HRESULT WINAPI GetAdapterIdentifier(UINT Adapter,
 		DWORD Flags,
 #ifdef TOUHOU_ON_D3D8
 		D3DADAPTER_IDENTIFIER8 *pIdentifier) override
@@ -266,44 +271,44 @@ public:
 		D3DADAPTER_IDENTIFIER9 *pIdentifier) override
 #endif
 	{
-		return m_pd3d->GetAdapterIdentifier( Adapter,
+		return m_pd3d->GetAdapterIdentifier(Adapter,
 			Flags,
-			pIdentifier );
+			pIdentifier);
 	}
 	
 #ifdef TOUHOU_ON_D3D8
 	UINT WINAPI GetAdapterModeCount(UINT Adapter) override
 #else
-	UINT WINAPI GetAdapterModeCount(          UINT Adapter,
-		D3DFORMAT Format ) override
+	UINT WINAPI GetAdapterModeCount(UINT Adapter,
+		D3DFORMAT Format) override
 #endif
 	{
 #ifdef TOUHOU_ON_D3D8
 		return m_pd3d->GetAdapterModeCount(Adapter);
 #else
-		return m_pd3d->GetAdapterModeCount( Adapter, Format );
+		return m_pd3d->GetAdapterModeCount(Adapter, Format);
 #endif
 	}
 
-	HMONITOR WINAPI GetAdapterMonitor(          UINT Adapter ) override
+	HMONITOR WINAPI GetAdapterMonitor(UINT Adapter) override
 	{
-		return m_pd3d->GetAdapterMonitor( Adapter );
+		return m_pd3d->GetAdapterMonitor(Adapter);
 	}
 
-	HRESULT WINAPI GetDeviceCaps(          UINT Adapter,
+	HRESULT WINAPI GetDeviceCaps(UINT Adapter,
 		D3DDEVTYPE DeviceType,
 #ifdef TOUHOU_ON_D3D8
-		D3DCAPS8 *pCaps ) override
+		D3DCAPS8 *pCaps) override
 #else
-		D3DCAPS9 *pCaps ) override
+		D3DCAPS9 *pCaps) override
 #endif
 	{
-		return m_pd3d->GetDeviceCaps( Adapter, DeviceType, pCaps );
+		return m_pd3d->GetDeviceCaps(Adapter, DeviceType, pCaps);
 	}
 
-	HRESULT WINAPI RegisterSoftwareDevice(          void *pInitializeFunction ) override
+	HRESULT WINAPI RegisterSoftwareDevice(void *pInitializeFunction) override
 	{
-		return m_pd3d->RegisterSoftwareDevice( pInitializeFunction );
+		return m_pd3d->RegisterSoftwareDevice(pInitializeFunction);
 	}
 };
 
@@ -1253,10 +1258,6 @@ public:
 
 	virtual ~THRotatorDirect3DDevice()
 	{
-#ifdef _DEBUG
-		MessageBox(NULL, _T("RELEASE"), NULL, 0);
-#endif
-
 		ms_refCnt--;
 		if (ms_refCnt == 0 && ms_hHook == NULL)
 		{
@@ -1277,7 +1278,7 @@ public:
 				(rcWindow.right - rcWindow.left) - (rcClient.right - rcClient.left) + (rcClient.bottom - rcClient.top),
 				(rcWindow.bottom - rcWindow.top) - (rcClient.bottom - rcClient.top) + (rcClient.right - rcClient.left), TRUE);
 
-			m_bResetQueued = m_pd3dDev;
+			m_bResetQueued = static_cast<bool>(m_pd3dDev);
 		}
 		SendDlgItemMessage(m_hDlg, IDC_VERTICALWINDOW, BM_SETCHECK, piv ? BST_CHECKED : BST_UNCHECKED, 0);
 		m_pivRot = piv;
@@ -1614,28 +1615,6 @@ public:
 			Stencil);
 	}
 
-#ifndef TOUHOU_ON_D3D8
-	HRESULT WINAPI ColorFill(IDirect3DSurface9 *pSurface,
-		CONST RECT *pRect,
-		D3DCOLOR color) override
-	{
-		return m_pd3dDev->ColorFill(pSurface, pRect, color);
-	}
-#endif
-
-#ifdef TOUHOU_ON_D3D8
-	HRESULT WINAPI CopyRects(
-		IDirect3DSurface8* pSourceSurface,
-		CONST RECT* pSourceRectsArray,
-		UINT cRects,
-		IDirect3DSurface8* pDestinationSurface,
-		CONST POINT* pDestPointsArray) override
-	{
-		return m_pd3dDev->CopyRects(pSourceSurface, pSourceRectsArray,
-			cRects, pDestinationSurface, pDestPointsArray);
-	}
-#endif
-
 	HRESULT WINAPI CreateAdditionalSwapChain(D3DPRESENT_PARAMETERS* pPresentationParameters,
 		Direct3DSwapChainBase** ppSwapChain) override
 	{
@@ -1685,17 +1664,6 @@ public:
 #endif
 	}
 
-#ifdef TOUHOU_ON_D3D8
-	HRESULT WINAPI CreateImageSurface(
-		UINT Width,
-		UINT Height,
-		D3DFORMAT Format,
-		IDirect3DSurface8** ppSurface) override
-	{
-		return m_pd3dDev->CreateImageSurface(Width, Height, Format, ppSurface);
-	}
-#endif
-
 	HRESULT WINAPI CreateIndexBuffer(UINT Length,
 		DWORD Usage,
 		D3DFORMAT Format,
@@ -1715,19 +1683,6 @@ public:
 #endif
 	}
 
-#ifndef TOUHOU_ON_D3D8
-	HRESULT WINAPI CreateOffscreenPlainSurface(UINT Width,
-		UINT Height,
-		D3DFORMAT Format,
-		D3DPOOL Pool,
-		Direct3DSurfaceBase** ppSurface,
-		HANDLE* pHandle) override
-	{
-		return m_pd3dDev->CreateOffscreenPlainSurface(Width,
-			Height, Format, Pool, ppSurface, pHandle);
-	}
-#endif
-
 	HRESULT WINAPI CreatePixelShader(CONST DWORD *pFunction,
 #ifdef TOUHOU_ON_D3D8
 		DWORD* pHandle) override
@@ -1742,14 +1697,6 @@ public:
 			ppShader);
 #endif
 	}
-
-#ifndef TOUHOU_ON_D3D8
-	HRESULT WINAPI CreateQuery(D3DQUERYTYPE Type,
-		IDirect3DQuery9** ppQuery) override
-	{
-		return m_pd3dDev->CreateQuery(Type, ppQuery);
-	}
-#endif
 
 	HRESULT WINAPI CreateRenderTarget(UINT Width,
 		UINT Height,
@@ -1831,14 +1778,6 @@ public:
 			ppVertexBuffer, pHandle);
 #endif
 	}
-
-#ifndef TOUHOU_ON_D3D8
-	HRESULT WINAPI CreateVertexDeclaration(CONST D3DVERTEXELEMENT9* pVertexElements,
-		IDirect3DVertexDeclaration9** ppDecl) override
-	{
-		return m_pd3dDev->CreateVertexDeclaration(pVertexElements, ppDecl);
-	}
-#endif
 
 	HRESULT WINAPI CreateVertexShader(
 #ifdef TOUHOU_ON_D3D8
@@ -2198,13 +2137,6 @@ public:
 #endif
 	}
 
-#ifndef TOUHOU_ON_D3D8
-	HRESULT WINAPI EvictManagedResources(VOID) override
-	{
-		return m_pd3dDev->EvictManagedResources();
-	}
-#endif
-
 	UINT WINAPI GetAvailableTextureMem(VOID) override
 	{
 		return m_pd3dDev->GetAvailableTextureMem();
@@ -2284,30 +2216,6 @@ public:
 			pMode);
 	}
 
-#ifdef TOUHOU_ON_D3D8
-	HRESULT WINAPI GetFrontBuffer(
-#else
-	HRESULT WINAPI GetFrontBufferData(
-		UINT iSwapChain,
-#endif
-		Direct3DSurfaceBase *pDestSurface) override
-	{
-#ifdef TOUHOU_ON_D3D8
-		return m_pd3dDev->GetFrontBuffer(
-#else
-		return m_pd3dDev->GetFrontBufferData(
-			iSwapChain,
-#endif
-			pDestSurface);
-	}
-
-#ifndef TOUHOU_ON_D3D8
-	HRESULT WINAPI GetFVF(DWORD *pFVF) override
-	{
-		return m_pd3dDev->GetFVF(pFVF);
-	}
-#endif
-
 	void WINAPI GetGammaRamp(
 #ifndef TOUHOU_ON_D3D8
 		UINT iSwapChain,
@@ -2363,18 +2271,6 @@ public:
 		return m_pd3dDev->GetMaterial(pMaterial);
 	}
 
-#ifndef TOUHOU_ON_D3D8
-	FLOAT WINAPI GetNPatchMode(VOID) override
-	{
-		return m_pd3dDev->GetNPatchMode();
-	}
-
-	UINT WINAPI GetNumberOfSwapChains(VOID) override
-	{
-		return m_pd3dDev->GetNumberOfSwapChains();
-	}
-#endif
-
 	HRESULT WINAPI GetPaletteEntries(UINT PaletteNumber,
 		PALETTEENTRY *pEntries) override
 	{
@@ -2394,42 +2290,6 @@ public:
 		return m_pd3dDev->GetPixelShader(ppShader);
 #endif
 	}
-
-#ifdef TOUHOU_ON_D3D8
-	HRESULT WINAPI GetPixelShaderConstant(THIS_ DWORD Register, void* pConstantData, DWORD ConstantCount) override
-	{
-		return m_pd3dDev->GetPixelShaderConstant(Register, pConstantData, ConstantCount);
-	}
-
-	HRESULT WINAPI GetPixelShaderFunction(DWORD Register, void* pConstantData, DWORD* pSizeOfData) override
-	{
-		return m_pd3dDev->GetPixelShaderFunction(Register, pConstantData, pSizeOfData);
-	}
-#else
-	HRESULT WINAPI GetPixelShaderConstantB(UINT StartRegister,
-		BOOL *pConstantData,
-		UINT BoolCount) override
-	{
-		return m_pd3dDev->GetPixelShaderConstantB(StartRegister,
-			pConstantData, BoolCount);
-	}
-
-	HRESULT WINAPI GetPixelShaderConstantF(UINT StartRegister,
-		float *pConstantData,
-		UINT Vector4fCount) override
-	{
-		return m_pd3dDev->GetPixelShaderConstantF(StartRegister,
-			pConstantData, Vector4fCount);
-	}
-
-	HRESULT WINAPI GetPixelShaderConstantI(UINT StartRegister,
-		int *pConstantData,
-		UINT Vector4iCount) override
-	{
-		return m_pd3dDev->GetPixelShaderConstantI(StartRegister,
-			pConstantData, Vector4iCount);
-	}
-#endif
 
 	HRESULT WINAPI GetRasterStatus(
 #ifndef TOUHOU_ON_D3D8
@@ -2463,32 +2323,6 @@ public:
 			ppRenderTarget);
 	}
 
-#ifndef TOUHOU_ON_D3D8
-	HRESULT WINAPI GetRenderTargetData(Direct3DSurfaceBase* pRenderTarget,
-		Direct3DSurfaceBase* pDestSurface) override
-	{
-		return m_pd3dDev->GetRenderTargetData(pRenderTarget,
-			pDestSurface);
-	}
-
-	HRESULT WINAPI GetSamplerState(DWORD Sampler,
-		D3DSAMPLERSTATETYPE Type,
-		DWORD* pValue) override
-	{
-		return m_pd3dDev->GetSamplerState(Sampler, Type, pValue);
-	}
-
-	HRESULT WINAPI GetScissorRect(RECT* pRect) override
-	{
-		return m_pd3dDev->GetScissorRect(pRect);
-	}
-
-	BOOL WINAPI GetSoftwareVertexProcessing(VOID) override
-	{
-		return m_pd3dDev->GetSoftwareVertexProcessing();
-	}
-#endif
-
 	HRESULT WINAPI GetStreamSource(UINT StreamNumber,
 		Direct3DVertexBufferBase** ppStreamData,
 #ifndef TOUHOU_ON_D3D8
@@ -2502,22 +2336,6 @@ public:
 #endif
 			pStride);
 	}
-
-#ifndef TOUHOU_ON_D3D8
-	HRESULT WINAPI GetStreamSourceFreq(UINT StreamNumber,
-		UINT* pDivider)
-	{
-		return m_pd3dDev->GetStreamSourceFreq(StreamNumber,
-			pDivider);
-	}
-
-	HRESULT WINAPI GetSwapChain(UINT iSwapChain,
-		Direct3DSwapChainBase **ppSwapChain)
-	{
-		return m_pd3dDev->GetSwapChain(iSwapChain, ppSwapChain);
-	}
-#endif
-
 	HRESULT WINAPI GetTexture(DWORD Stage,
 		Direct3DBaseTextureBase** ppTexture) override
 	{
@@ -2537,13 +2355,6 @@ public:
 		return m_pd3dDev->GetTransform(State, pMatrix);
 	}
 
-#ifndef TOUHOU_ON_D3D8
-	HRESULT WINAPI GetVertexDeclaration(IDirect3DVertexDeclaration9** ppDecl) override
-	{
-		return m_pd3dDev->GetVertexDeclaration(ppDecl);
-	}
-#endif
-
 	HRESULT WINAPI GetVertexShader(
 #ifdef TOUHOU_ON_D3D8
 		DWORD* pHandle) override
@@ -2557,49 +2368,6 @@ public:
 		return m_pd3dDev->GetVertexShader(ppShader);
 #endif
 	}
-
-#ifdef TOUHOU_ON_D3D8
-	HRESULT WINAPI GetVertexShaderConstant(DWORD Register,
-		void* pConstantData, DWORD ConstantCount) override
-	{
-		return m_pd3dDev->GetVertexShaderConstant(Register,
-			pConstantData, ConstantCount);
-	}
-
-	HRESULT WINAPI GetVertexShaderFunction(DWORD Register, void* pConstantData, DWORD* pSizeOfData) override
-	{
-		return m_pd3dDev->GetVertexShaderFunction(Register, pConstantData, pSizeOfData);
-	}
-
-	HRESULT WINAPI GetVertexShaderDeclaration(DWORD Handle, void* pData, DWORD* pSizeOfData) override
-	{
-		return m_pd3dDev->GetVertexShaderDeclaration(Handle, pData, pSizeOfData);
-	}
-#else
-	HRESULT WINAPI GetVertexShaderConstantB(UINT StartRegister,
-		BOOL *pConstantData,
-		UINT BoolCount) override
-	{
-		return m_pd3dDev->GetVertexShaderConstantB(StartRegister,
-			pConstantData, BoolCount);
-	}
-
-	HRESULT WINAPI GetVertexShaderConstantF(UINT StartRegister,
-		float *pConstantData,
-		UINT Vector4fCount) override
-	{
-		return m_pd3dDev->GetVertexShaderConstantF(StartRegister,
-			pConstantData, Vector4fCount);
-	}
-
-	HRESULT WINAPI GetVertexShaderConstantI(UINT StartRegister,
-		int *pConstantData,
-		UINT Vector4iCount) override
-	{
-		return m_pd3dDev->GetVertexShaderConstantI(StartRegister,
-			pConstantData, Vector4iCount);
-	}
-#endif
 
 	HRESULT WINAPI GetViewport(
 #ifdef TOUHOU_ON_D3D8
@@ -2642,7 +2410,7 @@ public:
 
 		if (m_bResetQueued)
 		{
-			return D3DERR_DEVICELOST;
+			return D3DERR_DEVICENOTRESET;
 		}
 
 #ifdef _DEBUG
@@ -2751,23 +2519,6 @@ public:
 			YHotSpot, pCursorBitmap);
 	}
 
-#ifndef TOUHOU_ON_D3D8
-	HRESULT WINAPI SetDepthStencilSurface(Direct3DSurfaceBase* pZStencilSurface) override
-	{
-		return m_pd3dDev->SetDepthStencilSurface(pZStencilSurface);
-	}
-
-	HRESULT WINAPI SetDialogBoxMode(BOOL bEnableDialogs) override
-	{
-		return m_pd3dDev->SetDialogBoxMode(bEnableDialogs);
-	}
-
-	HRESULT WINAPI SetFVF(DWORD FVF) override
-	{
-		return m_pd3dDev->SetFVF(FVF);
-	}
-#endif
-
 	void WINAPI SetGammaRamp(
 #ifndef TOUHOU_ON_D3D8
 		UINT iSwapChain,
@@ -2817,13 +2568,6 @@ public:
 		return m_pd3dDev->SetMaterial(pMaterial);
 	}
 
-#ifndef TOUHOU_ON_D3D8
-	HRESULT WINAPI SetNPatchMode(float nSegments) override
-	{
-		return m_pd3dDev->SetNPatchMode(nSegments);
-	}
-#endif
-
 	HRESULT WINAPI SetPaletteEntries(          UINT PaletteNumber,
 		const PALETTEENTRY *pEntries ) override
 	{
@@ -2844,38 +2588,6 @@ public:
 			pShader);
 #endif
 	}
-
-#ifdef TOUHOU_ON_D3D8
-	HRESULT WINAPI SetPixelShaderConstant(DWORD Register, CONST void* pConstantData, DWORD ConstantCount)
-	{
-		return m_pd3dDev->SetPixelShaderConstant(Register,
-			pConstantData, ConstantCount);
-	}
-#else
-	HRESULT WINAPI SetPixelShaderConstantB(UINT StartRegister,
-		CONST BOOL *pConstantData,
-		UINT BoolCount) override
-	{
-		return m_pd3dDev->SetPixelShaderConstantB(StartRegister,
-			pConstantData, BoolCount);
-	}
-
-	HRESULT WINAPI SetPixelShaderConstantF(UINT StartRegister,
-		CONST float *pConstantData,
-		UINT Vector4fCount) override
-	{
-		return m_pd3dDev->SetPixelShaderConstantF(StartRegister,
-			pConstantData, Vector4fCount);
-	}
-
-	HRESULT WINAPI SetPixelShaderConstantI(UINT StartRegister,
-		CONST int *pConstantData,
-		UINT Vector4iCount) override
-	{
-		return m_pd3dDev->SetPixelShaderConstantI(StartRegister,
-			pConstantData, Vector4iCount);
-	}
-#endif
 
 	HRESULT WINAPI SetRenderState(D3DRENDERSTATETYPE State,
 		DWORD Value) override
@@ -2899,26 +2611,6 @@ public:
 #endif
 	}
 
-#ifndef TOUHOU_ON_D3D8
-	HRESULT WINAPI SetSamplerState(DWORD Sampler,
-		D3DSAMPLERSTATETYPE Type,
-		DWORD Value) override
-	{
-		return m_pd3dDev->SetSamplerState(Sampler,
-			Type, Value);
-	}
-
-	HRESULT WINAPI SetScissorRect(CONST RECT* pRect) override
-	{
-		return m_pd3dDev->SetScissorRect(pRect);
-	}
-
-	HRESULT WINAPI SetSoftwareVertexProcessing(BOOL bSoftware) override
-	{
-		return m_pd3dDev->SetSoftwareVertexProcessing(bSoftware);
-	}
-#endif
-
 	HRESULT WINAPI SetStreamSource(UINT StreamNumber,
 		Direct3DVertexBufferBase *pStreamData,
 #ifndef TOUHOU_ON_D3D8
@@ -2932,15 +2624,6 @@ public:
 #endif
 			Stride);
 	}
-
-#ifndef TOUHOU_ON_D3D8
-	HRESULT WINAPI SetStreamSourceFreq(UINT StreamNumber,
-		UINT Divider) override
-	{
-		return m_pd3dDev->SetStreamSourceFreq(StreamNumber,
-			Divider);
-	}
-#endif
 
 	HRESULT WINAPI SetTexture(DWORD Stage,
 		Direct3DBaseTextureBase* pTexture) override
@@ -2975,43 +2658,6 @@ public:
 #endif
 	}
 
-#ifdef TOUHOU_ON_D3D8
-	HRESULT WINAPI SetVertexShaderConstant(DWORD Register, CONST void* pConstantData, DWORD ConstantCount) override
-	{
-		return m_pd3dDev->SetVertexShaderConstant(Register,
-			pConstantData, ConstantCount);
-	}
-#else
-	HRESULT WINAPI SetVertexDeclaration(IDirect3DVertexDeclaration9 *pDecl) override
-	{
-		return m_pd3dDev->SetVertexDeclaration(pDecl);
-	}
-
-	HRESULT WINAPI SetVertexShaderConstantB(UINT StartRegister,
-		CONST BOOL *pConstantData,
-		UINT BoolCount) override
-	{
-		return m_pd3dDev->SetVertexShaderConstantB(StartRegister,
-			pConstantData, BoolCount);
-	}
-
-	HRESULT WINAPI SetVertexShaderConstantF(UINT StartRegister,
-		CONST float *pConstantData,
-		UINT Vector4fCount) override
-	{
-		return m_pd3dDev->SetVertexShaderConstantF(StartRegister,
-			pConstantData, Vector4fCount);
-	}
-
-	HRESULT WINAPI SetVertexShaderConstantI(UINT StartRegister,
-		CONST int *pConstantData,
-		UINT Vector4iCount) override
-	{
-		return m_pd3dDev->SetVertexShaderConstantI(StartRegister,
-			pConstantData, Vector4iCount);
-	}
-#endif
-
 	HRESULT WINAPI SetViewport(
 #ifdef TOUHOU_ON_D3D8
 		CONST D3DVIEWPORT8* pViewport) override
@@ -3035,33 +2681,10 @@ public:
 		return m_pd3dDev->ShowCursor(bShow);
 	}
 
-#ifndef TOUHOU_ON_D3D8
-	HRESULT WINAPI StretchRect(IDirect3DSurface9 *pSourceSurface,
-		CONST RECT *pSourceRect,
-		IDirect3DSurface9 *pDestSurface,
-		CONST RECT *pDestRect,
-		D3DTEXTUREFILTERTYPE Filter) override
-	{
-		return m_pd3dDev->StretchRect(pSourceSurface, pSourceRect,
-			pDestSurface, pDestRect, Filter);
-	}
-#endif
-
 	HRESULT WINAPI TestCooperativeLevel(VOID) override
 	{
 		return m_pd3dDev->TestCooperativeLevel();
 	}
-
-#ifndef TOUHOU_ON_D3D8
-	HRESULT WINAPI UpdateSurface(Direct3DSurfaceBase* pSourceSurface,
-		CONST RECT* pSourceRect,
-		Direct3DSurfaceBase* pDestinationSurface,
-		CONST POINT* pDestinationPoint) override
-	{
-		return m_pd3dDev->UpdateSurface(pSourceSurface, pSourceRect,
-			pDestinationSurface, pDestinationPoint);
-	}
-#endif
 
 	HRESULT WINAPI UpdateTexture(Direct3DBaseTextureBase* pSourceTexture,
 		Direct3DBaseTextureBase *pDestinationTexture) override
@@ -3076,6 +2699,73 @@ public:
 	}
 
 #ifdef TOUHOU_ON_D3D8
+
+	// Interface implementations that appears only in IDirect3D8
+
+	HRESULT WINAPI CopyRects(
+		IDirect3DSurface8* pSourceSurface,
+		CONST RECT* pSourceRectsArray,
+		UINT cRects,
+		IDirect3DSurface8* pDestinationSurface,
+		CONST POINT* pDestPointsArray) override
+	{
+		return m_pd3dDev->CopyRects(pSourceSurface, pSourceRectsArray,
+			cRects, pDestinationSurface, pDestPointsArray);
+	}
+
+	HRESULT WINAPI CreateImageSurface(
+		UINT Width,
+		UINT Height,
+		D3DFORMAT Format,
+		IDirect3DSurface8** ppSurface) override
+	{
+		return m_pd3dDev->CreateImageSurface(Width, Height, Format, ppSurface);
+	}
+
+	HRESULT WINAPI GetFrontBuffer(Direct3DSurfaceBase *pDestSurface) override
+	{
+		return m_pd3dDev->GetFrontBuffer(pDestSurface);
+	}
+
+	HRESULT WINAPI GetPixelShaderConstant(THIS_ DWORD Register, void* pConstantData, DWORD ConstantCount) override
+	{
+		return m_pd3dDev->GetPixelShaderConstant(Register, pConstantData, ConstantCount);
+	}
+
+	HRESULT WINAPI GetPixelShaderFunction(DWORD Register, void* pConstantData, DWORD* pSizeOfData) override
+	{
+		return m_pd3dDev->GetPixelShaderFunction(Register, pConstantData, pSizeOfData);
+	}
+
+	HRESULT WINAPI GetVertexShaderConstant(DWORD Register,
+		void* pConstantData, DWORD ConstantCount) override
+	{
+		return m_pd3dDev->GetVertexShaderConstant(Register,
+			pConstantData, ConstantCount);
+	}
+
+	HRESULT WINAPI GetVertexShaderFunction(DWORD Register, void* pConstantData, DWORD* pSizeOfData) override
+	{
+		return m_pd3dDev->GetVertexShaderFunction(Register, pConstantData, pSizeOfData);
+	}
+
+	HRESULT WINAPI GetVertexShaderDeclaration(DWORD Handle, void* pData, DWORD* pSizeOfData) override
+	{
+		return m_pd3dDev->GetVertexShaderDeclaration(Handle, pData, pSizeOfData);
+	}
+
+	HRESULT WINAPI SetPixelShaderConstant(DWORD Register, CONST void* pConstantData, DWORD ConstantCount)
+	{
+		return m_pd3dDev->SetPixelShaderConstant(Register,
+			pConstantData, ConstantCount);
+	}
+
+	HRESULT WINAPI SetVertexShaderConstant(DWORD Register, CONST void* pConstantData, DWORD ConstantCount) override
+	{
+		return m_pd3dDev->SetVertexShaderConstant(Register,
+			pConstantData, ConstantCount);
+	}
+
 	HRESULT WINAPI ResourceManagerDiscardBytes(DWORD dw) override
 	{
 		return m_pd3dDev->ResourceManagerDiscardBytes(dw);
@@ -3111,7 +2801,276 @@ public:
 	{
 		return m_pd3dDev->DeletePixelShader(Handle);
 	}
-#endif
+#else // #ifdef TOUHOU_ON_D3D8
+
+	// Interface implementations that appears only in IDirect3D9
+
+	HRESULT WINAPI ColorFill(IDirect3DSurface9 *pSurface,
+		CONST RECT *pRect,
+		D3DCOLOR color) override
+	{
+		return m_pd3dDev->ColorFill(pSurface, pRect, color);
+	}
+
+	HRESULT WINAPI CreateOffscreenPlainSurface(UINT Width,
+		UINT Height,
+		D3DFORMAT Format,
+		D3DPOOL Pool,
+		Direct3DSurfaceBase** ppSurface,
+		HANDLE* pHandle) override
+	{
+		return m_pd3dDev->CreateOffscreenPlainSurface(Width,
+			Height, Format, Pool, ppSurface, pHandle);
+	}
+
+	HRESULT WINAPI CreateQuery(D3DQUERYTYPE Type,
+		IDirect3DQuery9** ppQuery) override
+	{
+		return m_pd3dDev->CreateQuery(Type, ppQuery);
+	}
+
+	HRESULT WINAPI CreateVertexDeclaration(CONST D3DVERTEXELEMENT9* pVertexElements,
+		IDirect3DVertexDeclaration9** ppDecl) override
+	{
+		return m_pd3dDev->CreateVertexDeclaration(pVertexElements, ppDecl);
+	}
+
+	HRESULT WINAPI EvictManagedResources(VOID) override
+	{
+		return m_pd3dDev->EvictManagedResources();
+	}
+
+	HRESULT WINAPI GetFrontBufferData(
+		UINT iSwapChain,
+		Direct3DSurfaceBase *pDestSurface) override
+	{
+		return m_pd3dDev->GetFrontBufferData(
+			iSwapChain,
+			pDestSurface);
+	}
+
+	HRESULT WINAPI GetFVF(DWORD *pFVF) override
+	{
+		return m_pd3dDev->GetFVF(pFVF);
+	}
+
+	FLOAT WINAPI GetNPatchMode(VOID) override
+	{
+		return m_pd3dDev->GetNPatchMode();
+	}
+
+	UINT WINAPI GetNumberOfSwapChains(VOID) override
+	{
+		return m_pd3dDev->GetNumberOfSwapChains();
+	}
+
+	HRESULT WINAPI GetPixelShaderConstantB(UINT StartRegister,
+		BOOL *pConstantData,
+		UINT BoolCount) override
+	{
+		return m_pd3dDev->GetPixelShaderConstantB(StartRegister,
+			pConstantData, BoolCount);
+	}
+
+	HRESULT WINAPI GetPixelShaderConstantF(UINT StartRegister,
+		float *pConstantData,
+		UINT Vector4fCount) override
+	{
+		return m_pd3dDev->GetPixelShaderConstantF(StartRegister,
+			pConstantData, Vector4fCount);
+	}
+
+	HRESULT WINAPI GetPixelShaderConstantI(UINT StartRegister,
+		int *pConstantData,
+		UINT Vector4iCount) override
+	{
+		return m_pd3dDev->GetPixelShaderConstantI(StartRegister,
+			pConstantData, Vector4iCount);
+	}
+
+	HRESULT WINAPI GetRenderTargetData(Direct3DSurfaceBase* pRenderTarget,
+		Direct3DSurfaceBase* pDestSurface) override
+	{
+		return m_pd3dDev->GetRenderTargetData(pRenderTarget,
+			pDestSurface);
+	}
+
+	HRESULT WINAPI GetSamplerState(DWORD Sampler,
+		D3DSAMPLERSTATETYPE Type,
+		DWORD* pValue) override
+	{
+		return m_pd3dDev->GetSamplerState(Sampler, Type, pValue);
+	}
+
+	HRESULT WINAPI GetScissorRect(RECT* pRect) override
+	{
+		return m_pd3dDev->GetScissorRect(pRect);
+	}
+
+	BOOL WINAPI GetSoftwareVertexProcessing(VOID) override
+	{
+		return m_pd3dDev->GetSoftwareVertexProcessing();
+	}
+
+	HRESULT WINAPI GetStreamSourceFreq(UINT StreamNumber,
+		UINT* pDivider)
+	{
+		return m_pd3dDev->GetStreamSourceFreq(StreamNumber,
+			pDivider);
+	}
+
+	HRESULT WINAPI GetSwapChain(UINT iSwapChain,
+		Direct3DSwapChainBase **ppSwapChain)
+	{
+		return m_pd3dDev->GetSwapChain(iSwapChain, ppSwapChain);
+	}
+
+	HRESULT WINAPI GetVertexShaderConstantB(UINT StartRegister,
+		BOOL *pConstantData,
+		UINT BoolCount) override
+	{
+		return m_pd3dDev->GetVertexShaderConstantB(StartRegister,
+			pConstantData, BoolCount);
+	}
+
+	HRESULT WINAPI GetVertexShaderConstantF(UINT StartRegister,
+		float *pConstantData,
+		UINT Vector4fCount) override
+	{
+		return m_pd3dDev->GetVertexShaderConstantF(StartRegister,
+			pConstantData, Vector4fCount);
+	}
+
+	HRESULT WINAPI GetVertexShaderConstantI(UINT StartRegister,
+		int *pConstantData,
+		UINT Vector4iCount) override
+	{
+		return m_pd3dDev->GetVertexShaderConstantI(StartRegister,
+			pConstantData, Vector4iCount);
+	}
+
+	HRESULT WINAPI GetVertexDeclaration(IDirect3DVertexDeclaration9** ppDecl) override
+	{
+		return m_pd3dDev->GetVertexDeclaration(ppDecl);
+	}
+
+	HRESULT WINAPI SetDepthStencilSurface(Direct3DSurfaceBase* pZStencilSurface) override
+	{
+		return m_pd3dDev->SetDepthStencilSurface(pZStencilSurface);
+	}
+
+	HRESULT WINAPI SetDialogBoxMode(BOOL bEnableDialogs) override
+	{
+		return m_pd3dDev->SetDialogBoxMode(bEnableDialogs);
+	}
+
+	HRESULT WINAPI SetFVF(DWORD FVF) override
+	{
+		return m_pd3dDev->SetFVF(FVF);
+	}
+
+	HRESULT WINAPI SetNPatchMode(float nSegments) override
+	{
+		return m_pd3dDev->SetNPatchMode(nSegments);
+	}
+
+	HRESULT WINAPI SetPixelShaderConstantB(UINT StartRegister,
+		CONST BOOL *pConstantData,
+		UINT BoolCount) override
+	{
+		return m_pd3dDev->SetPixelShaderConstantB(StartRegister,
+			pConstantData, BoolCount);
+	}
+
+	HRESULT WINAPI SetPixelShaderConstantF(UINT StartRegister,
+		CONST float *pConstantData,
+		UINT Vector4fCount) override
+	{
+		return m_pd3dDev->SetPixelShaderConstantF(StartRegister,
+			pConstantData, Vector4fCount);
+	}
+
+	HRESULT WINAPI SetPixelShaderConstantI(UINT StartRegister,
+		CONST int *pConstantData,
+		UINT Vector4iCount) override
+	{
+		return m_pd3dDev->SetPixelShaderConstantI(StartRegister,
+			pConstantData, Vector4iCount);
+	}
+
+	HRESULT WINAPI SetSamplerState(DWORD Sampler,
+		D3DSAMPLERSTATETYPE Type,
+		DWORD Value) override
+	{
+		return m_pd3dDev->SetSamplerState(Sampler,
+			Type, Value);
+	}
+
+	HRESULT WINAPI SetScissorRect(CONST RECT* pRect) override
+	{
+		return m_pd3dDev->SetScissorRect(pRect);
+	}
+
+	HRESULT WINAPI SetSoftwareVertexProcessing(BOOL bSoftware) override
+	{
+		return m_pd3dDev->SetSoftwareVertexProcessing(bSoftware);
+	}
+
+	HRESULT WINAPI SetStreamSourceFreq(UINT StreamNumber,
+		UINT Divider) override
+	{
+		return m_pd3dDev->SetStreamSourceFreq(StreamNumber,
+			Divider);
+	}
+
+	HRESULT WINAPI SetVertexDeclaration(IDirect3DVertexDeclaration9 *pDecl) override
+	{
+		return m_pd3dDev->SetVertexDeclaration(pDecl);
+	}
+
+	HRESULT WINAPI SetVertexShaderConstantB(UINT StartRegister,
+		CONST BOOL *pConstantData,
+		UINT BoolCount) override
+	{
+		return m_pd3dDev->SetVertexShaderConstantB(StartRegister,
+			pConstantData, BoolCount);
+	}
+
+	HRESULT WINAPI SetVertexShaderConstantF(UINT StartRegister,
+		CONST float *pConstantData,
+		UINT Vector4fCount) override
+	{
+		return m_pd3dDev->SetVertexShaderConstantF(StartRegister,
+			pConstantData, Vector4fCount);
+	}
+
+	HRESULT WINAPI SetVertexShaderConstantI(UINT StartRegister,
+		CONST int *pConstantData,
+		UINT Vector4iCount) override
+	{
+		return m_pd3dDev->SetVertexShaderConstantI(StartRegister,
+			pConstantData, Vector4iCount);
+	}
+
+	HRESULT WINAPI StretchRect(IDirect3DSurface9 *pSourceSurface,
+		CONST RECT *pSourceRect,
+		IDirect3DSurface9 *pDestSurface,
+		CONST RECT *pDestRect,
+		D3DTEXTUREFILTERTYPE Filter) override
+	{
+		return m_pd3dDev->StretchRect(pSourceSurface, pSourceRect,
+			pDestSurface, pDestRect, Filter);
+	}
+
+	HRESULT WINAPI UpdateSurface(Direct3DSurfaceBase* pSourceSurface,
+		CONST RECT* pSourceRect,
+		Direct3DSurfaceBase* pDestinationSurface,
+		CONST POINT* pDestinationPoint) override
+	{
+		return m_pd3dDev->UpdateSurface(pSourceSurface, pSourceRect,
+			pDestinationSurface, pDestinationPoint);
+	}
+#endif // #ifdef TOUHOU_ON_D3D8 #else
 };
 
 int THRotatorDirect3DDevice::ms_visID = 12345;
