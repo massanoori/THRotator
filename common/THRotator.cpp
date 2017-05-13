@@ -966,22 +966,22 @@ private:
 		{
 			DWORD pl, pt, pw, ph;
 			int jthres, yo;
-			GETANDSET( IDC_JUDGETHRESHOLD, jthres, TRUE, _T("判定の回数閾値の入力が不正です。") );
-			GETANDSET( IDC_PRLEFT, pl, FALSE, _T("プレイ画面領域の左座標の入力が不正です。") );
-			GETANDSET( IDC_PRTOP, pt, FALSE, _T("プレイ画面領域の上座標の入力が不正です。") );
-			GETANDSET( IDC_PRWIDTH, pw, FALSE, _T("プレイ画面領域の幅の入力が不正です。") );
-			if( pw == 0 )
+			GETANDSET(IDC_JUDGETHRESHOLD, jthres, TRUE, _T("判定の回数閾値の入力が不正です。"));
+			GETANDSET(IDC_PRLEFT, pl, FALSE, _T("プレイ画面領域の左座標の入力が不正です。"));
+			GETANDSET(IDC_PRTOP, pt, FALSE, _T("プレイ画面領域の上座標の入力が不正です。"));
+			GETANDSET(IDC_PRWIDTH, pw, FALSE, _T("プレイ画面領域の幅の入力が不正です。"));
+			if (pw == 0)
 			{
-				MessageBox( m_hEditorWin, _T("プレイ画面領域の幅は0以外の値でなければいけません。"), NULL, MB_ICONSTOP );
+				MessageBox(m_hEditorWin, _T("プレイ画面領域の幅は0以外の値でなければいけません。"), NULL, MB_ICONSTOP);
 				return FALSE;
 			}
-			GETANDSET( IDC_PRHEIGHT, ph, FALSE, _T("プレイ画面領域の高さの入力が不正です。") );
-			if( ph == 0 )
+			GETANDSET(IDC_PRHEIGHT, ph, FALSE, _T("プレイ画面領域の高さの入力が不正です。"));
+			if (ph == 0)
 			{
-				MessageBox( m_hEditorWin, _T("プレイ画面領域の高さは0以外の値でなければいけません。"), NULL, MB_ICONSTOP );
+				MessageBox(m_hEditorWin, _T("プレイ画面領域の高さは0以外の値でなければいけません。"), NULL, MB_ICONSTOP);
 				return FALSE;
 			}
-			GETANDSET( IDC_YOFFSET, yo, TRUE, _T("プレイ画面領域のオフセットの入力が不正です。") );
+			GETANDSET(IDC_YOFFSET, yo, TRUE, _T("プレイ画面領域のオフセットの入力が不正です。"));
 
 			m_judgeThreshold = jthres;
 			m_playRegionLeft = pl;
@@ -989,90 +989,147 @@ private:
 			m_playRegionWidth = pw;
 			m_playRegionHeight = ph;
 			m_yOffset = yo;
-
+		}
 #undef GETANDSET
 
-			{
-				namespace proptree = boost::property_tree;
-				proptree::ptree tree;
+		BOOL bVerticallyLong = BST_CHECKED == SendDlgItemMessage(m_hEditorWin, IDC_VERTICALWINDOW, BM_GETCHECK, 0, 0);
+		SetVerticallyLongWindow(bVerticallyLong);
+
+		BOOL bFilterTypeNone = BST_CHECKED == SendDlgItemMessage(m_hEditorWin, IDC_FILTERNONE, BM_GETCHECK, 0, 0);
+		m_filterType = bFilterTypeNone ? D3DTEXF_NONE : D3DTEXF_LINEAR;
+
+		if (BST_CHECKED == SendDlgItemMessage(m_hEditorWin, IDC_ROT0_2, BM_GETCHECK, 0, 0))
+		{
+			m_RotationAngle = Rotation_0;
+		}
+		else if (BST_CHECKED == SendDlgItemMessage(m_hEditorWin, IDC_ROT90_2, BM_GETCHECK, 0, 0))
+		{
+			m_RotationAngle = Rotation_90;
+		}
+		else if (BST_CHECKED == SendDlgItemMessage(m_hEditorWin, IDC_ROT180_2, BM_GETCHECK, 0, 0))
+		{
+			m_RotationAngle = Rotation_180;
+		}
+		else
+		{
+			m_RotationAngle = Rotation_270;
+		}
+
+		m_bVisible = SendDlgItemMessage(m_hEditorWin, IDC_VISIBLE, BM_GETCHECK, 0, 0) == BST_CHECKED ? TRUE : FALSE;
+
+		m_currentRectTransfers = m_editedRectTransfers;
+
+		SaveSettings();
+		
+		return TRUE;
+	}
+
+	void SaveSettings()
+	{
+		namespace proptree = boost::property_tree;
+		proptree::ptree tree;
 
 #define WRITE_INI_PARAM(name, value) tree.add(m_appName + "." + name, value)
-				WRITE_INI_PARAM("JC", jthres);
-				WRITE_INI_PARAM("PL", pl);
-				WRITE_INI_PARAM("PT", pt);
-				WRITE_INI_PARAM("PW", pw);
-				WRITE_INI_PARAM("PH", ph);
-				WRITE_INI_PARAM("YOffset", yo);
-				WRITE_INI_PARAM("Visible",
-					SendDlgItemMessage(m_hEditorWin, IDC_VISIBLE, BM_GETCHECK, 0, 0) == BST_CHECKED ? TRUE : FALSE);
-				m_bVisible = SendDlgItemMessage(m_hEditorWin, IDC_VISIBLE, BM_GETCHECK, 0, 0) == BST_CHECKED ? TRUE : FALSE;
+		WRITE_INI_PARAM("JC", m_judgeThreshold);
+		WRITE_INI_PARAM("PL", m_playRegionLeft);
+		WRITE_INI_PARAM("PT", m_playRegionTop);
+		WRITE_INI_PARAM("PW", m_playRegionWidth);
+		WRITE_INI_PARAM("PH", m_playRegionHeight);
+		WRITE_INI_PARAM("YOffset", m_yOffset);
+		WRITE_INI_PARAM("Visible", m_bVisible);
+		WRITE_INI_PARAM("PivRot", m_bVerticallyLongWindow);
+		WRITE_INI_PARAM("Filter", m_filterType);
+		WRITE_INI_PARAM("Rot", m_RotationAngle);
 
-				if (BST_CHECKED == SendDlgItemMessage(m_hEditorWin, IDC_VERTICALWINDOW, BM_GETCHECK, 0, 0))
-				{
-					WRITE_INI_PARAM("PivRot", 1);
-					SetVerticallyLongWindow(TRUE);
-				}
-				else
-				{
-					WRITE_INI_PARAM("PivRot", 0);
-					SetVerticallyLongWindow(FALSE);
-				}
-
-				if (BST_CHECKED == SendDlgItemMessage(m_hEditorWin, IDC_FILTERNONE, BM_GETCHECK, 0, 0))
-				{
-					WRITE_INI_PARAM("Filter", D3DTEXF_NONE);
-					m_filterType = D3DTEXF_NONE;
-				}
-				else
-				{
-					WRITE_INI_PARAM("Filter", D3DTEXF_LINEAR);
-					m_filterType = D3DTEXF_LINEAR;
-				}
-
-				if (BST_CHECKED == SendDlgItemMessage(m_hEditorWin, IDC_ROT0_2, BM_GETCHECK, 0, 0))
-				{
-					m_RotationAngle = Rotation_0;
-				}
-				else if (BST_CHECKED == SendDlgItemMessage(m_hEditorWin, IDC_ROT90_2, BM_GETCHECK, 0, 0))
-				{
-					m_RotationAngle = Rotation_90;
-				}
-				else if (BST_CHECKED == SendDlgItemMessage(m_hEditorWin, IDC_ROT180_2, BM_GETCHECK, 0, 0))
-				{
-					m_RotationAngle = Rotation_180;
-				}
-				else
-				{
-					m_RotationAngle = Rotation_270;
-				}
-				WRITE_INI_PARAM("Rot", m_RotationAngle);
-
-				int i = 0;
-				TCHAR name[64];
-				for (std::vector<RectTransferData>::iterator itr = m_editedRectTransfers.begin();
-					itr != m_editedRectTransfers.cend(); ++itr, ++i)
-				{
-					wsprintf(name, _T("Name%d"), i);
-					WRITE_INI_PARAM(name, itr->name);
-					wsprintf(name, _T("OSL%d"), i); WRITE_INI_PARAM(name, itr->rcSrc.left);
-					wsprintf(name, _T("OST%d"), i); WRITE_INI_PARAM(name, itr->rcSrc.top);
-					wsprintf(name, _T("OSW%d"), i); WRITE_INI_PARAM(name, itr->rcSrc.right);
-					wsprintf(name, _T("OSH%d"), i); WRITE_INI_PARAM(name, itr->rcSrc.bottom);
-					wsprintf(name, _T("ODL%d"), i); WRITE_INI_PARAM(name, itr->rcDest.left);
-					wsprintf(name, _T("ODT%d"), i); WRITE_INI_PARAM(name, itr->rcDest.top);
-					wsprintf(name, _T("ODW%d"), i); WRITE_INI_PARAM(name, itr->rcDest.right);
-					wsprintf(name, _T("ODH%d"), i); WRITE_INI_PARAM(name, itr->rcDest.bottom);
-					wsprintf(name, _T("OR%d"), i); WRITE_INI_PARAM(name, itr->rotation);
-					wsprintf(name, _T("ORHas%d"), i); WRITE_INI_PARAM(name, TRUE);
-				}
-				wsprintf(name, _T("ORHas%d"), i); WRITE_INI_PARAM(name, FALSE);
+		int i = 0;
+		TCHAR name[64];
+		for (std::vector<RectTransferData>::iterator itr = m_currentRectTransfers.begin();
+			itr != m_currentRectTransfers.cend(); ++itr, ++i)
+		{
+			wsprintf(name, _T("Name%d"), i); WRITE_INI_PARAM(name, itr->name);
+			wsprintf(name, _T("OSL%d"), i); WRITE_INI_PARAM(name, itr->rcSrc.left);
+			wsprintf(name, _T("OST%d"), i); WRITE_INI_PARAM(name, itr->rcSrc.top);
+			wsprintf(name, _T("OSW%d"), i); WRITE_INI_PARAM(name, itr->rcSrc.right);
+			wsprintf(name, _T("OSH%d"), i); WRITE_INI_PARAM(name, itr->rcSrc.bottom);
+			wsprintf(name, _T("ODL%d"), i); WRITE_INI_PARAM(name, itr->rcDest.left);
+			wsprintf(name, _T("ODT%d"), i); WRITE_INI_PARAM(name, itr->rcDest.top);
+			wsprintf(name, _T("ODW%d"), i); WRITE_INI_PARAM(name, itr->rcDest.right);
+			wsprintf(name, _T("ODH%d"), i); WRITE_INI_PARAM(name, itr->rcDest.bottom);
+			wsprintf(name, _T("OR%d"), i); WRITE_INI_PARAM(name, itr->rotation);
+			wsprintf(name, _T("ORHas%d"), i); WRITE_INI_PARAM(name, TRUE);
+		}
+		wsprintf(name, _T("ORHas%d"), i); WRITE_INI_PARAM(name, FALSE);
 #undef WRITE_INI_PARAM
 
-				proptree::write_ini(m_iniPath, tree);
-			}
+		proptree::write_ini(m_iniPath, tree);
+	}
+
+	void LoadSettings()
+	{
+		namespace proptree = boost::property_tree;
+
+		proptree::ptree tree;
+		try
+		{
+			proptree::read_ini(m_iniPath, tree);
 		}
-		m_currentRectTransfers = m_editedRectTransfers;
-		return TRUE;
+		catch (const proptree::ptree_error&)
+		{
+			// ファイルオープン失敗だが、boost::optional::get_value_or()でデフォルト値を設定できるので、そのまま進行
+		}
+
+#define READ_INI_PARAM(type, name, default_value) tree.get_optional<type>(m_appName + "." + name).get_value_or(default_value)
+		m_judgeThreshold = READ_INI_PARAM(int, "JC", 999);
+		m_playRegionLeft = READ_INI_PARAM(int, "PL", 32);
+		m_playRegionTop = READ_INI_PARAM(int, "PT", 16);
+		m_playRegionWidth = READ_INI_PARAM(int, "PW", 384);
+		m_playRegionHeight = READ_INI_PARAM(int, "PH", 448);
+		m_yOffset = READ_INI_PARAM(int, "YOffset", 0);
+		m_bVisible = READ_INI_PARAM(BOOL, "Visible", FALSE);
+		m_bVerticallyLongWindow = READ_INI_PARAM(BOOL, "PivRot", FALSE);
+		m_RotationAngle = static_cast<RotationAngle>(READ_INI_PARAM(std::uint32_t, "Rot", Rotation_0));
+		m_filterType = static_cast<D3DTEXTUREFILTERTYPE>(READ_INI_PARAM(int, "Filter", D3DTEXF_LINEAR));
+
+		BOOL bHasNext = READ_INI_PARAM(BOOL, "ORHas0", FALSE);
+		int cnt = 0;
+		while (bHasNext)
+		{
+			RectTransferData erd;
+			TCHAR name[64];
+
+			wsprintf(name, _T("Name%d"), cnt);
+			std::basic_string<TCHAR> rectName = READ_INI_PARAM(std::basic_string<TCHAR>, name, "");
+			strcpy_s(erd.name, rectName.c_str());
+			erd.name[rectName.length()] = '\0';
+
+			wsprintf(name, _T("OSL%d"), cnt);
+			erd.rcSrc.left = READ_INI_PARAM(int, name, 0);
+			wsprintf(name, _T("OST%d"), cnt);
+			erd.rcSrc.top = READ_INI_PARAM(int, name, 0);
+			wsprintf(name, _T("OSW%d"), cnt);
+			erd.rcSrc.right = READ_INI_PARAM(int, name, 0);
+			wsprintf(name, _T("OSH%d"), cnt);
+			erd.rcSrc.bottom = READ_INI_PARAM(int, name, 0);
+
+			wsprintf(name, _T("ODL%d"), cnt);
+			erd.rcDest.left = READ_INI_PARAM(int, name, 0);
+			wsprintf(name, _T("ODT%d"), cnt);
+			erd.rcDest.top = READ_INI_PARAM(int, name, 0);
+			wsprintf(name, _T("ODW%d"), cnt);
+			erd.rcDest.right = READ_INI_PARAM(int, name, 0);
+			wsprintf(name, _T("ODH%d"), cnt);
+			erd.rcDest.bottom = READ_INI_PARAM(int, name, 0);
+
+			wsprintf(name, _T("OR%d"), cnt);
+			erd.rotation = static_cast<RotationAngle>(READ_INI_PARAM(int, name, 0));
+
+			m_editedRectTransfers.push_back(erd);
+			cnt++;
+
+			wsprintf(name, _T("ORHas%d"), cnt);
+			bHasNext = READ_INI_PARAM(BOOL, name, FALSE);
+		}
+#undef READ_INI_PARAM
 	}
 
 	static LRESULT CALLBACK CallWndHook(int nCode, WPARAM wParam, LPARAM lParam)
@@ -1355,72 +1412,7 @@ public:
 		}
 		m_iniPath = (m_workingDir / "throt.ini").string();
 
-		{
-			namespace proptree = boost::property_tree;
-
-			proptree::ptree tree;
-			try
-			{
-				proptree::read_ini(m_iniPath, tree);
-			}
-			catch (const proptree::ptree_error&)
-			{
-				// ファイルオープン失敗だが、boost::optional::get_value_or()でデフォルト値を設定できるので、そのまま進行
-			}
-
-#define READ_INI_PARAM(type, name, default_value) tree.get_optional<type>(m_appName + "." + name).get_value_or(default_value)
-			m_judgeThreshold = READ_INI_PARAM(int, "JC", 999);
-			m_playRegionLeft = READ_INI_PARAM(int, "PL", 32);
-			m_playRegionTop = READ_INI_PARAM(int, "PT", 16);
-			m_playRegionWidth = READ_INI_PARAM(int, "PW", 384);
-			m_playRegionHeight = READ_INI_PARAM(int, "PH", 448);
-			m_yOffset = READ_INI_PARAM(int, "YOffset", 0);
-			m_bVisible = READ_INI_PARAM(BOOL, "Visible", FALSE);
-			m_bVerticallyLongWindow = READ_INI_PARAM(BOOL, "PivRot", FALSE);
-			m_RotationAngle = static_cast<RotationAngle>(READ_INI_PARAM(std::uint32_t, "Rot", Rotation_0));
-			m_filterType = static_cast<D3DTEXTUREFILTERTYPE>(READ_INI_PARAM(int, "Filter", D3DTEXF_LINEAR));
-
-			BOOL bHasNext = READ_INI_PARAM(BOOL, "ORHas0", FALSE);
-			int cnt = 0;
-			while (bHasNext)
-			{
-				RectTransferData erd;
-				TCHAR name[64];
-
-				wsprintf(name, _T("Name%d"), cnt);
-				std::basic_string<TCHAR> rectName = READ_INI_PARAM(std::basic_string<TCHAR>, name, "");
-				strcpy_s(erd.name, rectName.c_str());
-				erd.name[rectName.length()] = '\0';
-
-				wsprintf(name, _T("OSL%d"), cnt);
-				erd.rcSrc.left = READ_INI_PARAM(int, name, 0);
-				wsprintf(name, _T("OST%d"), cnt);
-				erd.rcSrc.top = READ_INI_PARAM(int, name, 0);
-				wsprintf(name, _T("OSW%d"), cnt);
-				erd.rcSrc.right = READ_INI_PARAM(int, name, 0);
-				wsprintf(name, _T("OSH%d"), cnt);
-				erd.rcSrc.bottom = READ_INI_PARAM(int, name, 0);
-
-				wsprintf(name, _T("ODL%d"), cnt);
-				erd.rcDest.left = READ_INI_PARAM(int, name, 0);
-				wsprintf(name, _T("ODT%d"), cnt);
-				erd.rcDest.top = READ_INI_PARAM(int, name, 0);
-				wsprintf(name, _T("ODW%d"), cnt);
-				erd.rcDest.right = READ_INI_PARAM(int, name, 0);
-				wsprintf(name, _T("ODH%d"), cnt);
-				erd.rcDest.bottom = READ_INI_PARAM(int, name, 0);
-
-				wsprintf(name, _T("OR%d"), cnt);
-				erd.rotation = static_cast<RotationAngle>(READ_INI_PARAM(int, name, 0));
-
-				m_editedRectTransfers.push_back(erd);
-				cnt++;
-
-				wsprintf(name, _T("ORHas%d"), cnt);
-				bHasNext = READ_INI_PARAM(BOOL, name, FALSE);
-			}
-#undef READ_INI_PARAM
-		}
+		LoadSettings();
 
 		// スクリーンキャプチャ機能がないのは紅魔郷
 		m_bTouhouWithoutScreenCapture = touhouIndex == 6.0;
