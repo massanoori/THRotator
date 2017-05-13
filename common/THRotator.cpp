@@ -42,16 +42,38 @@ using Direct3DIndexBufferBase = IDirect3DIndexBuffer9;
 using Direct3DSwapChainBase = IDirect3DSwapChain9;
 #endif
 
+#pragma comment(lib,"comctl32.lib")
+
+using Microsoft::WRL::ComPtr;
+
+enum RotationAngle : std::uint32_t
+{
+	Rotation_0 = 0,
+	Rotation_90 = 1,
+	Rotation_180 = 2,
+	Rotation_270 = 3,
+
+	Rotation_Num,
+};
+
+static float RotationAngleToRadian(RotationAngle rotation)
+{
+	assert(0 <= rotation && rotation < Rotation_Num);
+	return static_cast<float>(rotation) * D3DX_PI * 0.5f;
+}
+
+struct RectTransferData
+{
+	RECT rcSrc, rcDest;
+	RotationAngle rotation;
+	TCHAR name[64];
+};
+
 UINT FullScreenWidth;
 UINT FullScreenHeight;
 
 const UINT BASE_SCREEN_WIDTH = 640u;
 const UINT BASE_SCREEN_HEIGHT = 480u;
-
-using Microsoft::WRL::ComPtr;
-
-
-#pragma comment(lib,"comctl32.lib")
 
 HANDLE g_hModule;
 
@@ -93,67 +115,20 @@ class THRotatorDirect3D : public Direct3DBase
 	ULONG m_referenceCount;
 	
 public:
-	THRotatorDirect3D()
-		: m_pd3d(nullptr)
-		, m_referenceCount(1)
-	{
-	}
+	THRotatorDirect3D();
+	virtual ~THRotatorDirect3D();
 
-	virtual ~THRotatorDirect3D()
-	{
-		if (m_pd3d)
-		{
-			m_pd3d->Release();
-		}
-	}
+	bool init(UINT v);
 
-	bool init( UINT v )
-	{
-#ifdef TOUHOU_ON_D3D8
-		m_pd3d = p_Direct3DCreate8(v);
-#else
-		m_pd3d = p_Direct3DCreate9(v);
-#endif
-		return m_pd3d != NULL;
-	}
-
-	ULONG WINAPI AddRef(VOID) override
-	{
-		return ++m_referenceCount;
-	}
-
-	HRESULT WINAPI QueryInterface( REFIID riid, LPVOID* ppvObj ) override
-	{
-		if (ppvObj == nullptr)
-		{
-			return E_POINTER;
-		}
-#ifdef TOUHOU_ON_D3D8
-		else if (riid == IID_IDirect3D8
-#else
-		else if (riid == __uuidof(Direct3DBase)
-#endif
-			|| riid == __uuidof(IUnknown))
-		{
-			AddRef();
-			*ppvObj = this;
-			return S_OK;
-		}
-		else
-		{
-			return E_NOINTERFACE;
-		}
-	}
-
-	ULONG WINAPI Release() override
-	{
-		ULONG ret = --m_referenceCount;
-		if (ret == 0)
-		{
-			delete this;
-		}
-		return ret;
-	}
+	ULONG WINAPI AddRef(VOID) override;
+	HRESULT WINAPI QueryInterface(REFIID riid, LPVOID* ppvObj) override;
+	ULONG WINAPI Release() override;
+	HRESULT WINAPI CreateDevice(UINT Adapter,
+		D3DDEVTYPE DeviceType,
+		HWND hFocusWindow,
+		DWORD BehaviorFlags,
+		D3DPRESENT_PARAMETERS *pPresentationParameters,
+		Direct3DDeviceBase** ppReturnedDeviceInterface) override;
 
 	HRESULT WINAPI CheckDepthStencilMatch(UINT Adapter,
 		D3DDEVTYPE DeviceType,
@@ -232,12 +207,6 @@ public:
 			Windowed);
 	}
 
-	HRESULT WINAPI CreateDevice(UINT Adapter,
-		D3DDEVTYPE DeviceType,
-		HWND hFocusWindow,
-		DWORD BehaviorFlags,
-		D3DPRESENT_PARAMETERS *pPresentationParameters,
-		Direct3DDeviceBase** ppReturnedDeviceInterface) override;
 
 	HRESULT WINAPI EnumAdapterModes(UINT Adapter,
 #ifndef TOUHOU_ON_D3D8
@@ -312,29 +281,6 @@ public:
 	{
 		return m_pd3d->RegisterSoftwareDevice(pInitializeFunction);
 	}
-};
-
-enum RotationAngle : std::uint32_t
-{
-	Rotation_0 = 0,
-	Rotation_90 = 1,
-	Rotation_180 = 2,
-	Rotation_270 = 3,
-
-	Rotation_Num,
-};
-
-static float RotationAngleToRadian(RotationAngle rotation)
-{
-	assert(0 <= rotation && rotation < Rotation_Num);
-	return static_cast<float>(rotation) * D3DX_PI * 0.5f;
-}
-
-struct RectTransferData
-{
-	RECT rcSrc, rcDest;
-	RotationAngle rotation;
-	TCHAR name[64];
 };
 
 class THRotatorDirect3DDevice : public Direct3DDeviceBase
@@ -430,1237 +376,52 @@ private:
 
 	static HHOOK ms_hWinHookToTouhouWin;
 
-	void SetVisibility( BOOL vis )
-	{
-		m_bVisible = vis;
-		MENUITEMINFO mi;
-		ZeroMemory( &mi, sizeof(mi) );
+	void SetVisibility(BOOL vis);
 
-		mi.cbSize = sizeof(mi);
-		mi.fMask = MIIM_STRING;
-		mi.dwTypeData = vis ? _T("TH Rotatorのウィンドウを非表示") : _T("Th Rotatorのウィンドウを表示");
-		SetMenuItemInfo( m_hSysMenu, ms_switchVisibilityID, FALSE, &mi );
+	void InitListView(HWND hLV);
 
-		ShowWindow( m_hEditorWin, vis ? SW_SHOW : SW_HIDE );
-	}
+	static BOOL CALLBACK DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-	void InitListView( HWND hLV )
-	{
-		ListView_DeleteAllItems( hLV );
-		int i = 0;
-		for( std::vector<RectTransferData>::iterator itr = m_editedRectTransfers.begin();
-			itr != m_editedRectTransfers.end(); ++itr, ++i )
-		{
-			LVITEM lvi;
-			ZeroMemory( &lvi, sizeof(lvi) );
+	static BOOL CALLBACK EditRectProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-			lvi.mask = LVIF_TEXT;
-			lvi.iItem = i;
-			lvi.pszText = itr->name;
-			ListView_InsertItem( hLV, &lvi );
+	BOOL ApplyChange();
 
-			TCHAR str[64];
-			lvi.pszText = str;
+	void SaveSettings();
 
-			lvi.iSubItem = 1;
-			wsprintf( str, _T("%d,%d,%d,%d"), itr->rcSrc.left, itr->rcSrc.top, itr->rcSrc.right, itr->rcSrc.bottom );
-			ListView_SetItem( hLV, &lvi );
+	void LoadSettings();
 
-			lvi.iSubItem = 2;
-			wsprintf( str, _T("%d,%d,%d,%d"), itr->rcDest.left, itr->rcDest.top, itr->rcDest.right, itr->rcDest.bottom );
-			ListView_SetItem( hLV, &lvi );
-
-			lvi.iSubItem = 3;
-			wsprintf( str, _T("%d°"), itr->rotation*90 );
-			ListView_SetItem( hLV, &lvi );
-		}
-	}
-
-	static BOOL CALLBACK DlgProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam )
-	{
-		switch (msg)
-		{
-		case WM_INITDIALOG:
-			hwnd2devMap[hWnd] = (THRotatorDirect3DDevice*)lParam;
-			SetDlgItemInt(hWnd, IDC_JUDGETHRESHOLD, hwnd2devMap[hWnd]->m_judgeThreshold, TRUE);
-			SetDlgItemInt(hWnd, IDC_PRLEFT, hwnd2devMap[hWnd]->m_playRegionLeft, FALSE);
-			SetDlgItemInt(hWnd, IDC_PRTOP, hwnd2devMap[hWnd]->m_playRegionTop, FALSE);
-			SetDlgItemInt(hWnd, IDC_PRWIDTH, hwnd2devMap[hWnd]->m_playRegionWidth, FALSE);
-			SetDlgItemInt(hWnd, IDC_PRHEIGHT, hwnd2devMap[hWnd]->m_playRegionHeight, FALSE);
-			SetDlgItemInt(hWnd, IDC_YOFFSET, hwnd2devMap[hWnd]->m_yOffset, TRUE);
-			SendDlgItemMessage(hWnd, IDC_VISIBLE, BM_SETCHECK, hwnd2devMap[hWnd]->m_bVisible ? BST_CHECKED : BST_UNCHECKED, 0);
-			switch (((THRotatorDirect3DDevice*)lParam)->m_filterType)
-			{
-			case D3DTEXF_NONE:
-				SendDlgItemMessage(hWnd, IDC_FILTERNONE, BM_SETCHECK, BST_CHECKED, 0);
-				break;
-
-			case D3DTEXF_LINEAR:
-				SendDlgItemMessage(hWnd, IDC_FILTERBILINEAR, BM_SETCHECK, BST_CHECKED, 0);
-				break;
-			}
-			/*switch( hwnd2devMap[hWnd]->m_bVerticallyLongWindow )
-			{
-			case 0:
-				SendDlgItemMessage( hWnd, IDC_PIV0, BM_SETCHECK, BST_CHECKED, 0 );
-				break;
-
-			case 1:
-				SendDlgItemMessage( hWnd, IDC_PIV90, BM_SETCHECK, BST_CHECKED, 0 );
-				break;
-
-			case 3:
-				SendDlgItemMessage( hWnd, IDC_PIV270, BM_SETCHECK, BST_CHECKED, 0 );
-				break;
-			}*/
-
-			if (hwnd2devMap[hWnd]->m_bVerticallyLongWindow == 1)
-				SendDlgItemMessage(hWnd, IDC_VERTICALWINDOW, BM_SETCHECK, BST_CHECKED, 0);
-
-			switch (hwnd2devMap[hWnd]->m_RotationAngle)
-			{
-			case Rotation_0:
-				SendDlgItemMessage(hWnd, IDC_ROT0_2, BM_SETCHECK, BST_CHECKED, 0);
-				break;
-
-			case Rotation_90:
-				SendDlgItemMessage(hWnd, IDC_ROT90_2, BM_SETCHECK, BST_CHECKED, 0);
-				break;
-
-			case Rotation_180:
-				SendDlgItemMessage(hWnd, IDC_ROT180_2, BM_SETCHECK, BST_CHECKED, 0);
-				break;
-
-			case Rotation_270:
-				SendDlgItemMessage(hWnd, IDC_ROT270_2, BM_SETCHECK, BST_CHECKED, 0);
-				break;
-			}
-
-			{
-				LVCOLUMN lvc;
-				lvc.mask = LVCF_TEXT | LVCF_WIDTH;
-				lvc.pszText = _T("矩形名");
-				lvc.cx = 64;
-				ListView_InsertColumn(GetDlgItem(hWnd, IDC_ORLIST), 0, &lvc);
-				lvc.pszText = _T("元の矩形");
-				lvc.cx = 96;
-				ListView_InsertColumn(GetDlgItem(hWnd, IDC_ORLIST), 1, &lvc);
-				lvc.pszText = _T("先の矩形");
-				lvc.cx = 96;
-				ListView_InsertColumn(GetDlgItem(hWnd, IDC_ORLIST), 2, &lvc);
-				lvc.pszText = _T("回転角");
-				lvc.cx = 48;
-				ListView_InsertColumn(GetDlgItem(hWnd, IDC_ORLIST), 3, &lvc);
-			}
-
-			hwnd2devMap[hWnd]->InitListView(GetDlgItem(hWnd, IDC_ORLIST));
-
-			return TRUE;
-
-		case WM_CLOSE:
-			return FALSE;
-
-		case WM_COMMAND:
-			switch (wParam)
-			{
-			case IDC_GETVPCOUNT:
-				SetDlgItemInt(hWnd, IDC_VPCOUNT, hwnd2devMap[hWnd]->m_judgeCountPrev, FALSE);
-				return TRUE;
-			case IDOK:
-				return hwnd2devMap[hWnd]->ApplyChange();
-
-			case IDC_RESET:
-				SetDlgItemInt(hWnd, IDC_JUDGETHRESHOLD, hwnd2devMap[hWnd]->m_judgeThreshold, FALSE);
-				SetDlgItemInt(hWnd, IDC_PRLEFT, hwnd2devMap[hWnd]->m_playRegionLeft, FALSE);
-				SetDlgItemInt(hWnd, IDC_PRTOP, hwnd2devMap[hWnd]->m_playRegionTop, FALSE);
-				SetDlgItemInt(hWnd, IDC_PRWIDTH, hwnd2devMap[hWnd]->m_playRegionWidth, FALSE);
-				SetDlgItemInt(hWnd, IDC_PRHEIGHT, hwnd2devMap[hWnd]->m_playRegionHeight, FALSE);
-				SetDlgItemInt(hWnd, IDC_YOFFSET, hwnd2devMap[hWnd]->m_yOffset, TRUE);
-				hwnd2devMap[hWnd]->m_editedRectTransfers = hwnd2devMap[hWnd]->m_currentRectTransfers;
-				hwnd2devMap[hWnd]->InitListView(GetDlgItem(hWnd, IDC_ORLIST));
-				SendDlgItemMessage(hWnd, IDC_VISIBLE, BM_SETCHECK, hwnd2devMap[hWnd]->m_bVisible ? BST_CHECKED : BST_UNCHECKED, 0);
-				if (hwnd2devMap[hWnd]->m_bVerticallyLongWindow == 1)
-					SendDlgItemMessage(hWnd, IDC_VERTICALWINDOW, BM_SETCHECK, BST_CHECKED, 0);
-				else
-					SendDlgItemMessage(hWnd, IDC_VERTICALWINDOW, BM_SETCHECK, BST_UNCHECKED, 0);
-
-				switch (hwnd2devMap[hWnd]->m_RotationAngle)
-				{
-				case 0:
-					SendDlgItemMessage(hWnd, IDC_ROT0_2, BM_SETCHECK, BST_CHECKED, 0);
-					SendDlgItemMessage(hWnd, IDC_ROT90_2, BM_SETCHECK, BST_UNCHECKED, 0);
-					SendDlgItemMessage(hWnd, IDC_ROT180_2, BM_SETCHECK, BST_UNCHECKED, 0);
-					SendDlgItemMessage(hWnd, IDC_ROT270_2, BM_SETCHECK, BST_UNCHECKED, 0);
-					break;
-
-				case 1:
-					SendDlgItemMessage(hWnd, IDC_ROT90_2, BM_SETCHECK, BST_CHECKED, 0);
-					SendDlgItemMessage(hWnd, IDC_ROT180_2, BM_SETCHECK, BST_UNCHECKED, 0);
-					SendDlgItemMessage(hWnd, IDC_ROT270_2, BM_SETCHECK, BST_UNCHECKED, 0);
-					SendDlgItemMessage(hWnd, IDC_ROT0_2, BM_SETCHECK, BST_UNCHECKED, 0);
-					break;
-
-				case 2:
-					SendDlgItemMessage(hWnd, IDC_ROT180_2, BM_SETCHECK, BST_CHECKED, 0);
-					SendDlgItemMessage(hWnd, IDC_ROT270_2, BM_SETCHECK, BST_UNCHECKED, 0);
-					SendDlgItemMessage(hWnd, IDC_ROT0_2, BM_SETCHECK, BST_UNCHECKED, 0);
-					SendDlgItemMessage(hWnd, IDC_ROT90_2, BM_SETCHECK, BST_UNCHECKED, 0);
-					break;
-
-				case 3:
-					SendDlgItemMessage(hWnd, IDC_ROT270_2, BM_SETCHECK, BST_CHECKED, 0);
-					SendDlgItemMessage(hWnd, IDC_ROT0_2, BM_SETCHECK, BST_UNCHECKED, 0);
-					SendDlgItemMessage(hWnd, IDC_ROT90_2, BM_SETCHECK, BST_UNCHECKED, 0);
-					SendDlgItemMessage(hWnd, IDC_ROT180_2, BM_SETCHECK, BST_UNCHECKED, 0);
-					break;
-				}
-				switch (hwnd2devMap[hWnd]->m_filterType)
-				{
-				case D3DTEXF_NONE:
-					SendDlgItemMessage(hWnd, IDC_FILTERNONE, BM_SETCHECK, BST_CHECKED, 0);
-					SendDlgItemMessage(hWnd, IDC_FILTERBILINEAR, BM_SETCHECK, BST_UNCHECKED, 0);
-					break;
-
-				case D3DTEXF_LINEAR:
-					SendDlgItemMessage(hWnd, IDC_FILTERBILINEAR, BM_SETCHECK, BST_CHECKED, 0);
-					SendDlgItemMessage(hWnd, IDC_FILTERNONE, BM_SETCHECK, BST_UNCHECKED, 0);
-					break;
-				}
-				return TRUE;
-
-			case IDCANCEL:
-				hwnd2devMap[hWnd]->SetVisibility(FALSE);
-				return TRUE;
-
-			case IDC_ADDRECT:
-			{
-				RectTransferData erd;
-				ZeroMemory(&erd, sizeof(erd));
-			reedit1:
-				if (IDOK == DialogBoxParam((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDD_EDITRECTDLG), hWnd, EditRectProc, reinterpret_cast<LPARAM>(&erd)))
-				{
-					for (std::vector<RectTransferData>::const_iterator itr = hwnd2devMap[hWnd]->m_editedRectTransfers.cbegin(); itr != hwnd2devMap[hWnd]->m_editedRectTransfers.cend();
-						++itr)
-					{
-						if (lstrcmp(itr->name, erd.name) == 0)
-						{
-							MessageBox(hWnd, _T("この矩形名はすでに存在しています。別の矩形名前を入力してください。"), NULL, MB_ICONSTOP);
-							goto reedit1;
-						}
-					}
-					TCHAR str[64];
-					hwnd2devMap[hWnd]->m_editedRectTransfers.push_back(erd);
-					LVITEM lvi;
-					ZeroMemory(&lvi, sizeof(lvi));
-					lvi.mask = LVIF_TEXT;
-					lvi.iItem = ListView_GetItemCount(GetDlgItem(hWnd, IDC_ORLIST));
-					lvi.pszText = erd.name;
-					ListView_InsertItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
-
-					lvi.pszText = str;
-
-					lvi.iSubItem = 1;
-					wsprintf(str, _T("%d,%d,%d,%d"), erd.rcSrc.left, erd.rcSrc.top, erd.rcSrc.right, erd.rcSrc.bottom);
-					ListView_SetItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
-
-					lvi.iSubItem = 2;
-					wsprintf(str, _T("%d,%d,%d,%d"), erd.rcDest.left, erd.rcDest.top, erd.rcDest.right, erd.rcDest.bottom);
-					ListView_SetItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
-
-					lvi.iSubItem = 3;
-					switch (erd.rotation)
-					{
-					case 0:
-						lvi.pszText = _T("0°");
-						break;
-
-					case 1:
-						lvi.pszText = _T("90°");
-						break;
-
-					case 2:
-						lvi.pszText = _T("180°");
-						break;
-
-					case 3:
-						lvi.pszText = _T("270°");
-						break;
-					}
-					ListView_SetItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
-				}
-			}
-			return TRUE;
-
-			case IDC_EDITRECT:
-			{
-				int i = ListView_GetSelectionMark(GetDlgItem(hWnd, IDC_ORLIST));
-				if (i == -1)
-				{
-					MessageBox(hWnd, _T("矩形が選択されていません。"), NULL, MB_ICONEXCLAMATION);
-					return FALSE;
-				}
-				RectTransferData& erd = hwnd2devMap[hWnd]->m_editedRectTransfers[i];
-			reedit2:
-				if (IDOK == DialogBoxParam((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDD_EDITRECTDLG), hWnd, EditRectProc, reinterpret_cast<LPARAM>(&erd)))
-				{
-					for (std::vector<RectTransferData>::const_iterator itr = hwnd2devMap[hWnd]->m_editedRectTransfers.cbegin(); itr != hwnd2devMap[hWnd]->m_editedRectTransfers.cend();
-						++itr)
-					{
-						if (itr == hwnd2devMap[hWnd]->m_editedRectTransfers.begin() + i)
-							continue;
-						if (lstrcmp(itr->name, erd.name) == 0)
-						{
-							MessageBox(hWnd, _T("この矩形名はすでに存在しています。別の矩形名前を入力してください。"), NULL, MB_ICONSTOP);
-							goto reedit2;
-						}
-					}
-					TCHAR str[64];
-					LVITEM lvi;
-					ZeroMemory(&lvi, sizeof(lvi));
-					lvi.mask = LVIF_TEXT;
-					lvi.iItem = i;
-					lvi.pszText = erd.name;
-					ListView_SetItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
-
-					lvi.pszText = str;
-
-					lvi.iSubItem = 1;
-					wsprintf(str, _T("%d,%d,%d,%d"), erd.rcSrc.left, erd.rcSrc.top, erd.rcSrc.right, erd.rcSrc.bottom);
-					ListView_SetItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
-
-					lvi.iSubItem = 2;
-					wsprintf(str, _T("%d,%d,%d,%d"), erd.rcDest.left, erd.rcDest.top, erd.rcDest.right, erd.rcDest.bottom);
-					ListView_SetItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
-
-					lvi.iSubItem = 3;
-					switch (erd.rotation)
-					{
-					case 0:
-						lvi.pszText = _T("0°");
-						break;
-
-					case 1:
-						lvi.pszText = _T("90°");
-						break;
-
-					case 2:
-						lvi.pszText = _T("180°");
-						break;
-
-					case 3:
-						lvi.pszText = _T("270°");
-						break;
-					}
-					ListView_SetItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
-				}
-				return TRUE;
-			}
-
-			case IDC_REMRECT:
-			{
-				int i = ListView_GetSelectionMark(GetDlgItem(hWnd, IDC_ORLIST));
-				if (i == -1)
-				{
-					MessageBox(hWnd, _T("矩形が選択されていません。"), NULL, MB_ICONEXCLAMATION);
-					return FALSE;
-				}
-				hwnd2devMap[hWnd]->m_editedRectTransfers.erase(hwnd2devMap[hWnd]->m_editedRectTransfers.cbegin() + i);
-				ListView_DeleteItem(GetDlgItem(hWnd, IDC_ORLIST), i);
-				if (ListView_GetItemCount(GetDlgItem(hWnd, IDC_ORLIST)) == 0)
-				{
-					EnableWindow(GetDlgItem(hWnd, IDC_EDITRECT), FALSE);
-					EnableWindow(GetDlgItem(hWnd, IDC_REMRECT), FALSE);
-					EnableWindow(GetDlgItem(hWnd, IDC_UP), FALSE);
-					EnableWindow(GetDlgItem(hWnd, IDC_DOWN), FALSE);
-				}
-				return TRUE;
-			}
-
-			case IDC_UP:
-			{
-				int i = ListView_GetSelectionMark(GetDlgItem(hWnd, IDC_ORLIST));
-				if (i == -1)
-				{
-					MessageBox(hWnd, _T("矩形が選択されていません。"), NULL, MB_ICONEXCLAMATION);
-					return FALSE;
-				}
-				if (i == 0)
-				{
-					MessageBox(hWnd, _T("選択されている矩形が一番上のものです。"), NULL, MB_ICONEXCLAMATION);
-					return FALSE;
-				}
-				RectTransferData erd = hwnd2devMap[hWnd]->m_editedRectTransfers[i];
-				hwnd2devMap[hWnd]->m_editedRectTransfers[i] = hwnd2devMap[hWnd]->m_editedRectTransfers[i - 1];
-				hwnd2devMap[hWnd]->m_editedRectTransfers[i - 1] = erd;
-				hwnd2devMap[hWnd]->InitListView(GetDlgItem(hWnd, IDC_ORLIST));
-				ListView_SetSelectionMark(GetDlgItem(hWnd, IDC_ORLIST), i - 1);
-				EnableWindow(GetDlgItem(hWnd, IDC_DOWN), TRUE);
-				if (i == 1)
-					EnableWindow(GetDlgItem(hWnd, IDC_UP), FALSE);
-				return TRUE;
-			}
-
-			case IDC_DOWN:
-			{
-				int i = ListView_GetSelectionMark(GetDlgItem(hWnd, IDC_ORLIST));
-				int count = ListView_GetItemCount(GetDlgItem(hWnd, IDC_ORLIST));
-				if (i == -1)
-				{
-					MessageBox(hWnd, _T("矩形が選択されていません。"), NULL, MB_ICONEXCLAMATION);
-					return FALSE;
-				}
-				if (i == count - 1)
-				{
-					MessageBox(hWnd, _T("選択されている矩形が一番下のものです。"), NULL, MB_ICONEXCLAMATION);
-					return FALSE;
-				}
-				RectTransferData erd = hwnd2devMap[hWnd]->m_editedRectTransfers[i];
-				hwnd2devMap[hWnd]->m_editedRectTransfers[i] = hwnd2devMap[hWnd]->m_editedRectTransfers[i + 1];
-				hwnd2devMap[hWnd]->m_editedRectTransfers[i + 1] = erd;
-				hwnd2devMap[hWnd]->InitListView(GetDlgItem(hWnd, IDC_ORLIST));
-				ListView_SetSelectionMark(GetDlgItem(hWnd, IDC_ORLIST), i + 1);
-				EnableWindow(GetDlgItem(hWnd, IDC_UP), TRUE);
-				if (i == count - 2)
-					EnableWindow(GetDlgItem(hWnd, IDC_DOWN), FALSE);
-				return TRUE;
-			}
-			}
-			return FALSE;
-
-		case WM_NOTIFY:
-			if (reinterpret_cast<LPNMHDR>(lParam)->code == LVN_ITEMCHANGED)
-			{
-				LPNMLISTVIEW lpnmLV = (LPNMLISTVIEW)lParam;
-				int count = ListView_GetItemCount(GetDlgItem(hWnd, IDC_ORLIST));
-				BOOL bEnabled = count > 0;
-				EnableWindow(GetDlgItem(hWnd, IDC_EDITRECT), bEnabled);
-				EnableWindow(GetDlgItem(hWnd, IDC_REMRECT), bEnabled);
-				EnableWindow(GetDlgItem(hWnd, IDC_UP), bEnabled && lpnmLV->iItem > 0);
-				EnableWindow(GetDlgItem(hWnd, IDC_DOWN), bEnabled && lpnmLV->iItem < count - 1);
-			}
-			return FALSE;
-
-		default:
-			break;
-		}
-
-		return FALSE;
-	}
-
-	static BOOL CALLBACK EditRectProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam )
-	{
-		static std::map<HWND,RectTransferData*> hwnd2erdMap;
-		switch( msg )
-		{
-		case WM_INITDIALOG:
-			{
-				RectTransferData* pErd = reinterpret_cast<RectTransferData*>(lParam);
-				hwnd2erdMap[hWnd] = pErd;
-				SetDlgItemInt( hWnd, IDC_SRCLEFT, pErd->rcSrc.left, TRUE );
-				SetDlgItemInt( hWnd, IDC_SRCWIDTH, pErd->rcSrc.right, TRUE );
-				SetDlgItemInt( hWnd, IDC_SRCTOP, pErd->rcSrc.top, TRUE );
-				SetDlgItemInt( hWnd, IDC_SRCHEIGHT, pErd->rcSrc.bottom, TRUE );
-				SetDlgItemInt( hWnd, IDC_DESTLEFT, pErd->rcDest.left, TRUE );
-				SetDlgItemInt( hWnd, IDC_DESTWIDTH, pErd->rcDest.right, TRUE );
-				SetDlgItemInt( hWnd, IDC_DESTTOP, pErd->rcDest.top, TRUE );
-				SetDlgItemInt( hWnd, IDC_DESTHEIGHT, pErd->rcDest.bottom, TRUE );
-				switch( pErd->rotation )
-				{
-				case 0:
-					SendDlgItemMessage( hWnd, IDC_ROT0, BM_SETCHECK, BST_CHECKED, 0 );
-					break;
-
-				case 1:
-					SendDlgItemMessage( hWnd, IDC_ROT90, BM_SETCHECK, BST_CHECKED, 0 );
-					break;
-
-				case 2:
-					SendDlgItemMessage( hWnd, IDC_ROT180, BM_SETCHECK, BST_CHECKED, 0 );
-					break;
-
-				case 3:
-					SendDlgItemMessage( hWnd, IDC_ROT270, BM_SETCHECK, BST_CHECKED, 0 );
-					break;
-				}
-
-				SetDlgItemText( hWnd, IDC_RECTNAME, pErd->name );
-			}
-			return TRUE;
-
-		case WM_COMMAND:
-			switch( wParam )
-			{
-			case IDOK:
-				#define GETANDSET_E(id,var,bSig,errmsg) {\
-					BOOL bRet;UINT ret;\
-					ret = GetDlgItemInt( hWnd, id, &bRet, bSig );\
-					if( !bRet )\
-					{\
-						MessageBox( hWnd, errmsg, NULL, MB_ICONSTOP );\
-						return FALSE;\
-					}\
-					if( bSig )\
-						var=(signed)ret;\
-					else\
-						var=ret;\
-				}
-
-				{
-					RECT rcSrc, rcDest;
-					GETANDSET_E( IDC_SRCLEFT, rcSrc.left, TRUE, _T("矩形転送元の左座標の入力が不正です。") );
-					GETANDSET_E( IDC_SRCTOP, rcSrc.top, TRUE, _T("矩形転送元の上座標の入力が不正です。") );
-					GETANDSET_E( IDC_SRCWIDTH, rcSrc.right, TRUE, _T("矩形転送元の幅の入力が不正です。") );
-					GETANDSET_E( IDC_SRCHEIGHT, rcSrc.bottom, TRUE, _T("矩形転送元の高さの入力が不正です。") );
-					GETANDSET_E( IDC_DESTLEFT, rcDest.left, TRUE, _T("矩形転送先の左座標の入力が不正です。") );
-					GETANDSET_E( IDC_DESTTOP, rcDest.top, TRUE, _T("矩形転送先の上座標の入力が不正です。") );
-					GETANDSET_E( IDC_DESTWIDTH, rcDest.right, TRUE, _T("矩形転送先の幅の入力が不正です。") );
-					GETANDSET_E( IDC_DESTHEIGHT, rcDest.bottom, TRUE, _T("矩形転送先の高さの入力が不正です。") );
-
-					if( rcSrc.right == 0 || rcSrc.bottom == 0 || rcDest.right == 0 || rcDest.bottom == 0 )
-						MessageBox( hWnd, _T("入力された幅と高さに0が含まれています。この場合、矩形は描画されません。\r\n描画するにはあとで変更してください。"), NULL, MB_ICONEXCLAMATION );
-
-					if( SendDlgItemMessage( hWnd, IDC_ROT0, BM_GETCHECK, 0, 0 ) == BST_CHECKED )
-						hwnd2erdMap[hWnd]->rotation = Rotation_0;
-					else if( SendDlgItemMessage( hWnd, IDC_ROT90, BM_GETCHECK, 0, 0 ) == BST_CHECKED )
-						hwnd2erdMap[hWnd]->rotation = Rotation_90;
-					else if( SendDlgItemMessage( hWnd, IDC_ROT180, BM_GETCHECK, 0, 0 ) == BST_CHECKED )
-						hwnd2erdMap[hWnd]->rotation = Rotation_180;
-					else if( SendDlgItemMessage( hWnd, IDC_ROT270, BM_GETCHECK, 0, 0 ) == BST_CHECKED )
-						hwnd2erdMap[hWnd]->rotation = Rotation_270;
-					hwnd2erdMap[hWnd]->rcSrc = rcSrc;
-					hwnd2erdMap[hWnd]->rcDest = rcDest;
-					GetDlgItemText( hWnd, IDC_RECTNAME,
-						hwnd2erdMap[hWnd]->name, sizeof(((RectTransferData*)NULL)->name)/sizeof(TCHAR) );
-				}
-				hwnd2erdMap.erase( hWnd );
-				EndDialog( hWnd, IDOK );
-				return TRUE;
-
-			case IDCANCEL:
-				hwnd2erdMap.erase( hWnd );
-				EndDialog( hWnd, IDCANCEL );
-				return TRUE;
-			}
-			return FALSE;
-		}
-		return FALSE;
-	}
-
-	BOOL ApplyChange()
-	{
-#define GETANDSET(id,var,bSig,errmsg) {\
-			BOOL bRet;UINT ret;\
-			ret = GetDlgItemInt( m_hEditorWin, id, &bRet, bSig );\
-			if( !bRet )\
-			{\
-				MessageBox( m_hEditorWin, errmsg, NULL, MB_ICONSTOP );\
-				return FALSE;\
-			}\
-			if( bSig )\
-				var=(signed)ret;\
-			else\
-				var=ret;\
-			SetDlgItemInt( m_hEditorWin, id, ret, bSig );\
-		}
-
-		{
-			DWORD pl, pt, pw, ph;
-			int jthres, yo;
-			GETANDSET(IDC_JUDGETHRESHOLD, jthres, TRUE, _T("判定の回数閾値の入力が不正です。"));
-			GETANDSET(IDC_PRLEFT, pl, FALSE, _T("プレイ画面領域の左座標の入力が不正です。"));
-			GETANDSET(IDC_PRTOP, pt, FALSE, _T("プレイ画面領域の上座標の入力が不正です。"));
-			GETANDSET(IDC_PRWIDTH, pw, FALSE, _T("プレイ画面領域の幅の入力が不正です。"));
-			if (pw == 0)
-			{
-				MessageBox(m_hEditorWin, _T("プレイ画面領域の幅は0以外の値でなければいけません。"), NULL, MB_ICONSTOP);
-				return FALSE;
-			}
-			GETANDSET(IDC_PRHEIGHT, ph, FALSE, _T("プレイ画面領域の高さの入力が不正です。"));
-			if (ph == 0)
-			{
-				MessageBox(m_hEditorWin, _T("プレイ画面領域の高さは0以外の値でなければいけません。"), NULL, MB_ICONSTOP);
-				return FALSE;
-			}
-			GETANDSET(IDC_YOFFSET, yo, TRUE, _T("プレイ画面領域のオフセットの入力が不正です。"));
-
-			m_judgeThreshold = jthres;
-			m_playRegionLeft = pl;
-			m_playRegionTop = pt;
-			m_playRegionWidth = pw;
-			m_playRegionHeight = ph;
-			m_yOffset = yo;
-		}
-#undef GETANDSET
-
-		BOOL bVerticallyLong = BST_CHECKED == SendDlgItemMessage(m_hEditorWin, IDC_VERTICALWINDOW, BM_GETCHECK, 0, 0);
-		SetVerticallyLongWindow(bVerticallyLong);
-
-		BOOL bFilterTypeNone = BST_CHECKED == SendDlgItemMessage(m_hEditorWin, IDC_FILTERNONE, BM_GETCHECK, 0, 0);
-		m_filterType = bFilterTypeNone ? D3DTEXF_NONE : D3DTEXF_LINEAR;
-
-		if (BST_CHECKED == SendDlgItemMessage(m_hEditorWin, IDC_ROT0_2, BM_GETCHECK, 0, 0))
-		{
-			m_RotationAngle = Rotation_0;
-		}
-		else if (BST_CHECKED == SendDlgItemMessage(m_hEditorWin, IDC_ROT90_2, BM_GETCHECK, 0, 0))
-		{
-			m_RotationAngle = Rotation_90;
-		}
-		else if (BST_CHECKED == SendDlgItemMessage(m_hEditorWin, IDC_ROT180_2, BM_GETCHECK, 0, 0))
-		{
-			m_RotationAngle = Rotation_180;
-		}
-		else
-		{
-			m_RotationAngle = Rotation_270;
-		}
-
-		m_bVisible = SendDlgItemMessage(m_hEditorWin, IDC_VISIBLE, BM_GETCHECK, 0, 0) == BST_CHECKED ? TRUE : FALSE;
-
-		m_currentRectTransfers = m_editedRectTransfers;
-
-		SaveSettings();
-		
-		return TRUE;
-	}
-
-	void SaveSettings()
-	{
-		namespace proptree = boost::property_tree;
-		proptree::ptree tree;
-
-#define WRITE_INI_PARAM(name, value) tree.add(m_appName + "." + name, value)
-		WRITE_INI_PARAM("JC", m_judgeThreshold);
-		WRITE_INI_PARAM("PL", m_playRegionLeft);
-		WRITE_INI_PARAM("PT", m_playRegionTop);
-		WRITE_INI_PARAM("PW", m_playRegionWidth);
-		WRITE_INI_PARAM("PH", m_playRegionHeight);
-		WRITE_INI_PARAM("YOffset", m_yOffset);
-		WRITE_INI_PARAM("Visible", m_bVisible);
-		WRITE_INI_PARAM("PivRot", m_bVerticallyLongWindow);
-		WRITE_INI_PARAM("Filter", m_filterType);
-		WRITE_INI_PARAM("Rot", m_RotationAngle);
-
-		int i = 0;
-		TCHAR name[64];
-		for (std::vector<RectTransferData>::iterator itr = m_currentRectTransfers.begin();
-			itr != m_currentRectTransfers.cend(); ++itr, ++i)
-		{
-			wsprintf(name, _T("Name%d"), i); WRITE_INI_PARAM(name, itr->name);
-			wsprintf(name, _T("OSL%d"), i); WRITE_INI_PARAM(name, itr->rcSrc.left);
-			wsprintf(name, _T("OST%d"), i); WRITE_INI_PARAM(name, itr->rcSrc.top);
-			wsprintf(name, _T("OSW%d"), i); WRITE_INI_PARAM(name, itr->rcSrc.right);
-			wsprintf(name, _T("OSH%d"), i); WRITE_INI_PARAM(name, itr->rcSrc.bottom);
-			wsprintf(name, _T("ODL%d"), i); WRITE_INI_PARAM(name, itr->rcDest.left);
-			wsprintf(name, _T("ODT%d"), i); WRITE_INI_PARAM(name, itr->rcDest.top);
-			wsprintf(name, _T("ODW%d"), i); WRITE_INI_PARAM(name, itr->rcDest.right);
-			wsprintf(name, _T("ODH%d"), i); WRITE_INI_PARAM(name, itr->rcDest.bottom);
-			wsprintf(name, _T("OR%d"), i); WRITE_INI_PARAM(name, itr->rotation);
-			wsprintf(name, _T("ORHas%d"), i); WRITE_INI_PARAM(name, TRUE);
-		}
-		wsprintf(name, _T("ORHas%d"), i); WRITE_INI_PARAM(name, FALSE);
-#undef WRITE_INI_PARAM
-
-		proptree::write_ini(m_iniPath, tree);
-	}
-
-	void LoadSettings()
-	{
-		namespace proptree = boost::property_tree;
-
-		proptree::ptree tree;
-		try
-		{
-			proptree::read_ini(m_iniPath, tree);
-		}
-		catch (const proptree::ptree_error&)
-		{
-			// ファイルオープン失敗だが、boost::optional::get_value_or()でデフォルト値を設定できるので、そのまま進行
-		}
-
-#define READ_INI_PARAM(type, name, default_value) tree.get_optional<type>(m_appName + "." + name).get_value_or(default_value)
-		m_judgeThreshold = READ_INI_PARAM(int, "JC", 999);
-		m_playRegionLeft = READ_INI_PARAM(int, "PL", 32);
-		m_playRegionTop = READ_INI_PARAM(int, "PT", 16);
-		m_playRegionWidth = READ_INI_PARAM(int, "PW", 384);
-		m_playRegionHeight = READ_INI_PARAM(int, "PH", 448);
-		m_yOffset = READ_INI_PARAM(int, "YOffset", 0);
-		m_bVisible = READ_INI_PARAM(BOOL, "Visible", FALSE);
-		m_bVerticallyLongWindow = READ_INI_PARAM(BOOL, "PivRot", FALSE);
-		m_RotationAngle = static_cast<RotationAngle>(READ_INI_PARAM(std::uint32_t, "Rot", Rotation_0));
-		m_filterType = static_cast<D3DTEXTUREFILTERTYPE>(READ_INI_PARAM(int, "Filter", D3DTEXF_LINEAR));
-
-		BOOL bHasNext = READ_INI_PARAM(BOOL, "ORHas0", FALSE);
-		int cnt = 0;
-		while (bHasNext)
-		{
-			RectTransferData erd;
-			TCHAR name[64];
-
-			wsprintf(name, _T("Name%d"), cnt);
-			std::basic_string<TCHAR> rectName = READ_INI_PARAM(std::basic_string<TCHAR>, name, "");
-			strcpy_s(erd.name, rectName.c_str());
-			erd.name[rectName.length()] = '\0';
-
-			wsprintf(name, _T("OSL%d"), cnt);
-			erd.rcSrc.left = READ_INI_PARAM(int, name, 0);
-			wsprintf(name, _T("OST%d"), cnt);
-			erd.rcSrc.top = READ_INI_PARAM(int, name, 0);
-			wsprintf(name, _T("OSW%d"), cnt);
-			erd.rcSrc.right = READ_INI_PARAM(int, name, 0);
-			wsprintf(name, _T("OSH%d"), cnt);
-			erd.rcSrc.bottom = READ_INI_PARAM(int, name, 0);
-
-			wsprintf(name, _T("ODL%d"), cnt);
-			erd.rcDest.left = READ_INI_PARAM(int, name, 0);
-			wsprintf(name, _T("ODT%d"), cnt);
-			erd.rcDest.top = READ_INI_PARAM(int, name, 0);
-			wsprintf(name, _T("ODW%d"), cnt);
-			erd.rcDest.right = READ_INI_PARAM(int, name, 0);
-			wsprintf(name, _T("ODH%d"), cnt);
-			erd.rcDest.bottom = READ_INI_PARAM(int, name, 0);
-
-			wsprintf(name, _T("OR%d"), cnt);
-			erd.rotation = static_cast<RotationAngle>(READ_INI_PARAM(int, name, 0));
-
-			m_editedRectTransfers.push_back(erd);
-			cnt++;
-
-			wsprintf(name, _T("ORHas%d"), cnt);
-			bHasNext = READ_INI_PARAM(BOOL, name, FALSE);
-		}
-#undef READ_INI_PARAM
-	}
-
-	static LRESULT CALLBACK CallWndHook(int nCode, WPARAM wParam, LPARAM lParam)
-	{
-		LPMSG pMsg = reinterpret_cast<LPMSG>(lParam);
-		if (nCode >= 0 && PM_REMOVE == wParam)
-		{
-			for (std::map<HWND, THRotatorDirect3DDevice*>::iterator itr = hwnd2devMap.begin();
-				itr != hwnd2devMap.end(); ++itr)
-			{
-				// Don't translate non-input events.
-				if ((pMsg->message >= WM_KEYFIRST && pMsg->message <= WM_KEYLAST))
-				{
-					if (IsDialogMessage(itr->second->m_hEditorWin, pMsg))
-					{
-						// The value returned from this hookproc is ignored, 
-						// and it cannot be used to tell Windows the message has been handled.
-						// To avoid further processing, convert the message to WM_NULL 
-						// before returning.
-						pMsg->message = WM_NULL;
-						pMsg->lParam = 0;
-						pMsg->wParam = 0;
-					}
-				}
-			}
-		}
-		if (nCode == HC_ACTION)
-		{
-			if (th_hwnd2hwndMap.find(pMsg->hwnd) != th_hwnd2hwndMap.end())
-			{
-				THRotatorDirect3DDevice* pDev = hwnd2devMap[th_hwnd2hwndMap[pMsg->hwnd]];
-				switch (pMsg->message)
-				{
-				case WM_SYSCOMMAND:
-					if (pMsg->wParam == ms_switchVisibilityID)
-						pDev->SetVisibility(!pDev->m_bVisible);
-					break;
-
-				case WM_KEYDOWN:
-					switch (pMsg->wParam)
-					{
-					case VK_HOME:
-						if (pDev->m_bTouhouWithoutScreenCapture && pDev->m_d3dpp.BackBufferFormat == D3DFMT_X8R8G8B8)
-						{
-							if ((HIWORD(pMsg->lParam) & KF_REPEAT) == 0)
-							{
-								namespace fs = boost::filesystem;
-								char fname[MAX_PATH];
-
-								fs::create_directory(pDev->m_workingDir / "snapshot");
-								for (int i = 0; i >= 0; ++i)
-								{
-									wsprintfA(fname, (pDev->m_workingDir / "snapshot/thRot%03d.bmp").string().c_str(), i);
-									if (!fs::exists(fname))
-									{
-										::D3DXSaveSurfaceToFileA(fname, D3DXIFF_BMP, pDev->m_pRenderTarget.Get(), nullptr, nullptr);
-										break;
-									}
-								}
-							}
-						}
-						break;
-					}
-					break;
-
-				case WM_SYSKEYDOWN:
-					switch (pMsg->wParam)
-					{
-					case VK_LEFT:
-						if ((HIWORD(pMsg->lParam) & KF_ALTDOWN) && !(HIWORD(pMsg->lParam) & KF_REPEAT))
-						{
-							auto nextRotationAngle = static_cast<RotationAngle>((pDev->m_RotationAngle + 1) % 4);
-							switch ((pDev->m_RotationAngle + 1) % 4)
-							{
-							case Rotation_0:
-								SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT0_2, BM_SETCHECK, BST_CHECKED, 0);
-								SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT90_2, BM_SETCHECK, BST_UNCHECKED, 0);
-								SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT180_2, BM_SETCHECK, BST_UNCHECKED, 0);
-								SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT270_2, BM_SETCHECK, BST_UNCHECKED, 0);
-								//if( pDev->m_d3dpp.Windowed ) pDev->SetVerticallyLongWindow( 0 );
-								break;
-
-							case 1:
-								SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT0_2, BM_SETCHECK, BST_UNCHECKED, 0);
-								SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT90_2, BM_SETCHECK, BST_CHECKED, 0);
-								SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT180_2, BM_SETCHECK, BST_UNCHECKED, 0);
-								SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT270_2, BM_SETCHECK, BST_UNCHECKED, 0);
-								//if( pDev->m_d3dpp.Windowed ) pDev->SetVerticallyLongWindow( 1 );
-								break;
-
-							case 2:
-								SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT0_2, BM_SETCHECK, BST_UNCHECKED, 0);
-								SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT90_2, BM_SETCHECK, BST_UNCHECKED, 0);
-								SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT180_2, BM_SETCHECK, BST_CHECKED, 0);
-								SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT270_2, BM_SETCHECK, BST_UNCHECKED, 0);
-								//if( pDev->m_d3dpp.Windowed ) pDev->SetVerticallyLongWindow( 0 );
-								break;
-
-							case 3:
-								SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT0_2, BM_SETCHECK, BST_UNCHECKED, 0);
-								SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT90_2, BM_SETCHECK, BST_UNCHECKED, 0);
-								SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT180_2, BM_SETCHECK, BST_UNCHECKED, 0);
-								SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT270_2, BM_SETCHECK, BST_CHECKED, 0);
-								//if( pDev->m_d3dpp.Windowed ) pDev->SetVerticallyLongWindow( 1 );
-								break;
-							}
-							pDev->ApplyChange();
-						}
-						break;
-
-					case VK_RIGHT:
-						if (HIWORD(pMsg->lParam) & KF_ALTDOWN && !(HIWORD(pMsg->lParam) & KF_REPEAT))
-						{
-							auto nextRotationAngle = static_cast<RotationAngle>((pDev->m_RotationAngle + Rotation_Num - 1) % 4);
-							switch (nextRotationAngle)
-							{
-							case 0:
-								SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT0_2, BM_SETCHECK, BST_CHECKED, 0);
-								SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT90_2, BM_SETCHECK, BST_UNCHECKED, 0);
-								SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT180_2, BM_SETCHECK, BST_UNCHECKED, 0);
-								SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT270_2, BM_SETCHECK, BST_UNCHECKED, 0);
-								//if( pDev->m_d3dpp.Windowed ) pDev->SetVerticallyLongWindow( 0 );
-								break;
-
-							case 1:
-								SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT0_2, BM_SETCHECK, BST_UNCHECKED, 0);
-								SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT90_2, BM_SETCHECK, BST_CHECKED, 0);
-								SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT180_2, BM_SETCHECK, BST_UNCHECKED, 0);
-								SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT270_2, BM_SETCHECK, BST_UNCHECKED, 0);
-								//if( pDev->m_d3dpp.Windowed ) pDev->SetVerticallyLongWindow( 1 );
-								break;
-
-							case 2:
-								SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT0_2, BM_SETCHECK, BST_UNCHECKED, 0);
-								SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT90_2, BM_SETCHECK, BST_UNCHECKED, 0);
-								SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT180_2, BM_SETCHECK, BST_CHECKED, 0);
-								SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT270_2, BM_SETCHECK, BST_UNCHECKED, 0);
-								//if( pDev->m_d3dpp.Windowed ) pDev->SetVerticallyLongWindow( 0 );
-								break;
-
-							case 3:
-								SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT0_2, BM_SETCHECK, BST_UNCHECKED, 0);
-								SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT90_2, BM_SETCHECK, BST_UNCHECKED, 0);
-								SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT180_2, BM_SETCHECK, BST_UNCHECKED, 0);
-								SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT270_2, BM_SETCHECK, BST_CHECKED, 0);
-								//if( pDev->m_d3dpp.Windowed ) pDev->SetVerticallyLongWindow( 1 );
-								break;
-							}
-							pDev->ApplyChange();
-						}
-						break;
-					}
-					break;
-				}
-			}
-		}
-		return CallNextHookEx(ms_hWinHookToTouhouWin, nCode, wParam, lParam);
-	}
+	static LRESULT CALLBACK CallWndHook(int nCode, WPARAM wParam, LPARAM lParam);
 
 public:
-	THRotatorDirect3DDevice()
-		: m_bInitialized(false)
-		, m_referenceCount(1)
-		, m_requestedWidth(0)
-		, m_requestedHeight(0)
-		, m_bResetQueued(false)
-		, m_judgeCount(0)
-		, m_judgeCountPrev(0)
-		, m_bTouhouWithoutScreenCapture(false)
-#ifdef _DEBUG
-		, m_FPSNew(60.f)
-		, m_fpsCount(0)
-#endif
-	{
-		if (ms_hWinHookToTouhouWin == NULL)
-		{
-			ms_hWinHookToTouhouWin = SetWindowsHookEx(WH_GETMESSAGE, CallWndHook, NULL, GetCurrentThreadId());
-			if (ms_hWinHookToTouhouWin == NULL)
-			{
-				LPVOID lpMessageBuffer;
-
-				FormatMessage(
-					FORMAT_MESSAGE_ALLOCATE_BUFFER |
-					FORMAT_MESSAGE_FROM_SYSTEM,
-					NULL,
-					GetLastError(),
-					MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // デフォルト ユーザー言語 
-					(LPTSTR)&lpMessageBuffer,
-					0,
-					NULL);
-
-				MessageBox(NULL, (LPTSTR)lpMessageBuffer, NULL, MB_ICONSTOP);
-
-				//... 文字列が表示されます。
-				// システムによって確保されたバッファを開放します。
-				LocalFree(lpMessageBuffer);
-			}
-		}
-		ms_hookRefCount++;
-
-#ifdef _DEBUG
-		QueryPerformanceFrequency(&m_freq);
-		ZeroMemory(&m_prev, sizeof(m_prev));
-#endif
-	}
+	THRotatorDirect3DDevice();
+	virtual ~THRotatorDirect3DDevice();
 
 	THRotatorDirect3DDevice(const THRotatorDirect3DDevice&) = delete;
 	THRotatorDirect3DDevice(THRotatorDirect3DDevice&&) = delete;
 	THRotatorDirect3DDevice& operator=(const THRotatorDirect3DDevice&) = delete;
 	THRotatorDirect3DDevice& operator=(THRotatorDirect3D&&) = delete;
 
-	virtual ~THRotatorDirect3DDevice()
-	{
-		ms_hookRefCount--;
-		if (ms_hookRefCount == 0 && ms_hWinHookToTouhouWin == NULL)
-		{
-			UnhookWindowsHookEx(ms_hWinHookToTouhouWin);
-			ms_hWinHookToTouhouWin = NULL;
-		}
-	}
-
-	void SetVerticallyLongWindow(BOOL bVerticallyLongWindow)
-	{
-		if (m_bVerticallyLongWindow % 2 != bVerticallyLongWindow % 2 && m_d3dpp.Windowed)
-		{
-			RECT rcClient, rcWindow;
-			GetClientRect(m_hTouhouWin, &rcClient);
-			GetWindowRect(m_hTouhouWin, &rcWindow);
-
-			MoveWindow(m_hTouhouWin, rcWindow.left, rcWindow.top,
-				(rcWindow.right - rcWindow.left) - (rcClient.right - rcClient.left) + (rcClient.bottom - rcClient.top),
-				(rcWindow.bottom - rcWindow.top) - (rcClient.bottom - rcClient.top) + (rcClient.right - rcClient.left), TRUE);
-
-			m_bResetQueued = static_cast<bool>(m_pd3dDev);
-		}
-		SendDlgItemMessage(m_hEditorWin, IDC_VERTICALWINDOW, BM_SETCHECK, bVerticallyLongWindow ? BST_CHECKED : BST_UNCHECKED, 0);
-		m_bVerticallyLongWindow = bVerticallyLongWindow;
-	}
+	void SetVerticallyLongWindow(BOOL bVerticallyLongWindow);
 
 	HRESULT init(UINT Adapter, THRotatorDirect3D* pMyD3D, D3DDEVTYPE DeviceType, HWND hFocusWindow,
 		DWORD BehaviorFlags, const D3DPRESENT_PARAMETERS& d3dpp,
-		UINT requestedWidth, UINT requestedHeight)
-	{
-		m_d3dpp = d3dpp;
+		UINT requestedWidth, UINT requestedHeight);
 
-		char fname[MAX_PATH];
-		GetModuleFileName(NULL, fname, MAX_PATH);
-		*strrchr(fname, '.') = '\0';
-		boost::filesystem::path pth(fname);
+	HRESULT InitResources();
 
-		m_appName = std::string("THRotator_") + pth.filename().generic_string();
-		char path[MAX_PATH];
-		size_t retSize;
-		errno_t en = getenv_s(&retSize, path, "APPDATA");
+	void ReleaseResources();
 
-		double touhouIndex = 0.0;
-		if (pth.filename().generic_string().compare("東方紅魔郷") == 0)
-		{
-			touhouIndex = 6.0;
-		}
-		else
-		{
-			char dummy[128];
-			sscanf_s(pth.filename().generic_string().c_str(), "th%lf%s", &touhouIndex, dummy, (unsigned)_countof(dummy));
-		}
+	void UpdateBackBufferResolution();
 
-		while (touhouIndex > 90.0)
-		{
-			touhouIndex /= 10.0;
-		}
-
-		if (touhouIndex > 12.3 && en == 0 && retSize > 0)
-		{
-			m_workingDir = boost::filesystem::path(path) / "ShanghaiAlice" / pth.filename();
-			boost::filesystem::create_directory(m_workingDir);
-		}
-		else
-		{
-			m_workingDir = boost::filesystem::current_path();
-		}
-		m_iniPath = (m_workingDir / "throt.ini").string();
-
-		LoadSettings();
-
-		// スクリーンキャプチャ機能がないのは紅魔郷
-		m_bTouhouWithoutScreenCapture = touhouIndex == 6.0;
-
-		m_hTouhouWin = GetActiveWindow();
-
-		int bVerticallyLongWindow = m_bVerticallyLongWindow;
-		m_bVerticallyLongWindow = 0;
-		SetVerticallyLongWindow(bVerticallyLongWindow);
-
-		m_currentRectTransfers = m_editedRectTransfers;
-
-		//	メニューを改造
-		HMENU hMenu = GetSystemMenu(m_hTouhouWin, FALSE);
-		AppendMenu(hMenu, MF_SEPARATOR, 0, NULL);
-		AppendMenu(hMenu, MF_STRING, ms_switchVisibilityID, _T(""));
-
-		m_hSysMenu = hMenu;
-
-#ifdef TOUHOU_ON_D3D8
-		HMODULE hDllModule = ::GetModuleHandleA("d3d8");
-#else
-		HMODULE hDllModule = ::GetModuleHandleA("d3d9");
-#endif
-
-		HWND hWnd = m_hEditorWin = CreateDialogParam(hDllModule, MAKEINTRESOURCE(IDD_MAINDLG), NULL, DlgProc, (LPARAM)this);
-		th_hwnd2hwndMap[m_hTouhouWin] = hWnd;
-		if (hWnd == NULL)
-		{
-			MessageBox(NULL, _T("ダイアログの作成に失敗"), NULL, MB_ICONSTOP);
-		}
-
-		m_requestedWidth = requestedWidth;
-		m_requestedHeight = requestedHeight;
-
-		SetVisibility(m_bVisible);
-
-		UpdateBackBufferResolution();
-
-		m_judgeCount = 0;
-
-		HRESULT ret = pMyD3D->m_pd3d->CreateDevice(Adapter,
-			DeviceType, hFocusWindow, BehaviorFlags,
-			&m_d3dpp, &m_pd3dDev);
-		if (FAILED(ret))
-		{
-			return ret;
-		}
-
-		ret = InitResources();
-		if (FAILED(ret))
-		{
-			return ret;
-		}
-
-		m_pMyD3D = pMyD3D;
-
-		m_bInitialized = true;
-		return S_OK;
-	}
-
-	HRESULT InitResources()
-	{
-		HRESULT hr = m_pd3dDev->CreateTexture(m_requestedWidth, m_requestedHeight, 1,
-			D3DUSAGE_RENDERTARGET, m_d3dpp.BackBufferFormat, D3DPOOL_DEFAULT,
-#ifdef TOUHOU_ON_D3D8
-			&m_pTex);
-#else
-			&m_pTex, NULL);
-#endif
-		if (FAILED(hr))
-		{
-			return hr;
-		}
-
-		m_pTex->GetSurfaceLevel(0, &m_pTexSurface);
-
-		if (m_pSprite && FAILED(hr = m_pSprite->OnResetDevice()))
-		{
-			return hr;
-		}
-		else if (FAILED(hr = D3DXCreateSprite(m_pd3dDev.Get(), &m_pSprite)))
-		{
-			return hr;
-		}
-
-#if defined(_DEBUG) && !defined(TOUHOU_ON_D3D8)
-		if (m_pFont && FAILED(hr = m_pFont->OnResetDevice()))
-		{
-			return hr;
-		}
-		else if (FAILED(hr = D3DXCreateFont(m_pd3dDev.Get(),
-			0, 0, 0, 0, 0, 0, 0, 0, 0, "Arial", &m_pFont)))
-		{
-			return hr;
-		}
-#endif
-
-		hr = m_pd3dDev->CreateRenderTarget(m_requestedWidth, m_requestedHeight,
-			m_d3dpp.BackBufferFormat, m_d3dpp.MultiSampleType,
-#ifdef TOUHOU_ON_D3D8
-			TRUE, &m_pRenderTarget);
-#else
-			m_d3dpp.MultiSampleQuality, TRUE, &m_pRenderTarget, nullptr);
-#endif
-			
-		if (FAILED(hr))
-		{
-			return hr;
-		}
-
-#ifdef TOUHOU_ON_D3D8
-		ComPtr<Direct3DSurfaceBase> pSurf;
-
-		//	深さバッファの作成
-		if (FAILED(hr = m_pd3dDev->GetDepthStencilSurface(&pSurf)))
-		{
-			return hr;
-		}
-
-		if (FAILED(hr = pSurf->GetDesc(&m_surfDesc)))
-		{
-			return hr;
-		}
-
-		if (FAILED(hr = m_pd3dDev->CreateDepthStencilSurface(m_requestedWidth, m_requestedHeight,
-			m_surfDesc.Format, m_surfDesc.MultiSampleType, &m_pDepthStencil)))
-		{
-			return hr;
-		}
-
-		if (FAILED(hr = m_pd3dDev->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &m_pBackBuffer)))
-		{
-			return hr;
-		}
-
-		if (FAILED(hr = m_pd3dDev->SetRenderTarget(m_pRenderTarget.Get(), m_pDepthStencil.Get())))
-		{
-			return hr;
-		}
-#else
-		if (FAILED(hr = m_pd3dDev->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &m_pBackBuffer)))
-		{
-			return hr;
-		}
-
-		if (FAILED(hr = m_pd3dDev->SetRenderTarget(0, m_pRenderTarget.Get())))
-		{
-			return hr;
-		}
-#endif
-
-		return S_OK;
-	}
-
-	void ReleaseResources()
-	{
-#if TOUHOU_ON_D3D8
-		m_pSprite.Reset();
-		m_pDepthStencil.Reset();
-#else
-		if (m_pSprite)
-		{
-			m_pSprite->OnLostDevice();
-		}
-#ifdef _DEBUG
-		if (m_pFont)
-		{
-			m_pFont->OnLostDevice();
-		}
-#endif
-#endif
-
-		m_pRenderTarget.Reset();
-		m_pTexSurface.Reset();
-		m_pTex.Reset();
-		m_pBackBuffer.Reset();
-	}
-
-	void UpdateBackBufferResolution()
-	{
-		if (m_d3dpp.Windowed)
-		{
-			RECT rc;
-			GetClientRect(m_hTouhouWin, &rc);
-			m_d3dpp.BackBufferWidth = rc.right - rc.left;
-			m_d3dpp.BackBufferHeight = rc.bottom - rc.top;
-
-			// バックバッファの幅がリクエストの幅より小さい場合、バッファに何も描画されなくなるため、
-			// バックバッファの幅がリクエストの幅以上になるように補正
-			if (m_d3dpp.BackBufferWidth < m_d3dpp.BackBufferHeight)
-			{
-				UINT newWidth = m_d3dpp.BackBufferHeight;
-
-				// アスペクト比を掛けて小数点以下が発生しないようにする
-				while ((newWidth * m_requestedWidth) % m_requestedHeight != 0)
-				{
-					newWidth++;
-				}
-
-				m_d3dpp.BackBufferHeight = newWidth * m_requestedWidth / m_requestedHeight;
-				m_d3dpp.BackBufferWidth = newWidth;
-			}
-		}
-		else
-		{
-			m_d3dpp.BackBufferWidth = FullScreenWidth;
-			m_d3dpp.BackBufferHeight = FullScreenHeight;
-		}
-	}
-
-	ULONG WINAPI AddRef(VOID) override
-	{
-		return ++m_referenceCount;
-	}
-
-	HRESULT WINAPI QueryInterface(REFIID riid, LPVOID* ppvObj) override
-	{
-		if (ppvObj == nullptr)
-		{
-			return E_POINTER;
-		}
-#if TOUHOU_ON_D3D8
-		else if (riid == IID_IDirect3DDevice8
-#else
-		else if (riid == __uuidof(IDirect3DDevice9)
-#endif
-			|| riid == __uuidof(IUnknown))
-		{
-			AddRef();
-			*ppvObj = this;
-			return S_OK;
-		}
-		else
-		{
-			return E_NOINTERFACE;
-		}
-	}
-
-	ULONG WINAPI Release() override
-	{
-		ULONG ret = --m_referenceCount;
-		if (ret == 0)
-		{
-			delete this;
-		}
-		return ret;
-	}
+	ULONG WINAPI AddRef(VOID) override;
+	HRESULT WINAPI QueryInterface(REFIID riid, LPVOID* ppvObj) override;
+	ULONG WINAPI Release() override;
+	HRESULT WINAPI Present(CONST RECT *pSourceRect,
+		CONST RECT *pDestRect,
+		HWND hDestWindowOverride,
+		CONST RGNDATA *pDirtyRegion) override;
+	HRESULT WINAPI EndScene(VOID) override;
+	HRESULT WINAPI Reset(D3DPRESENT_PARAMETERS* pPresentationParameters) override;
 
 	HRESULT WINAPI BeginScene(VOID) override
 	{
@@ -1961,242 +722,6 @@ public:
 			pTriPatchInfo);
 	}
 
-	HRESULT WINAPI EndScene(VOID) override
-	{
-#ifdef TOUHOU_ON_D3D8
-		m_pd3dDev->SetRenderTarget(m_pBackBuffer.Get(), nullptr);
-#else
-		m_pd3dDev->SetRenderTarget(0, m_pBackBuffer.Get());
-#endif
-		D3DXLoadSurfaceFromSurface(m_pTexSurface.Get(), nullptr, nullptr,
-			m_pRenderTarget.Get(), nullptr, nullptr, D3DX_FILTER_NONE, 0);
-
-		m_pd3dDev->Clear( 0, NULL, D3DCLEAR_TARGET, 0x00000000, 1.f, 0 );
-		//if( SUCCEEDED( m_pd3dDev->BeginScene() ) )
-		{
-#ifdef TOUHOU_ON_D3D8
-			if (SUCCEEDED(m_pSprite->Begin()))
-#else
-			if (SUCCEEDED(m_pSprite->Begin(D3DXSPRITE_ALPHABLEND)))
-#endif
-			{
-#ifdef TOUHOU_ON_D3D8
-				D3DTEXTUREFILTERTYPE prevFilter, prevFilter2;
-				m_pd3dDev->GetTextureStageState(0, D3DTSS_MAGFILTER, (DWORD*)&prevFilter);
-				m_pd3dDev->GetTextureStageState(0, D3DTSS_MINFILTER, (DWORD*)&prevFilter2);
-				m_pd3dDev->SetTextureStageState(0, D3DTSS_MAGFILTER, m_filterType);
-				m_pd3dDev->SetTextureStageState(0, D3DTSS_MINFILTER, m_filterType);
-
-#else
-				m_pd3dDev->SetSamplerState(0, D3DSAMP_MAGFILTER, m_filterType);
-				m_pd3dDev->SetSamplerState(0, D3DSAMP_MINFILTER, m_filterType);
-#endif
-
-				m_pd3dDev->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
-
-				bool aspectLessThan133;
-				if (m_RotationAngle % 2 == 0)
-					aspectLessThan133 = m_d3dpp.BackBufferWidth * 3 < m_d3dpp.BackBufferHeight * 4;
-				else
-					aspectLessThan133 = m_d3dpp.BackBufferHeight * 3 < m_d3dpp.BackBufferWidth * 4;
-
-				bool bNeedsRearrangeHUD = aspectLessThan133 && m_judgeCount >= m_judgeThreshold;
-				LONG baseDestRectWidth = bNeedsRearrangeHUD ? m_playRegionWidth : static_cast<LONG>(BASE_SCREEN_WIDTH);
-				LONG baseDestRectHeight = bNeedsRearrangeHUD ? m_playRegionHeight : static_cast<LONG>(BASE_SCREEN_HEIGHT);
-
-
-
-				/***** 変換行列の計算 *****
-
-				 1. テクスチャを東方が要求したバックバッファ解像度から640x480にスケーリング
-				 2. 矩形の中心を原点(0, 0)に移動
-				 3. ユーザが指定した転送元矩形サイズの逆数でスケールをかける
-				 4. ユーザが指定した矩形ごとの回転角度で矩形を回転
-				 5. ユーザが指定した転送先矩形サイズでスケールをかける
-				 6. ユーザが指定した転送先矩形の位置へ移動
-				 7. プレイ領域のサイズがTHRotatorで内部的に確保したバックバッファ解像度へ拡大
-				 8. 現在の画面回転角度で回転
-				 9. 画面全体の中心を原点からバックバッファの中心へ移動
-
-				 2から6は矩形ごとのパラメータが必要。
-				 それより前の1と、後の7-9は事前計算できるので、それぞれpreRectTransform、postRectTransformとして保持
-
-				 *****/
-
-				D3DXMATRIX preRectTransform;
-				{
-					D3DXMATRIX baseSrcScale;
-					D3DXMatrixScaling(&baseSrcScale, BASE_SCREEN_WIDTH / static_cast<float>(m_requestedWidth), BASE_SCREEN_HEIGHT / static_cast<float>(m_requestedHeight), 1.0f);
-
-					preRectTransform = baseSrcScale;
-				}
-
-				D3DXMATRIX postRectTransform;
-				{
-					float baseDestScaleScalar = m_RotationAngle % 2 == 0 ?
-						(std::min)(m_d3dpp.BackBufferWidth / static_cast<float>(baseDestRectWidth), m_d3dpp.BackBufferHeight / static_cast<float>(baseDestRectHeight)) :
-						(std::min)(m_d3dpp.BackBufferWidth / static_cast<float>(baseDestRectHeight), m_d3dpp.BackBufferHeight / static_cast<float>(baseDestRectWidth));
-					D3DXMATRIX baseDestScale;
-					D3DXMatrixScaling(&baseDestScale, baseDestScaleScalar, baseDestScaleScalar, 1.0f);
-
-					D3DXMATRIX rotation;
-					D3DXMatrixRotationZ(&rotation, RotationAngleToRadian(m_RotationAngle));
-
-					D3DXMATRIX baseDestTranslation;
-					D3DXMatrixTranslation(&baseDestTranslation, 0.5f * m_d3dpp.BackBufferWidth, 0.5f * m_d3dpp.BackBufferHeight, 0.0f);
-
-					D3DXMATRIX temp;
-					D3DXMatrixMultiply(&temp, &baseDestScale, &rotation);
-					D3DXMatrixMultiply(&postRectTransform, &temp, &baseDestTranslation);
-				}
-
-				auto rectDrawer = [this, &preRectTransform, &postRectTransform](
-					const POINT& srcPos,
-					const SIZE& srcSize,
-					const POINT& destPos,
-					const SIZE& destSize,
-					const SIZE& playRegionSize,
-					RotationAngle rotation)
-				{
-					POINT correctedSrcPos = srcPos;
-					SIZE correctedSrcSize = srcSize;
-
-					SIZE srcRectTopLeftOffset{ 0, 0 };
-#ifdef TOUHOU_ON_D3D8
-					// 負の座標値がある場合、D3DX8では描画が行われないため、クランプ
-					if (correctedSrcPos.x < 0)
-					{
-						srcRectTopLeftOffset.cx = -correctedSrcPos.x;
-						correctedSrcPos.x = 0;
-						correctedSrcSize.cx -= srcRectTopLeftOffset.cx;
-					}
-
-					if (correctedSrcPos.y < 0)
-					{
-						srcRectTopLeftOffset.cy = -correctedSrcPos.y;
-						correctedSrcPos.y = 0;
-						correctedSrcSize.cy -= srcRectTopLeftOffset.cy;
-					}
-#endif
-
-					D3DXMATRIX translateSrcCenterToOrigin;
-					D3DXMatrixTranslation(&translateSrcCenterToOrigin,
-						-0.5f * srcSize.cx + srcRectTopLeftOffset.cx,
-						-0.5f * srcSize.cy + srcRectTopLeftOffset.cy, 0.0f);
-
-					D3DXMATRIX rectScaleSrcInv;
-					D3DXMatrixScaling(&rectScaleSrcInv, 1.0f / srcSize.cx, 1.0f / srcSize.cy, 1.0f);
-
-					D3DXMATRIX rectRotation;
-					D3DXMatrixRotationZ(&rectRotation, RotationAngleToRadian(rotation));
-
-					D3DXMATRIX rectScaleDest;
-					D3DXMatrixScaling(&rectScaleDest, static_cast<float>(destSize.cx), static_cast<float>(destSize.cy), 1.0f);
-
-					D3DXMATRIX rectTranslation;
-					D3DXMatrixTranslation(&rectTranslation,
-						static_cast<float>(destPos.x) + 0.5f * (destSize.cx - playRegionSize.cx),
-						static_cast<float>(destPos.y) + 0.5f * (destSize.cy - playRegionSize.cy), 0.0f);
-
-					D3DXMATRIX finalTransform, temp;
-					D3DXMatrixMultiply(&temp, &preRectTransform, &translateSrcCenterToOrigin);
-					D3DXMatrixMultiply(&finalTransform, &temp, &rectScaleSrcInv);
-					D3DXMatrixMultiply(&temp, &finalTransform, &rectRotation);
-					D3DXMatrixMultiply(&finalTransform, &temp, &rectScaleDest);
-					D3DXMatrixMultiply(&temp, &finalTransform, &rectTranslation);
-					D3DXMatrixMultiply(&finalTransform, &temp, &postRectTransform);
-
-					RECT scaledSourceRect;
-					float scaleFactorForSourceX = static_cast<float>(m_requestedWidth) / BASE_SCREEN_WIDTH;
-					float scaleFactorForSourceY = static_cast<float>(m_requestedHeight) / BASE_SCREEN_HEIGHT;
-					scaledSourceRect.left = static_cast<LONG>(correctedSrcPos.x * scaleFactorForSourceX);
-					scaledSourceRect.right = static_cast<LONG>((correctedSrcPos.x + correctedSrcSize.cx) * scaleFactorForSourceX);
-					scaledSourceRect.top = static_cast<LONG>(correctedSrcPos.y * scaleFactorForSourceY);
-					scaledSourceRect.bottom = static_cast<LONG>((correctedSrcPos.y + correctedSrcSize.cy) * scaleFactorForSourceY);
-
-#ifdef TOUHOU_ON_D3D8
-					m_pSprite->DrawTransform(m_pTex.Get(), &scaledSourceRect, &finalTransform, 0xffffffff);
-#else
-					m_pSprite->SetTransform(&finalTransform);
-					m_pSprite->Draw(m_pTex.Get(), &scaledSourceRect, &D3DXVECTOR3(0, 0, 0), NULL, 0xffffffff);
-#endif
-				};
-
-				if (!bNeedsRearrangeHUD)
-				{
-					rectDrawer(
-						POINT{ 0, 0 }, SIZE{ BASE_SCREEN_WIDTH, BASE_SCREEN_HEIGHT },
-						POINT{ 0, 0 }, SIZE{ BASE_SCREEN_WIDTH, BASE_SCREEN_HEIGHT },
-						SIZE{ BASE_SCREEN_WIDTH, BASE_SCREEN_HEIGHT }, Rotation_0);
-				}
-				else
-				{
-					// エネミーマーカーと周囲の枠が表示されるよう、ゲーム画面の矩形を拡張
-
-					POINT prPosition{ static_cast<LONG>(m_playRegionLeft), static_cast<LONG>(m_playRegionTop) };
-					SIZE prSize{ static_cast<LONG>(m_playRegionWidth), static_cast<LONG>(m_playRegionHeight) };
-					if (m_playRegionWidth * 4 < m_playRegionHeight * 3)
-					{
-						prPosition.x = (LONG)m_playRegionLeft + ((LONG)m_playRegionWidth - (LONG)m_playRegionHeight * 3 / 4) / 2;
-						prSize.cx = m_playRegionHeight * 3 / 4;
-					}
-					else if (m_playRegionWidth * 4 > m_playRegionHeight * 3)
-					{
-						prPosition.y = (LONG)m_playRegionTop + ((LONG)m_playRegionHeight - (LONG)m_playRegionWidth * 4 / 3) / 2;
-						prSize.cy = m_playRegionWidth * 4 / 3;
-					}
-
-					prPosition.y -= m_yOffset;
-
-					rectDrawer(prPosition, prSize, POINT{ 0, 0 }, prSize, prSize, Rotation_0);
-
-					for (const auto& rectData : m_currentRectTransfers)
-					{
-						if (rectData.rcSrc.right == 0 || rectData.rcSrc.bottom == 0)
-						{
-							continue;
-						}
-
-						if (rectData.rcDest.right == 0 || rectData.rcDest.bottom == 0)
-						{
-							continue;
-						}
-
-						rectDrawer(
-							POINT{ rectData.rcSrc.left, rectData.rcSrc.top }, SIZE{ rectData.rcSrc.right, rectData.rcSrc.bottom },
-							POINT{ rectData.rcDest.left, rectData.rcDest.top }, SIZE{ rectData.rcDest.right, rectData.rcDest.bottom },
-							prSize,
-							rectData.rotation);
-					}
-				}
-
-#ifdef TOUHOU_ON_D3D8
-				m_pd3dDev->SetTextureStageState(0, D3DTSS_MAGFILTER, prevFilter);
-				m_pd3dDev->SetTextureStageState(0, D3DTSS_MINFILTER, prevFilter2);
-#endif
-
-				m_pSprite->End();
-			}
-
-#if defined(_DEBUG) && !defined(TOUHOU_ON_D3D8)
-			RECT rcText;
-			rcText.right = m_d3dpp.BackBufferWidth;
-			rcText.left = rcText.right - 128;
-			rcText.bottom = m_d3dpp.BackBufferHeight;
-			rcText.top = rcText.bottom - 24;
-			TCHAR text[64];
-			_stprintf_s(text, _T("%5.2f fps"), m_FPS);
-			m_pFont->DrawText(NULL, text, -1, &rcText, 0, D3DCOLOR_XRGB(0xff, (unsigned)(0xff * max(0, m_FPS - 30.f) / 30.f), (unsigned)(0xff * max(0, m_FPS - 30.f) / 30.f)));
-#endif
-		}
-#ifdef TOUHOU_ON_D3D8
-		m_pd3dDev->SetRenderTarget(m_pRenderTarget.Get(), m_pDepthStencil.Get());
-#else
-		m_pd3dDev->SetRenderTarget(0, m_pRenderTarget.Get());
-#endif
-		return m_pd3dDev->EndScene();
-	}
-
 	HRESULT WINAPI EndStateBlock(
 #ifdef TOUHOU_ON_D3D8
 		DWORD* pToken) override
@@ -2465,47 +990,6 @@ public:
 		return m_pd3dDev->MultiplyTransform(State, pMatrix);
 	}
 
-	HRESULT WINAPI Present(CONST RECT *pSourceRect,
-		CONST RECT *pDestRect,
-		HWND hDestWindowOverride,
-		CONST RGNDATA *pDirtyRegion) override
-	{
-		m_judgeCountPrev = m_judgeCount;
-		m_judgeCount = 0;
-#ifdef _DEBUG
-		//std::cout << "present" << m_count << std::endl;
-#endif
-		HRESULT ret = m_pd3dDev->Present(pSourceRect, pDestRect,
-			hDestWindowOverride, pDirtyRegion);
-		if (FAILED(ret))
-		{
-			return ret;
-		}
-
-		if (m_bResetQueued)
-		{
-			return D3DERR_DEVICENOTRESET;
-		}
-
-#ifdef _DEBUG
-		QueryPerformanceCounter(&m_cur);
-		float FPS = float(m_freq.QuadPart) / float(m_cur.QuadPart - m_prev.QuadPart);
-		if (FPS < m_FPSNew)
-			m_FPSNew = FPS;
-
-		if (m_fpsCount % 30 == 0)
-		{
-			m_FPS = m_FPSNew;
-			m_FPSNew = 60.f;
-		}
-		m_fpsCount++;
-
-		m_prev = m_cur;
-
-#endif
-		return ret;
-	}
-
 	HRESULT WINAPI ProcessVertices(UINT SrcStartIndex,
 		UINT DestIndex,
 		UINT VertexCount,
@@ -2521,40 +1005,6 @@ public:
 			pVertexDecl,
 #endif
 			Flags);
-	}
-
-	HRESULT WINAPI Reset(D3DPRESENT_PARAMETERS* pPresentationParameters) override
-	{
-		assert(m_bInitialized);
-
-#ifdef _DEBUG
-		::OutputDebugStringA("Resetting D3D device\n");
-#endif
-		ReleaseResources();
-
-		m_d3dpp = *pPresentationParameters;
-
-		if (m_d3dpp.BackBufferWidth != 0)
-		{
-			m_requestedWidth = m_d3dpp.BackBufferWidth;
-		}
-
-		if (m_d3dpp.BackBufferHeight != 0)
-		{
-			m_requestedHeight = m_d3dpp.BackBufferHeight;
-		}
-
-		UpdateBackBufferResolution();
-
-		HRESULT ret = m_pd3dDev->Reset(&m_d3dpp);
-
-		if (FAILED(ret))
-		{
-			return ret;
-		}
-
-		m_bResetQueued = false;
-		return InitResources();
 	}
 
 	HRESULT WINAPI SetClipPlane(DWORD Index,
@@ -2739,14 +1189,6 @@ public:
 		CONST D3DVIEWPORT9* pViewport) override
 #endif
 	{
-		m_judgeCount++/* = (pViewport->X == m_judgeLeft && pViewport->Y == m_judgeTop
-			&& pViewport->Width == m_judgeWidth && pViewport->Height == m_judgeHeight ) ? m_judgeCount+1 : m_judgeCount*/;
-#ifdef _DEBUG
-			/*std::cout << std::setw(4) << pViewport->X
-				<< std::setw(4) << pViewport->Y
-				<< std::setw(4) << pViewport->Width
-				<< std::setw(4) << pViewport->Height << std::endl;*/
-#endif
 		return m_pd3dDev->SetViewport(pViewport);
 	}
 
@@ -3153,6 +1595,68 @@ int THRotatorDirect3DDevice::ms_hookRefCount = 0;
 std::map<HWND,THRotatorDirect3DDevice*> THRotatorDirect3DDevice::hwnd2devMap;
 std::map<HWND,HWND> THRotatorDirect3DDevice::th_hwnd2hwndMap;
 
+THRotatorDirect3D::THRotatorDirect3D()
+	: m_pd3d(nullptr)
+	, m_referenceCount(1)
+{
+}
+
+THRotatorDirect3D::~THRotatorDirect3D()
+{
+	if (m_pd3d)
+	{
+		m_pd3d->Release();
+	}
+}
+
+bool THRotatorDirect3D::init(UINT v)
+{
+#ifdef TOUHOU_ON_D3D8
+	m_pd3d = p_Direct3DCreate8(v);
+#else
+	m_pd3d = p_Direct3DCreate9(v);
+#endif
+	return m_pd3d != NULL;
+}
+
+ULONG WINAPI THRotatorDirect3D::AddRef(VOID)
+{
+	return ++m_referenceCount;
+}
+
+HRESULT WINAPI THRotatorDirect3D::QueryInterface(REFIID riid, LPVOID* ppvObj)
+{
+	if (ppvObj == nullptr)
+	{
+		return E_POINTER;
+	}
+#ifdef TOUHOU_ON_D3D8
+	else if (riid == IID_IDirect3D8
+#else
+	else if (riid == __uuidof(Direct3DBase)
+#endif
+		|| riid == __uuidof(IUnknown))
+	{
+		AddRef();
+		*ppvObj = this;
+		return S_OK;
+	}
+	else
+	{
+		return E_NOINTERFACE;
+	}
+}
+
+ULONG WINAPI THRotatorDirect3D::Release()
+{
+	ULONG ret = --m_referenceCount;
+	if (ret == 0)
+	{
+		delete this;
+	}
+	return ret;
+}
+
 HRESULT WINAPI THRotatorDirect3D::CreateDevice(UINT Adapter,
 	D3DDEVTYPE DeviceType,
 	HWND hFocusWindow,
@@ -3229,6 +1733,1541 @@ HRESULT WINAPI THRotatorDirect3D::CreateDevice(UINT Adapter,
 	*ppReturnedDeviceInterface = pRetDev;
 
 	return ret;
+}
+
+THRotatorDirect3DDevice::THRotatorDirect3DDevice()
+	: m_bInitialized(false)
+	, m_referenceCount(1)
+	, m_requestedWidth(0)
+	, m_requestedHeight(0)
+	, m_bResetQueued(false)
+	, m_judgeCount(0)
+	, m_judgeCountPrev(0)
+	, m_bTouhouWithoutScreenCapture(false)
+#ifdef _DEBUG
+	, m_FPSNew(60.f)
+	, m_fpsCount(0)
+#endif
+{
+	if (ms_hWinHookToTouhouWin == NULL)
+	{
+		ms_hWinHookToTouhouWin = SetWindowsHookEx(WH_GETMESSAGE, CallWndHook, NULL, GetCurrentThreadId());
+		if (ms_hWinHookToTouhouWin == NULL)
+		{
+			LPVOID lpMessageBuffer;
+
+			FormatMessage(
+				FORMAT_MESSAGE_ALLOCATE_BUFFER |
+				FORMAT_MESSAGE_FROM_SYSTEM,
+				NULL,
+				GetLastError(),
+				MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // デフォルト ユーザー言語 
+				(LPTSTR)&lpMessageBuffer,
+				0,
+				NULL);
+
+			MessageBox(NULL, (LPTSTR)lpMessageBuffer, NULL, MB_ICONSTOP);
+
+			//... 文字列が表示されます。
+			// システムによって確保されたバッファを開放します。
+			LocalFree(lpMessageBuffer);
+		}
+	}
+	ms_hookRefCount++;
+
+#ifdef _DEBUG
+	QueryPerformanceFrequency(&m_freq);
+	ZeroMemory(&m_prev, sizeof(m_prev));
+#endif
+}
+
+THRotatorDirect3DDevice::~THRotatorDirect3DDevice()
+{
+	ms_hookRefCount--;
+	if (ms_hookRefCount == 0 && ms_hWinHookToTouhouWin == NULL)
+	{
+		UnhookWindowsHookEx(ms_hWinHookToTouhouWin);
+		ms_hWinHookToTouhouWin = NULL;
+	}
+}
+
+void THRotatorDirect3DDevice::SetVisibility(BOOL bVisible)
+{
+	m_bVisible = bVisible;
+	MENUITEMINFO mi;
+	ZeroMemory(&mi, sizeof(mi));
+
+	mi.cbSize = sizeof(mi);
+	mi.fMask = MIIM_STRING;
+	mi.dwTypeData = bVisible ? _T("TH Rotatorのウィンドウを非表示") : _T("Th Rotatorのウィンドウを表示");
+	SetMenuItemInfo(m_hSysMenu, ms_switchVisibilityID, FALSE, &mi);
+
+	ShowWindow(m_hEditorWin, bVisible ? SW_SHOW : SW_HIDE);
+}
+
+void THRotatorDirect3DDevice::InitListView(HWND hLV)
+{
+	ListView_DeleteAllItems(hLV);
+	int i = 0;
+	for (std::vector<RectTransferData>::iterator itr = m_editedRectTransfers.begin();
+		itr != m_editedRectTransfers.end(); ++itr, ++i)
+	{
+		LVITEM lvi;
+		ZeroMemory(&lvi, sizeof(lvi));
+
+		lvi.mask = LVIF_TEXT;
+		lvi.iItem = i;
+		lvi.pszText = itr->name;
+		ListView_InsertItem(hLV, &lvi);
+
+		TCHAR str[64];
+		lvi.pszText = str;
+
+		lvi.iSubItem = 1;
+		wsprintf(str, _T("%d,%d,%d,%d"), itr->rcSrc.left, itr->rcSrc.top, itr->rcSrc.right, itr->rcSrc.bottom);
+		ListView_SetItem(hLV, &lvi);
+
+		lvi.iSubItem = 2;
+		wsprintf(str, _T("%d,%d,%d,%d"), itr->rcDest.left, itr->rcDest.top, itr->rcDest.right, itr->rcDest.bottom);
+		ListView_SetItem(hLV, &lvi);
+
+		lvi.iSubItem = 3;
+		wsprintf(str, _T("%d°"), itr->rotation * 90);
+		ListView_SetItem(hLV, &lvi);
+	}
+}
+
+BOOL CALLBACK THRotatorDirect3DDevice::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	switch (msg)
+	{
+	case WM_INITDIALOG:
+		hwnd2devMap[hWnd] = (THRotatorDirect3DDevice*)lParam;
+		SetDlgItemInt(hWnd, IDC_JUDGETHRESHOLD, hwnd2devMap[hWnd]->m_judgeThreshold, TRUE);
+		SetDlgItemInt(hWnd, IDC_PRLEFT, hwnd2devMap[hWnd]->m_playRegionLeft, FALSE);
+		SetDlgItemInt(hWnd, IDC_PRTOP, hwnd2devMap[hWnd]->m_playRegionTop, FALSE);
+		SetDlgItemInt(hWnd, IDC_PRWIDTH, hwnd2devMap[hWnd]->m_playRegionWidth, FALSE);
+		SetDlgItemInt(hWnd, IDC_PRHEIGHT, hwnd2devMap[hWnd]->m_playRegionHeight, FALSE);
+		SetDlgItemInt(hWnd, IDC_YOFFSET, hwnd2devMap[hWnd]->m_yOffset, TRUE);
+		SendDlgItemMessage(hWnd, IDC_VISIBLE, BM_SETCHECK, hwnd2devMap[hWnd]->m_bVisible ? BST_CHECKED : BST_UNCHECKED, 0);
+		switch (((THRotatorDirect3DDevice*)lParam)->m_filterType)
+		{
+		case D3DTEXF_NONE:
+			SendDlgItemMessage(hWnd, IDC_FILTERNONE, BM_SETCHECK, BST_CHECKED, 0);
+			break;
+
+		case D3DTEXF_LINEAR:
+			SendDlgItemMessage(hWnd, IDC_FILTERBILINEAR, BM_SETCHECK, BST_CHECKED, 0);
+			break;
+		}
+		/*switch( hwnd2devMap[hWnd]->m_bVerticallyLongWindow )
+		{
+		case 0:
+		SendDlgItemMessage( hWnd, IDC_PIV0, BM_SETCHECK, BST_CHECKED, 0 );
+		break;
+
+		case 1:
+		SendDlgItemMessage( hWnd, IDC_PIV90, BM_SETCHECK, BST_CHECKED, 0 );
+		break;
+
+		case 3:
+		SendDlgItemMessage( hWnd, IDC_PIV270, BM_SETCHECK, BST_CHECKED, 0 );
+		break;
+		}*/
+
+		if (hwnd2devMap[hWnd]->m_bVerticallyLongWindow == 1)
+			SendDlgItemMessage(hWnd, IDC_VERTICALWINDOW, BM_SETCHECK, BST_CHECKED, 0);
+
+		switch (hwnd2devMap[hWnd]->m_RotationAngle)
+		{
+		case Rotation_0:
+			SendDlgItemMessage(hWnd, IDC_ROT0_2, BM_SETCHECK, BST_CHECKED, 0);
+			break;
+
+		case Rotation_90:
+			SendDlgItemMessage(hWnd, IDC_ROT90_2, BM_SETCHECK, BST_CHECKED, 0);
+			break;
+
+		case Rotation_180:
+			SendDlgItemMessage(hWnd, IDC_ROT180_2, BM_SETCHECK, BST_CHECKED, 0);
+			break;
+
+		case Rotation_270:
+			SendDlgItemMessage(hWnd, IDC_ROT270_2, BM_SETCHECK, BST_CHECKED, 0);
+			break;
+		}
+
+		{
+			LVCOLUMN lvc;
+			lvc.mask = LVCF_TEXT | LVCF_WIDTH;
+			lvc.pszText = _T("矩形名");
+			lvc.cx = 64;
+			ListView_InsertColumn(GetDlgItem(hWnd, IDC_ORLIST), 0, &lvc);
+			lvc.pszText = _T("元の矩形");
+			lvc.cx = 96;
+			ListView_InsertColumn(GetDlgItem(hWnd, IDC_ORLIST), 1, &lvc);
+			lvc.pszText = _T("先の矩形");
+			lvc.cx = 96;
+			ListView_InsertColumn(GetDlgItem(hWnd, IDC_ORLIST), 2, &lvc);
+			lvc.pszText = _T("回転角");
+			lvc.cx = 48;
+			ListView_InsertColumn(GetDlgItem(hWnd, IDC_ORLIST), 3, &lvc);
+		}
+
+		hwnd2devMap[hWnd]->InitListView(GetDlgItem(hWnd, IDC_ORLIST));
+
+		return TRUE;
+
+	case WM_CLOSE:
+		return FALSE;
+
+	case WM_COMMAND:
+		switch (wParam)
+		{
+		case IDC_GETVPCOUNT:
+			SetDlgItemInt(hWnd, IDC_VPCOUNT, hwnd2devMap[hWnd]->m_judgeCountPrev, FALSE);
+			return TRUE;
+		case IDOK:
+			return hwnd2devMap[hWnd]->ApplyChange();
+
+		case IDC_RESET:
+			SetDlgItemInt(hWnd, IDC_JUDGETHRESHOLD, hwnd2devMap[hWnd]->m_judgeThreshold, FALSE);
+			SetDlgItemInt(hWnd, IDC_PRLEFT, hwnd2devMap[hWnd]->m_playRegionLeft, FALSE);
+			SetDlgItemInt(hWnd, IDC_PRTOP, hwnd2devMap[hWnd]->m_playRegionTop, FALSE);
+			SetDlgItemInt(hWnd, IDC_PRWIDTH, hwnd2devMap[hWnd]->m_playRegionWidth, FALSE);
+			SetDlgItemInt(hWnd, IDC_PRHEIGHT, hwnd2devMap[hWnd]->m_playRegionHeight, FALSE);
+			SetDlgItemInt(hWnd, IDC_YOFFSET, hwnd2devMap[hWnd]->m_yOffset, TRUE);
+			hwnd2devMap[hWnd]->m_editedRectTransfers = hwnd2devMap[hWnd]->m_currentRectTransfers;
+			hwnd2devMap[hWnd]->InitListView(GetDlgItem(hWnd, IDC_ORLIST));
+			SendDlgItemMessage(hWnd, IDC_VISIBLE, BM_SETCHECK, hwnd2devMap[hWnd]->m_bVisible ? BST_CHECKED : BST_UNCHECKED, 0);
+			if (hwnd2devMap[hWnd]->m_bVerticallyLongWindow == 1)
+				SendDlgItemMessage(hWnd, IDC_VERTICALWINDOW, BM_SETCHECK, BST_CHECKED, 0);
+			else
+				SendDlgItemMessage(hWnd, IDC_VERTICALWINDOW, BM_SETCHECK, BST_UNCHECKED, 0);
+
+			switch (hwnd2devMap[hWnd]->m_RotationAngle)
+			{
+			case 0:
+				SendDlgItemMessage(hWnd, IDC_ROT0_2, BM_SETCHECK, BST_CHECKED, 0);
+				SendDlgItemMessage(hWnd, IDC_ROT90_2, BM_SETCHECK, BST_UNCHECKED, 0);
+				SendDlgItemMessage(hWnd, IDC_ROT180_2, BM_SETCHECK, BST_UNCHECKED, 0);
+				SendDlgItemMessage(hWnd, IDC_ROT270_2, BM_SETCHECK, BST_UNCHECKED, 0);
+				break;
+
+			case 1:
+				SendDlgItemMessage(hWnd, IDC_ROT90_2, BM_SETCHECK, BST_CHECKED, 0);
+				SendDlgItemMessage(hWnd, IDC_ROT180_2, BM_SETCHECK, BST_UNCHECKED, 0);
+				SendDlgItemMessage(hWnd, IDC_ROT270_2, BM_SETCHECK, BST_UNCHECKED, 0);
+				SendDlgItemMessage(hWnd, IDC_ROT0_2, BM_SETCHECK, BST_UNCHECKED, 0);
+				break;
+
+			case 2:
+				SendDlgItemMessage(hWnd, IDC_ROT180_2, BM_SETCHECK, BST_CHECKED, 0);
+				SendDlgItemMessage(hWnd, IDC_ROT270_2, BM_SETCHECK, BST_UNCHECKED, 0);
+				SendDlgItemMessage(hWnd, IDC_ROT0_2, BM_SETCHECK, BST_UNCHECKED, 0);
+				SendDlgItemMessage(hWnd, IDC_ROT90_2, BM_SETCHECK, BST_UNCHECKED, 0);
+				break;
+
+			case 3:
+				SendDlgItemMessage(hWnd, IDC_ROT270_2, BM_SETCHECK, BST_CHECKED, 0);
+				SendDlgItemMessage(hWnd, IDC_ROT0_2, BM_SETCHECK, BST_UNCHECKED, 0);
+				SendDlgItemMessage(hWnd, IDC_ROT90_2, BM_SETCHECK, BST_UNCHECKED, 0);
+				SendDlgItemMessage(hWnd, IDC_ROT180_2, BM_SETCHECK, BST_UNCHECKED, 0);
+				break;
+			}
+			switch (hwnd2devMap[hWnd]->m_filterType)
+			{
+			case D3DTEXF_NONE:
+				SendDlgItemMessage(hWnd, IDC_FILTERNONE, BM_SETCHECK, BST_CHECKED, 0);
+				SendDlgItemMessage(hWnd, IDC_FILTERBILINEAR, BM_SETCHECK, BST_UNCHECKED, 0);
+				break;
+
+			case D3DTEXF_LINEAR:
+				SendDlgItemMessage(hWnd, IDC_FILTERBILINEAR, BM_SETCHECK, BST_CHECKED, 0);
+				SendDlgItemMessage(hWnd, IDC_FILTERNONE, BM_SETCHECK, BST_UNCHECKED, 0);
+				break;
+			}
+			return TRUE;
+
+		case IDCANCEL:
+			hwnd2devMap[hWnd]->SetVisibility(FALSE);
+			return TRUE;
+
+		case IDC_ADDRECT:
+		{
+			RectTransferData erd;
+			ZeroMemory(&erd, sizeof(erd));
+		reedit1:
+			if (IDOK == DialogBoxParam((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDD_EDITRECTDLG), hWnd, EditRectProc, reinterpret_cast<LPARAM>(&erd)))
+			{
+				for (std::vector<RectTransferData>::const_iterator itr = hwnd2devMap[hWnd]->m_editedRectTransfers.cbegin(); itr != hwnd2devMap[hWnd]->m_editedRectTransfers.cend();
+					++itr)
+				{
+					if (lstrcmp(itr->name, erd.name) == 0)
+					{
+						MessageBox(hWnd, _T("この矩形名はすでに存在しています。別の矩形名前を入力してください。"), NULL, MB_ICONSTOP);
+						goto reedit1;
+					}
+				}
+				TCHAR str[64];
+				hwnd2devMap[hWnd]->m_editedRectTransfers.push_back(erd);
+				LVITEM lvi;
+				ZeroMemory(&lvi, sizeof(lvi));
+				lvi.mask = LVIF_TEXT;
+				lvi.iItem = ListView_GetItemCount(GetDlgItem(hWnd, IDC_ORLIST));
+				lvi.pszText = erd.name;
+				ListView_InsertItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
+
+				lvi.pszText = str;
+
+				lvi.iSubItem = 1;
+				wsprintf(str, _T("%d,%d,%d,%d"), erd.rcSrc.left, erd.rcSrc.top, erd.rcSrc.right, erd.rcSrc.bottom);
+				ListView_SetItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
+
+				lvi.iSubItem = 2;
+				wsprintf(str, _T("%d,%d,%d,%d"), erd.rcDest.left, erd.rcDest.top, erd.rcDest.right, erd.rcDest.bottom);
+				ListView_SetItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
+
+				lvi.iSubItem = 3;
+				switch (erd.rotation)
+				{
+				case 0:
+					lvi.pszText = _T("0°");
+					break;
+
+				case 1:
+					lvi.pszText = _T("90°");
+					break;
+
+				case 2:
+					lvi.pszText = _T("180°");
+					break;
+
+				case 3:
+					lvi.pszText = _T("270°");
+					break;
+				}
+				ListView_SetItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
+			}
+		}
+		return TRUE;
+
+		case IDC_EDITRECT:
+		{
+			int i = ListView_GetSelectionMark(GetDlgItem(hWnd, IDC_ORLIST));
+			if (i == -1)
+			{
+				MessageBox(hWnd, _T("矩形が選択されていません。"), NULL, MB_ICONEXCLAMATION);
+				return FALSE;
+			}
+			RectTransferData& erd = hwnd2devMap[hWnd]->m_editedRectTransfers[i];
+		reedit2:
+			if (IDOK == DialogBoxParam((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDD_EDITRECTDLG), hWnd, EditRectProc, reinterpret_cast<LPARAM>(&erd)))
+			{
+				for (std::vector<RectTransferData>::const_iterator itr = hwnd2devMap[hWnd]->m_editedRectTransfers.cbegin(); itr != hwnd2devMap[hWnd]->m_editedRectTransfers.cend();
+					++itr)
+				{
+					if (itr == hwnd2devMap[hWnd]->m_editedRectTransfers.begin() + i)
+						continue;
+					if (lstrcmp(itr->name, erd.name) == 0)
+					{
+						MessageBox(hWnd, _T("この矩形名はすでに存在しています。別の矩形名前を入力してください。"), NULL, MB_ICONSTOP);
+						goto reedit2;
+					}
+				}
+				TCHAR str[64];
+				LVITEM lvi;
+				ZeroMemory(&lvi, sizeof(lvi));
+				lvi.mask = LVIF_TEXT;
+				lvi.iItem = i;
+				lvi.pszText = erd.name;
+				ListView_SetItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
+
+				lvi.pszText = str;
+
+				lvi.iSubItem = 1;
+				wsprintf(str, _T("%d,%d,%d,%d"), erd.rcSrc.left, erd.rcSrc.top, erd.rcSrc.right, erd.rcSrc.bottom);
+				ListView_SetItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
+
+				lvi.iSubItem = 2;
+				wsprintf(str, _T("%d,%d,%d,%d"), erd.rcDest.left, erd.rcDest.top, erd.rcDest.right, erd.rcDest.bottom);
+				ListView_SetItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
+
+				lvi.iSubItem = 3;
+				switch (erd.rotation)
+				{
+				case 0:
+					lvi.pszText = _T("0°");
+					break;
+
+				case 1:
+					lvi.pszText = _T("90°");
+					break;
+
+				case 2:
+					lvi.pszText = _T("180°");
+					break;
+
+				case 3:
+					lvi.pszText = _T("270°");
+					break;
+				}
+				ListView_SetItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
+			}
+			return TRUE;
+		}
+
+		case IDC_REMRECT:
+		{
+			int i = ListView_GetSelectionMark(GetDlgItem(hWnd, IDC_ORLIST));
+			if (i == -1)
+			{
+				MessageBox(hWnd, _T("矩形が選択されていません。"), NULL, MB_ICONEXCLAMATION);
+				return FALSE;
+			}
+			hwnd2devMap[hWnd]->m_editedRectTransfers.erase(hwnd2devMap[hWnd]->m_editedRectTransfers.cbegin() + i);
+			ListView_DeleteItem(GetDlgItem(hWnd, IDC_ORLIST), i);
+			if (ListView_GetItemCount(GetDlgItem(hWnd, IDC_ORLIST)) == 0)
+			{
+				EnableWindow(GetDlgItem(hWnd, IDC_EDITRECT), FALSE);
+				EnableWindow(GetDlgItem(hWnd, IDC_REMRECT), FALSE);
+				EnableWindow(GetDlgItem(hWnd, IDC_UP), FALSE);
+				EnableWindow(GetDlgItem(hWnd, IDC_DOWN), FALSE);
+			}
+			return TRUE;
+		}
+
+		case IDC_UP:
+		{
+			int i = ListView_GetSelectionMark(GetDlgItem(hWnd, IDC_ORLIST));
+			if (i == -1)
+			{
+				MessageBox(hWnd, _T("矩形が選択されていません。"), NULL, MB_ICONEXCLAMATION);
+				return FALSE;
+			}
+			if (i == 0)
+			{
+				MessageBox(hWnd, _T("選択されている矩形が一番上のものです。"), NULL, MB_ICONEXCLAMATION);
+				return FALSE;
+			}
+			RectTransferData erd = hwnd2devMap[hWnd]->m_editedRectTransfers[i];
+			hwnd2devMap[hWnd]->m_editedRectTransfers[i] = hwnd2devMap[hWnd]->m_editedRectTransfers[i - 1];
+			hwnd2devMap[hWnd]->m_editedRectTransfers[i - 1] = erd;
+			hwnd2devMap[hWnd]->InitListView(GetDlgItem(hWnd, IDC_ORLIST));
+			ListView_SetSelectionMark(GetDlgItem(hWnd, IDC_ORLIST), i - 1);
+			EnableWindow(GetDlgItem(hWnd, IDC_DOWN), TRUE);
+			if (i == 1)
+				EnableWindow(GetDlgItem(hWnd, IDC_UP), FALSE);
+			return TRUE;
+		}
+
+		case IDC_DOWN:
+		{
+			int i = ListView_GetSelectionMark(GetDlgItem(hWnd, IDC_ORLIST));
+			int count = ListView_GetItemCount(GetDlgItem(hWnd, IDC_ORLIST));
+			if (i == -1)
+			{
+				MessageBox(hWnd, _T("矩形が選択されていません。"), NULL, MB_ICONEXCLAMATION);
+				return FALSE;
+			}
+			if (i == count - 1)
+			{
+				MessageBox(hWnd, _T("選択されている矩形が一番下のものです。"), NULL, MB_ICONEXCLAMATION);
+				return FALSE;
+			}
+			RectTransferData erd = hwnd2devMap[hWnd]->m_editedRectTransfers[i];
+			hwnd2devMap[hWnd]->m_editedRectTransfers[i] = hwnd2devMap[hWnd]->m_editedRectTransfers[i + 1];
+			hwnd2devMap[hWnd]->m_editedRectTransfers[i + 1] = erd;
+			hwnd2devMap[hWnd]->InitListView(GetDlgItem(hWnd, IDC_ORLIST));
+			ListView_SetSelectionMark(GetDlgItem(hWnd, IDC_ORLIST), i + 1);
+			EnableWindow(GetDlgItem(hWnd, IDC_UP), TRUE);
+			if (i == count - 2)
+				EnableWindow(GetDlgItem(hWnd, IDC_DOWN), FALSE);
+			return TRUE;
+		}
+		}
+		return FALSE;
+
+	case WM_NOTIFY:
+		if (reinterpret_cast<LPNMHDR>(lParam)->code == LVN_ITEMCHANGED)
+		{
+			LPNMLISTVIEW lpnmLV = (LPNMLISTVIEW)lParam;
+			int count = ListView_GetItemCount(GetDlgItem(hWnd, IDC_ORLIST));
+			BOOL bEnabled = count > 0;
+			EnableWindow(GetDlgItem(hWnd, IDC_EDITRECT), bEnabled);
+			EnableWindow(GetDlgItem(hWnd, IDC_REMRECT), bEnabled);
+			EnableWindow(GetDlgItem(hWnd, IDC_UP), bEnabled && lpnmLV->iItem > 0);
+			EnableWindow(GetDlgItem(hWnd, IDC_DOWN), bEnabled && lpnmLV->iItem < count - 1);
+		}
+		return FALSE;
+
+	default:
+		break;
+	}
+
+	return FALSE;
+}
+
+BOOL CALLBACK THRotatorDirect3DDevice::EditRectProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	static std::map<HWND, RectTransferData*> hwnd2erdMap;
+	switch (msg)
+	{
+	case WM_INITDIALOG:
+	{
+		RectTransferData* pErd = reinterpret_cast<RectTransferData*>(lParam);
+		hwnd2erdMap[hWnd] = pErd;
+		SetDlgItemInt(hWnd, IDC_SRCLEFT, pErd->rcSrc.left, TRUE);
+		SetDlgItemInt(hWnd, IDC_SRCWIDTH, pErd->rcSrc.right, TRUE);
+		SetDlgItemInt(hWnd, IDC_SRCTOP, pErd->rcSrc.top, TRUE);
+		SetDlgItemInt(hWnd, IDC_SRCHEIGHT, pErd->rcSrc.bottom, TRUE);
+		SetDlgItemInt(hWnd, IDC_DESTLEFT, pErd->rcDest.left, TRUE);
+		SetDlgItemInt(hWnd, IDC_DESTWIDTH, pErd->rcDest.right, TRUE);
+		SetDlgItemInt(hWnd, IDC_DESTTOP, pErd->rcDest.top, TRUE);
+		SetDlgItemInt(hWnd, IDC_DESTHEIGHT, pErd->rcDest.bottom, TRUE);
+		switch (pErd->rotation)
+		{
+		case 0:
+			SendDlgItemMessage(hWnd, IDC_ROT0, BM_SETCHECK, BST_CHECKED, 0);
+			break;
+
+		case 1:
+			SendDlgItemMessage(hWnd, IDC_ROT90, BM_SETCHECK, BST_CHECKED, 0);
+			break;
+
+		case 2:
+			SendDlgItemMessage(hWnd, IDC_ROT180, BM_SETCHECK, BST_CHECKED, 0);
+			break;
+
+		case 3:
+			SendDlgItemMessage(hWnd, IDC_ROT270, BM_SETCHECK, BST_CHECKED, 0);
+			break;
+		}
+
+		SetDlgItemText(hWnd, IDC_RECTNAME, pErd->name);
+	}
+	return TRUE;
+
+	case WM_COMMAND:
+		switch (wParam)
+		{
+		case IDOK:
+#define GETANDSET_E(id,var,bSig,errmsg) {\
+					BOOL bRet;UINT ret;\
+					ret = GetDlgItemInt( hWnd, id, &bRet, bSig );\
+					if( !bRet )\
+					{\
+						MessageBox( hWnd, errmsg, NULL, MB_ICONSTOP );\
+						return FALSE;\
+					}\
+					if( bSig )\
+						var=(signed)ret;\
+					else\
+						var=ret;\
+				}
+
+		{
+			RECT rcSrc, rcDest;
+			GETANDSET_E(IDC_SRCLEFT, rcSrc.left, TRUE, _T("矩形転送元の左座標の入力が不正です。"));
+			GETANDSET_E(IDC_SRCTOP, rcSrc.top, TRUE, _T("矩形転送元の上座標の入力が不正です。"));
+			GETANDSET_E(IDC_SRCWIDTH, rcSrc.right, TRUE, _T("矩形転送元の幅の入力が不正です。"));
+			GETANDSET_E(IDC_SRCHEIGHT, rcSrc.bottom, TRUE, _T("矩形転送元の高さの入力が不正です。"));
+			GETANDSET_E(IDC_DESTLEFT, rcDest.left, TRUE, _T("矩形転送先の左座標の入力が不正です。"));
+			GETANDSET_E(IDC_DESTTOP, rcDest.top, TRUE, _T("矩形転送先の上座標の入力が不正です。"));
+			GETANDSET_E(IDC_DESTWIDTH, rcDest.right, TRUE, _T("矩形転送先の幅の入力が不正です。"));
+			GETANDSET_E(IDC_DESTHEIGHT, rcDest.bottom, TRUE, _T("矩形転送先の高さの入力が不正です。"));
+
+			if (rcSrc.right == 0 || rcSrc.bottom == 0 || rcDest.right == 0 || rcDest.bottom == 0)
+				MessageBox(hWnd, _T("入力された幅と高さに0が含まれています。この場合、矩形は描画されません。\r\n描画するにはあとで変更してください。"), NULL, MB_ICONEXCLAMATION);
+
+			if (SendDlgItemMessage(hWnd, IDC_ROT0, BM_GETCHECK, 0, 0) == BST_CHECKED)
+				hwnd2erdMap[hWnd]->rotation = Rotation_0;
+			else if (SendDlgItemMessage(hWnd, IDC_ROT90, BM_GETCHECK, 0, 0) == BST_CHECKED)
+				hwnd2erdMap[hWnd]->rotation = Rotation_90;
+			else if (SendDlgItemMessage(hWnd, IDC_ROT180, BM_GETCHECK, 0, 0) == BST_CHECKED)
+				hwnd2erdMap[hWnd]->rotation = Rotation_180;
+			else if (SendDlgItemMessage(hWnd, IDC_ROT270, BM_GETCHECK, 0, 0) == BST_CHECKED)
+				hwnd2erdMap[hWnd]->rotation = Rotation_270;
+			hwnd2erdMap[hWnd]->rcSrc = rcSrc;
+			hwnd2erdMap[hWnd]->rcDest = rcDest;
+			GetDlgItemText(hWnd, IDC_RECTNAME,
+				hwnd2erdMap[hWnd]->name, sizeof(((RectTransferData*)NULL)->name) / sizeof(TCHAR));
+		}
+		hwnd2erdMap.erase(hWnd);
+		EndDialog(hWnd, IDOK);
+		return TRUE;
+
+		case IDCANCEL:
+			hwnd2erdMap.erase(hWnd);
+			EndDialog(hWnd, IDCANCEL);
+			return TRUE;
+		}
+		return FALSE;
+	}
+	return FALSE;
+}
+
+BOOL THRotatorDirect3DDevice::ApplyChange()
+{
+#define GETANDSET(id,var,bSig,errmsg) {\
+			BOOL bRet;UINT ret;\
+			ret = GetDlgItemInt( m_hEditorWin, id, &bRet, bSig );\
+			if( !bRet )\
+			{\
+				MessageBox( m_hEditorWin, errmsg, NULL, MB_ICONSTOP );\
+				return FALSE;\
+			}\
+			if( bSig )\
+				var=(signed)ret;\
+			else\
+				var=ret;\
+			SetDlgItemInt( m_hEditorWin, id, ret, bSig );\
+		}
+
+	DWORD pl, pt, pw, ph;
+	int jthres, yo;
+	GETANDSET(IDC_JUDGETHRESHOLD, jthres, TRUE, _T("判定の回数閾値の入力が不正です。"));
+	GETANDSET(IDC_PRLEFT, pl, FALSE, _T("プレイ画面領域の左座標の入力が不正です。"));
+	GETANDSET(IDC_PRTOP, pt, FALSE, _T("プレイ画面領域の上座標の入力が不正です。"));
+	GETANDSET(IDC_PRWIDTH, pw, FALSE, _T("プレイ画面領域の幅の入力が不正です。"));
+	if (pw == 0)
+	{
+		MessageBox(m_hEditorWin, _T("プレイ画面領域の幅は0以外の値でなければいけません。"), NULL, MB_ICONSTOP);
+		return FALSE;
+	}
+	GETANDSET(IDC_PRHEIGHT, ph, FALSE, _T("プレイ画面領域の高さの入力が不正です。"));
+	if (ph == 0)
+	{
+		MessageBox(m_hEditorWin, _T("プレイ画面領域の高さは0以外の値でなければいけません。"), NULL, MB_ICONSTOP);
+		return FALSE;
+	}
+	GETANDSET(IDC_YOFFSET, yo, TRUE, _T("プレイ画面領域のオフセットの入力が不正です。"));
+
+	m_judgeThreshold = jthres;
+	m_playRegionLeft = pl;
+	m_playRegionTop = pt;
+	m_playRegionWidth = pw;
+	m_playRegionHeight = ph;
+	m_yOffset = yo;
+#undef GETANDSET
+
+	BOOL bVerticallyLong = BST_CHECKED == SendDlgItemMessage(m_hEditorWin, IDC_VERTICALWINDOW, BM_GETCHECK, 0, 0);
+	SetVerticallyLongWindow(bVerticallyLong);
+
+	BOOL bFilterTypeNone = BST_CHECKED == SendDlgItemMessage(m_hEditorWin, IDC_FILTERNONE, BM_GETCHECK, 0, 0);
+	m_filterType = bFilterTypeNone ? D3DTEXF_NONE : D3DTEXF_LINEAR;
+
+	if (BST_CHECKED == SendDlgItemMessage(m_hEditorWin, IDC_ROT0_2, BM_GETCHECK, 0, 0))
+	{
+		m_RotationAngle = Rotation_0;
+	}
+	else if (BST_CHECKED == SendDlgItemMessage(m_hEditorWin, IDC_ROT90_2, BM_GETCHECK, 0, 0))
+	{
+		m_RotationAngle = Rotation_90;
+	}
+	else if (BST_CHECKED == SendDlgItemMessage(m_hEditorWin, IDC_ROT180_2, BM_GETCHECK, 0, 0))
+	{
+		m_RotationAngle = Rotation_180;
+	}
+	else
+	{
+		m_RotationAngle = Rotation_270;
+	}
+
+	m_bVisible = SendDlgItemMessage(m_hEditorWin, IDC_VISIBLE, BM_GETCHECK, 0, 0) == BST_CHECKED ? TRUE : FALSE;
+
+	m_currentRectTransfers = m_editedRectTransfers;
+
+	SaveSettings();
+
+	return TRUE;
+}
+
+void THRotatorDirect3DDevice::SaveSettings()
+{
+	namespace proptree = boost::property_tree;
+	proptree::ptree tree;
+
+#define WRITE_INI_PARAM(name, value) tree.add(m_appName + "." + name, value)
+	WRITE_INI_PARAM("JC", m_judgeThreshold);
+	WRITE_INI_PARAM("PL", m_playRegionLeft);
+	WRITE_INI_PARAM("PT", m_playRegionTop);
+	WRITE_INI_PARAM("PW", m_playRegionWidth);
+	WRITE_INI_PARAM("PH", m_playRegionHeight);
+	WRITE_INI_PARAM("YOffset", m_yOffset);
+	WRITE_INI_PARAM("Visible", m_bVisible);
+	WRITE_INI_PARAM("PivRot", m_bVerticallyLongWindow);
+	WRITE_INI_PARAM("Filter", m_filterType);
+	WRITE_INI_PARAM("Rot", m_RotationAngle);
+
+	int i = 0;
+	TCHAR name[64];
+	for (std::vector<RectTransferData>::iterator itr = m_currentRectTransfers.begin();
+		itr != m_currentRectTransfers.cend(); ++itr, ++i)
+	{
+		wsprintf(name, _T("Name%d"), i); WRITE_INI_PARAM(name, itr->name);
+		wsprintf(name, _T("OSL%d"), i); WRITE_INI_PARAM(name, itr->rcSrc.left);
+		wsprintf(name, _T("OST%d"), i); WRITE_INI_PARAM(name, itr->rcSrc.top);
+		wsprintf(name, _T("OSW%d"), i); WRITE_INI_PARAM(name, itr->rcSrc.right);
+		wsprintf(name, _T("OSH%d"), i); WRITE_INI_PARAM(name, itr->rcSrc.bottom);
+		wsprintf(name, _T("ODL%d"), i); WRITE_INI_PARAM(name, itr->rcDest.left);
+		wsprintf(name, _T("ODT%d"), i); WRITE_INI_PARAM(name, itr->rcDest.top);
+		wsprintf(name, _T("ODW%d"), i); WRITE_INI_PARAM(name, itr->rcDest.right);
+		wsprintf(name, _T("ODH%d"), i); WRITE_INI_PARAM(name, itr->rcDest.bottom);
+		wsprintf(name, _T("OR%d"), i); WRITE_INI_PARAM(name, itr->rotation);
+		wsprintf(name, _T("ORHas%d"), i); WRITE_INI_PARAM(name, TRUE);
+	}
+	wsprintf(name, _T("ORHas%d"), i); WRITE_INI_PARAM(name, FALSE);
+#undef WRITE_INI_PARAM
+
+	proptree::write_ini(m_iniPath, tree);
+	}
+
+void THRotatorDirect3DDevice::LoadSettings()
+{
+	namespace proptree = boost::property_tree;
+
+	proptree::ptree tree;
+	try
+	{
+		proptree::read_ini(m_iniPath, tree);
+	}
+	catch (const proptree::ptree_error&)
+	{
+		// ファイルオープン失敗だが、boost::optional::get_value_or()でデフォルト値を設定できるので、そのまま進行
+	}
+
+#define READ_INI_PARAM(type, name, default_value) tree.get_optional<type>(m_appName + "." + name).get_value_or(default_value)
+	m_judgeThreshold = READ_INI_PARAM(int, "JC", 999);
+	m_playRegionLeft = READ_INI_PARAM(int, "PL", 32);
+	m_playRegionTop = READ_INI_PARAM(int, "PT", 16);
+	m_playRegionWidth = READ_INI_PARAM(int, "PW", 384);
+	m_playRegionHeight = READ_INI_PARAM(int, "PH", 448);
+	m_yOffset = READ_INI_PARAM(int, "YOffset", 0);
+	m_bVisible = READ_INI_PARAM(BOOL, "Visible", FALSE);
+	m_bVerticallyLongWindow = READ_INI_PARAM(BOOL, "PivRot", FALSE);
+	m_RotationAngle = static_cast<RotationAngle>(READ_INI_PARAM(std::uint32_t, "Rot", Rotation_0));
+	m_filterType = static_cast<D3DTEXTUREFILTERTYPE>(READ_INI_PARAM(int, "Filter", D3DTEXF_LINEAR));
+
+	BOOL bHasNext = READ_INI_PARAM(BOOL, "ORHas0", FALSE);
+	int cnt = 0;
+	while (bHasNext)
+	{
+		RectTransferData erd;
+		TCHAR name[64];
+
+		wsprintf(name, _T("Name%d"), cnt);
+		std::basic_string<TCHAR> rectName = READ_INI_PARAM(std::basic_string<TCHAR>, name, "");
+		strcpy_s(erd.name, rectName.c_str());
+		erd.name[rectName.length()] = '\0';
+
+		wsprintf(name, _T("OSL%d"), cnt);
+		erd.rcSrc.left = READ_INI_PARAM(int, name, 0);
+		wsprintf(name, _T("OST%d"), cnt);
+		erd.rcSrc.top = READ_INI_PARAM(int, name, 0);
+		wsprintf(name, _T("OSW%d"), cnt);
+		erd.rcSrc.right = READ_INI_PARAM(int, name, 0);
+		wsprintf(name, _T("OSH%d"), cnt);
+		erd.rcSrc.bottom = READ_INI_PARAM(int, name, 0);
+
+		wsprintf(name, _T("ODL%d"), cnt);
+		erd.rcDest.left = READ_INI_PARAM(int, name, 0);
+		wsprintf(name, _T("ODT%d"), cnt);
+		erd.rcDest.top = READ_INI_PARAM(int, name, 0);
+		wsprintf(name, _T("ODW%d"), cnt);
+		erd.rcDest.right = READ_INI_PARAM(int, name, 0);
+		wsprintf(name, _T("ODH%d"), cnt);
+		erd.rcDest.bottom = READ_INI_PARAM(int, name, 0);
+
+		wsprintf(name, _T("OR%d"), cnt);
+		erd.rotation = static_cast<RotationAngle>(READ_INI_PARAM(int, name, 0));
+
+		m_editedRectTransfers.push_back(erd);
+		cnt++;
+
+		wsprintf(name, _T("ORHas%d"), cnt);
+		bHasNext = READ_INI_PARAM(BOOL, name, FALSE);
+	}
+#undef READ_INI_PARAM
+}
+
+LRESULT CALLBACK THRotatorDirect3DDevice::CallWndHook(int nCode, WPARAM wParam, LPARAM lParam)
+{
+	LPMSG pMsg = reinterpret_cast<LPMSG>(lParam);
+	if (nCode >= 0 && PM_REMOVE == wParam)
+	{
+		for (std::map<HWND, THRotatorDirect3DDevice*>::iterator itr = hwnd2devMap.begin();
+			itr != hwnd2devMap.end(); ++itr)
+		{
+			// Don't translate non-input events.
+			if ((pMsg->message >= WM_KEYFIRST && pMsg->message <= WM_KEYLAST))
+			{
+				if (IsDialogMessage(itr->second->m_hEditorWin, pMsg))
+				{
+					// The value returned from this hookproc is ignored, 
+					// and it cannot be used to tell Windows the message has been handled.
+					// To avoid further processing, convert the message to WM_NULL 
+					// before returning.
+					pMsg->message = WM_NULL;
+					pMsg->lParam = 0;
+					pMsg->wParam = 0;
+				}
+			}
+		}
+	}
+	if (nCode == HC_ACTION)
+	{
+		if (th_hwnd2hwndMap.find(pMsg->hwnd) != th_hwnd2hwndMap.end())
+		{
+			THRotatorDirect3DDevice* pDev = hwnd2devMap[th_hwnd2hwndMap[pMsg->hwnd]];
+			switch (pMsg->message)
+			{
+			case WM_SYSCOMMAND:
+				if (pMsg->wParam == ms_switchVisibilityID)
+					pDev->SetVisibility(!pDev->m_bVisible);
+				break;
+
+			case WM_KEYDOWN:
+				switch (pMsg->wParam)
+				{
+				case VK_HOME:
+					if (pDev->m_bTouhouWithoutScreenCapture && pDev->m_d3dpp.BackBufferFormat == D3DFMT_X8R8G8B8)
+					{
+						if ((HIWORD(pMsg->lParam) & KF_REPEAT) == 0)
+						{
+							namespace fs = boost::filesystem;
+							char fname[MAX_PATH];
+
+							fs::create_directory(pDev->m_workingDir / "snapshot");
+							for (int i = 0; i >= 0; ++i)
+							{
+								wsprintfA(fname, (pDev->m_workingDir / "snapshot/thRot%03d.bmp").string().c_str(), i);
+								if (!fs::exists(fname))
+								{
+									::D3DXSaveSurfaceToFileA(fname, D3DXIFF_BMP, pDev->m_pRenderTarget.Get(), nullptr, nullptr);
+									break;
+								}
+							}
+						}
+					}
+					break;
+				}
+				break;
+
+			case WM_SYSKEYDOWN:
+				switch (pMsg->wParam)
+				{
+				case VK_LEFT:
+					if ((HIWORD(pMsg->lParam) & KF_ALTDOWN) && !(HIWORD(pMsg->lParam) & KF_REPEAT))
+					{
+						auto nextRotationAngle = static_cast<RotationAngle>((pDev->m_RotationAngle + 1) % 4);
+						switch ((pDev->m_RotationAngle + 1) % 4)
+						{
+						case Rotation_0:
+							SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT0_2, BM_SETCHECK, BST_CHECKED, 0);
+							SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT90_2, BM_SETCHECK, BST_UNCHECKED, 0);
+							SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT180_2, BM_SETCHECK, BST_UNCHECKED, 0);
+							SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT270_2, BM_SETCHECK, BST_UNCHECKED, 0);
+							//if( pDev->m_d3dpp.Windowed ) pDev->SetVerticallyLongWindow( 0 );
+							break;
+
+						case 1:
+							SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT0_2, BM_SETCHECK, BST_UNCHECKED, 0);
+							SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT90_2, BM_SETCHECK, BST_CHECKED, 0);
+							SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT180_2, BM_SETCHECK, BST_UNCHECKED, 0);
+							SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT270_2, BM_SETCHECK, BST_UNCHECKED, 0);
+							//if( pDev->m_d3dpp.Windowed ) pDev->SetVerticallyLongWindow( 1 );
+							break;
+
+						case 2:
+							SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT0_2, BM_SETCHECK, BST_UNCHECKED, 0);
+							SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT90_2, BM_SETCHECK, BST_UNCHECKED, 0);
+							SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT180_2, BM_SETCHECK, BST_CHECKED, 0);
+							SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT270_2, BM_SETCHECK, BST_UNCHECKED, 0);
+							//if( pDev->m_d3dpp.Windowed ) pDev->SetVerticallyLongWindow( 0 );
+							break;
+
+						case 3:
+							SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT0_2, BM_SETCHECK, BST_UNCHECKED, 0);
+							SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT90_2, BM_SETCHECK, BST_UNCHECKED, 0);
+							SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT180_2, BM_SETCHECK, BST_UNCHECKED, 0);
+							SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT270_2, BM_SETCHECK, BST_CHECKED, 0);
+							//if( pDev->m_d3dpp.Windowed ) pDev->SetVerticallyLongWindow( 1 );
+							break;
+						}
+						pDev->ApplyChange();
+					}
+					break;
+
+				case VK_RIGHT:
+					if (HIWORD(pMsg->lParam) & KF_ALTDOWN && !(HIWORD(pMsg->lParam) & KF_REPEAT))
+					{
+						auto nextRotationAngle = static_cast<RotationAngle>((pDev->m_RotationAngle + Rotation_Num - 1) % 4);
+						switch (nextRotationAngle)
+						{
+						case 0:
+							SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT0_2, BM_SETCHECK, BST_CHECKED, 0);
+							SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT90_2, BM_SETCHECK, BST_UNCHECKED, 0);
+							SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT180_2, BM_SETCHECK, BST_UNCHECKED, 0);
+							SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT270_2, BM_SETCHECK, BST_UNCHECKED, 0);
+							//if( pDev->m_d3dpp.Windowed ) pDev->SetVerticallyLongWindow( 0 );
+							break;
+
+						case 1:
+							SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT0_2, BM_SETCHECK, BST_UNCHECKED, 0);
+							SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT90_2, BM_SETCHECK, BST_CHECKED, 0);
+							SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT180_2, BM_SETCHECK, BST_UNCHECKED, 0);
+							SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT270_2, BM_SETCHECK, BST_UNCHECKED, 0);
+							//if( pDev->m_d3dpp.Windowed ) pDev->SetVerticallyLongWindow( 1 );
+							break;
+
+						case 2:
+							SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT0_2, BM_SETCHECK, BST_UNCHECKED, 0);
+							SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT90_2, BM_SETCHECK, BST_UNCHECKED, 0);
+							SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT180_2, BM_SETCHECK, BST_CHECKED, 0);
+							SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT270_2, BM_SETCHECK, BST_UNCHECKED, 0);
+							//if( pDev->m_d3dpp.Windowed ) pDev->SetVerticallyLongWindow( 0 );
+							break;
+
+						case 3:
+							SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT0_2, BM_SETCHECK, BST_UNCHECKED, 0);
+							SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT90_2, BM_SETCHECK, BST_UNCHECKED, 0);
+							SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT180_2, BM_SETCHECK, BST_UNCHECKED, 0);
+							SendDlgItemMessage(pDev->m_hEditorWin, IDC_ROT270_2, BM_SETCHECK, BST_CHECKED, 0);
+							//if( pDev->m_d3dpp.Windowed ) pDev->SetVerticallyLongWindow( 1 );
+							break;
+						}
+						pDev->ApplyChange();
+					}
+					break;
+				}
+				break;
+			}
+		}
+	}
+	return CallNextHookEx(ms_hWinHookToTouhouWin, nCode, wParam, lParam);
+}
+
+void THRotatorDirect3DDevice::SetVerticallyLongWindow(BOOL bVerticallyLongWindow)
+{
+	if (m_bVerticallyLongWindow % 2 != bVerticallyLongWindow % 2 && m_d3dpp.Windowed)
+	{
+		RECT rcClient, rcWindow;
+		GetClientRect(m_hTouhouWin, &rcClient);
+		GetWindowRect(m_hTouhouWin, &rcWindow);
+
+		MoveWindow(m_hTouhouWin, rcWindow.left, rcWindow.top,
+			(rcWindow.right - rcWindow.left) - (rcClient.right - rcClient.left) + (rcClient.bottom - rcClient.top),
+			(rcWindow.bottom - rcWindow.top) - (rcClient.bottom - rcClient.top) + (rcClient.right - rcClient.left), TRUE);
+
+		m_bResetQueued = static_cast<bool>(m_pd3dDev);
+	}
+	SendDlgItemMessage(m_hEditorWin, IDC_VERTICALWINDOW, BM_SETCHECK, bVerticallyLongWindow ? BST_CHECKED : BST_UNCHECKED, 0);
+	m_bVerticallyLongWindow = bVerticallyLongWindow;
+}
+
+HRESULT THRotatorDirect3DDevice::init(UINT Adapter, THRotatorDirect3D* pMyD3D, D3DDEVTYPE DeviceType, HWND hFocusWindow,
+	DWORD BehaviorFlags, const D3DPRESENT_PARAMETERS& d3dpp,
+	UINT requestedWidth, UINT requestedHeight)
+{
+	m_d3dpp = d3dpp;
+
+	char fname[MAX_PATH];
+	GetModuleFileName(NULL, fname, MAX_PATH);
+	*strrchr(fname, '.') = '\0';
+	boost::filesystem::path pth(fname);
+
+	m_appName = std::string("THRotator_") + pth.filename().generic_string();
+	char path[MAX_PATH];
+	size_t retSize;
+	errno_t en = getenv_s(&retSize, path, "APPDATA");
+
+	double touhouIndex = 0.0;
+	if (pth.filename().generic_string().compare("東方紅魔郷") == 0)
+	{
+		touhouIndex = 6.0;
+	}
+	else
+	{
+		char dummy[128];
+		sscanf_s(pth.filename().generic_string().c_str(), "th%lf%s", &touhouIndex, dummy, (unsigned)_countof(dummy));
+	}
+
+	while (touhouIndex > 90.0)
+	{
+		touhouIndex /= 10.0;
+	}
+
+	if (touhouIndex > 12.3 && en == 0 && retSize > 0)
+	{
+		m_workingDir = boost::filesystem::path(path) / "ShanghaiAlice" / pth.filename();
+		boost::filesystem::create_directory(m_workingDir);
+	}
+	else
+	{
+		m_workingDir = boost::filesystem::current_path();
+	}
+	m_iniPath = (m_workingDir / "throt.ini").string();
+
+	LoadSettings();
+
+	// スクリーンキャプチャ機能がないのは紅魔郷
+	m_bTouhouWithoutScreenCapture = touhouIndex == 6.0;
+
+	m_hTouhouWin = GetActiveWindow();
+
+	int bVerticallyLongWindow = m_bVerticallyLongWindow;
+	m_bVerticallyLongWindow = 0;
+	SetVerticallyLongWindow(bVerticallyLongWindow);
+
+	m_currentRectTransfers = m_editedRectTransfers;
+
+	//	メニューを改造
+	HMENU hMenu = GetSystemMenu(m_hTouhouWin, FALSE);
+	AppendMenu(hMenu, MF_SEPARATOR, 0, NULL);
+	AppendMenu(hMenu, MF_STRING, ms_switchVisibilityID, _T(""));
+
+	m_hSysMenu = hMenu;
+
+#ifdef TOUHOU_ON_D3D8
+	HMODULE hDllModule = ::GetModuleHandleA("d3d8");
+#else
+	HMODULE hDllModule = ::GetModuleHandleA("d3d9");
+#endif
+
+	HWND hWnd = m_hEditorWin = CreateDialogParam(hDllModule, MAKEINTRESOURCE(IDD_MAINDLG), NULL, DlgProc, (LPARAM)this);
+	th_hwnd2hwndMap[m_hTouhouWin] = hWnd;
+	if (hWnd == NULL)
+	{
+		MessageBox(NULL, _T("ダイアログの作成に失敗"), NULL, MB_ICONSTOP);
+	}
+
+	m_requestedWidth = requestedWidth;
+	m_requestedHeight = requestedHeight;
+
+	SetVisibility(m_bVisible);
+
+	UpdateBackBufferResolution();
+
+	m_judgeCount = 0;
+
+	HRESULT ret = pMyD3D->m_pd3d->CreateDevice(Adapter,
+		DeviceType, hFocusWindow, BehaviorFlags,
+		&m_d3dpp, &m_pd3dDev);
+	if (FAILED(ret))
+	{
+		return ret;
+	}
+
+	ret = InitResources();
+	if (FAILED(ret))
+	{
+		return ret;
+	}
+
+	m_pMyD3D = pMyD3D;
+
+	m_bInitialized = true;
+	return S_OK;
+}
+
+HRESULT THRotatorDirect3DDevice::InitResources()
+{
+	HRESULT hr = m_pd3dDev->CreateTexture(m_requestedWidth, m_requestedHeight, 1,
+		D3DUSAGE_RENDERTARGET, m_d3dpp.BackBufferFormat, D3DPOOL_DEFAULT,
+#ifdef TOUHOU_ON_D3D8
+		&m_pTex);
+#else
+		&m_pTex, NULL);
+#endif
+	if (FAILED(hr))
+	{
+		return hr;
+	}
+
+	m_pTex->GetSurfaceLevel(0, &m_pTexSurface);
+
+	if (m_pSprite && FAILED(hr = m_pSprite->OnResetDevice()))
+	{
+		return hr;
+	}
+	else if (FAILED(hr = D3DXCreateSprite(m_pd3dDev.Get(), &m_pSprite)))
+	{
+		return hr;
+	}
+
+#if defined(_DEBUG) && !defined(TOUHOU_ON_D3D8)
+	if (m_pFont && FAILED(hr = m_pFont->OnResetDevice()))
+	{
+		return hr;
+	}
+	else if (FAILED(hr = D3DXCreateFont(m_pd3dDev.Get(),
+		0, 0, 0, 0, 0, 0, 0, 0, 0, "Arial", &m_pFont)))
+	{
+		return hr;
+	}
+#endif
+
+	hr = m_pd3dDev->CreateRenderTarget(m_requestedWidth, m_requestedHeight,
+		m_d3dpp.BackBufferFormat, m_d3dpp.MultiSampleType,
+#ifdef TOUHOU_ON_D3D8
+		TRUE, &m_pRenderTarget);
+#else
+		m_d3dpp.MultiSampleQuality, TRUE, &m_pRenderTarget, nullptr);
+#endif
+
+	if (FAILED(hr))
+	{
+		return hr;
+	}
+
+#ifdef TOUHOU_ON_D3D8
+	ComPtr<Direct3DSurfaceBase> pSurf;
+
+	//	深さバッファの作成
+	if (FAILED(hr = m_pd3dDev->GetDepthStencilSurface(&pSurf)))
+	{
+		return hr;
+	}
+
+	if (FAILED(hr = pSurf->GetDesc(&m_surfDesc)))
+	{
+		return hr;
+	}
+
+	if (FAILED(hr = m_pd3dDev->CreateDepthStencilSurface(m_requestedWidth, m_requestedHeight,
+		m_surfDesc.Format, m_surfDesc.MultiSampleType, &m_pDepthStencil)))
+	{
+		return hr;
+	}
+
+	if (FAILED(hr = m_pd3dDev->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &m_pBackBuffer)))
+	{
+		return hr;
+	}
+
+	if (FAILED(hr = m_pd3dDev->SetRenderTarget(m_pRenderTarget.Get(), m_pDepthStencil.Get())))
+	{
+		return hr;
+	}
+#else
+	if (FAILED(hr = m_pd3dDev->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &m_pBackBuffer)))
+	{
+		return hr;
+	}
+
+	if (FAILED(hr = m_pd3dDev->SetRenderTarget(0, m_pRenderTarget.Get())))
+	{
+		return hr;
+	}
+#endif
+
+	return S_OK;
+}
+
+void THRotatorDirect3DDevice::ReleaseResources()
+{
+#if TOUHOU_ON_D3D8
+	m_pSprite.Reset();
+	m_pDepthStencil.Reset();
+#else
+	if (m_pSprite)
+	{
+		m_pSprite->OnLostDevice();
+	}
+#ifdef _DEBUG
+	if (m_pFont)
+	{
+		m_pFont->OnLostDevice();
+	}
+#endif
+#endif
+
+	m_pRenderTarget.Reset();
+	m_pTexSurface.Reset();
+	m_pTex.Reset();
+	m_pBackBuffer.Reset();
+}
+
+void THRotatorDirect3DDevice::UpdateBackBufferResolution()
+{
+	if (m_d3dpp.Windowed)
+	{
+		RECT rc;
+		GetClientRect(m_hTouhouWin, &rc);
+		m_d3dpp.BackBufferWidth = rc.right - rc.left;
+		m_d3dpp.BackBufferHeight = rc.bottom - rc.top;
+
+		// バックバッファの幅がリクエストの幅より小さい場合、バッファに何も描画されなくなるため、
+		// バックバッファの幅がリクエストの幅以上になるように補正
+		if (m_d3dpp.BackBufferWidth < m_d3dpp.BackBufferHeight)
+		{
+			UINT newWidth = m_d3dpp.BackBufferHeight;
+
+			// アスペクト比を掛けて小数点以下が発生しないようにする
+			while ((newWidth * m_requestedWidth) % m_requestedHeight != 0)
+			{
+				newWidth++;
+			}
+
+			m_d3dpp.BackBufferHeight = newWidth * m_requestedWidth / m_requestedHeight;
+			m_d3dpp.BackBufferWidth = newWidth;
+		}
+	}
+	else
+	{
+		m_d3dpp.BackBufferWidth = FullScreenWidth;
+		m_d3dpp.BackBufferHeight = FullScreenHeight;
+	}
+}
+
+ULONG WINAPI THRotatorDirect3DDevice::AddRef(VOID)
+{
+	return ++m_referenceCount;
+}
+
+HRESULT WINAPI THRotatorDirect3DDevice::QueryInterface(REFIID riid, LPVOID* ppvObj)
+{
+	if (ppvObj == nullptr)
+	{
+		return E_POINTER;
+	}
+#if TOUHOU_ON_D3D8
+	else if (riid == IID_IDirect3DDevice8
+#else
+	else if (riid == __uuidof(IDirect3DDevice9)
+#endif
+		|| riid == __uuidof(IUnknown))
+	{
+		AddRef();
+		*ppvObj = this;
+		return S_OK;
+	}
+	else
+	{
+		return E_NOINTERFACE;
+	}
+}
+
+ULONG WINAPI THRotatorDirect3DDevice::Release()
+{
+	ULONG ret = --m_referenceCount;
+	if (ret == 0)
+	{
+		delete this;
+	}
+	return ret;
+}
+
+HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
+{
+#ifdef TOUHOU_ON_D3D8
+	m_pd3dDev->SetRenderTarget(m_pBackBuffer.Get(), nullptr);
+#else
+	m_pd3dDev->SetRenderTarget(0, m_pBackBuffer.Get());
+#endif
+	D3DXLoadSurfaceFromSurface(m_pTexSurface.Get(), nullptr, nullptr,
+		m_pRenderTarget.Get(), nullptr, nullptr, D3DX_FILTER_NONE, 0);
+
+	m_pd3dDev->Clear(0, NULL, D3DCLEAR_TARGET, 0x00000000, 1.f, 0);
+	//if( SUCCEEDED( m_pd3dDev->BeginScene() ) )
+	{
+#ifdef TOUHOU_ON_D3D8
+		if (SUCCEEDED(m_pSprite->Begin()))
+#else
+		if (SUCCEEDED(m_pSprite->Begin(D3DXSPRITE_ALPHABLEND)))
+#endif
+		{
+#ifdef TOUHOU_ON_D3D8
+			D3DTEXTUREFILTERTYPE prevFilter, prevFilter2;
+			m_pd3dDev->GetTextureStageState(0, D3DTSS_MAGFILTER, (DWORD*)&prevFilter);
+			m_pd3dDev->GetTextureStageState(0, D3DTSS_MINFILTER, (DWORD*)&prevFilter2);
+			m_pd3dDev->SetTextureStageState(0, D3DTSS_MAGFILTER, m_filterType);
+			m_pd3dDev->SetTextureStageState(0, D3DTSS_MINFILTER, m_filterType);
+
+#else
+			m_pd3dDev->SetSamplerState(0, D3DSAMP_MAGFILTER, m_filterType);
+			m_pd3dDev->SetSamplerState(0, D3DSAMP_MINFILTER, m_filterType);
+#endif
+
+			m_pd3dDev->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
+
+			bool aspectLessThan133;
+			if (m_RotationAngle % 2 == 0)
+				aspectLessThan133 = m_d3dpp.BackBufferWidth * 3 < m_d3dpp.BackBufferHeight * 4;
+			else
+				aspectLessThan133 = m_d3dpp.BackBufferHeight * 3 < m_d3dpp.BackBufferWidth * 4;
+
+			bool bNeedsRearrangeHUD = aspectLessThan133 && m_judgeCount >= m_judgeThreshold;
+			LONG baseDestRectWidth = bNeedsRearrangeHUD ? m_playRegionWidth : static_cast<LONG>(BASE_SCREEN_WIDTH);
+			LONG baseDestRectHeight = bNeedsRearrangeHUD ? m_playRegionHeight : static_cast<LONG>(BASE_SCREEN_HEIGHT);
+
+
+
+			/***** 変換行列の計算 *****
+
+			1. テクスチャを東方が要求したバックバッファ解像度から640x480にスケーリング
+			2. 矩形の中心を原点(0, 0)に移動
+			3. ユーザが指定した転送元矩形サイズの逆数でスケールをかける
+			4. ユーザが指定した矩形ごとの回転角度で矩形を回転
+			5. ユーザが指定した転送先矩形サイズでスケールをかける
+			6. ユーザが指定した転送先矩形の位置へ移動
+			7. プレイ領域のサイズがTHRotatorで内部的に確保したバックバッファ解像度へ拡大
+			8. 現在の画面回転角度で回転
+			9. 画面全体の中心を原点からバックバッファの中心へ移動
+
+			2から6は矩形ごとのパラメータが必要。
+			それより前の1と、後の7-9は事前計算できるので、それぞれpreRectTransform、postRectTransformとして保持
+
+			*****/
+
+			D3DXMATRIX preRectTransform;
+			{
+				D3DXMATRIX baseSrcScale;
+				D3DXMatrixScaling(&baseSrcScale, BASE_SCREEN_WIDTH / static_cast<float>(m_requestedWidth), BASE_SCREEN_HEIGHT / static_cast<float>(m_requestedHeight), 1.0f);
+
+				preRectTransform = baseSrcScale;
+			}
+
+			D3DXMATRIX postRectTransform;
+			{
+				float baseDestScaleScalar = m_RotationAngle % 2 == 0 ?
+					(std::min)(m_d3dpp.BackBufferWidth / static_cast<float>(baseDestRectWidth), m_d3dpp.BackBufferHeight / static_cast<float>(baseDestRectHeight)) :
+					(std::min)(m_d3dpp.BackBufferWidth / static_cast<float>(baseDestRectHeight), m_d3dpp.BackBufferHeight / static_cast<float>(baseDestRectWidth));
+				D3DXMATRIX baseDestScale;
+				D3DXMatrixScaling(&baseDestScale, baseDestScaleScalar, baseDestScaleScalar, 1.0f);
+
+				D3DXMATRIX rotation;
+				D3DXMatrixRotationZ(&rotation, RotationAngleToRadian(m_RotationAngle));
+
+				D3DXMATRIX baseDestTranslation;
+				D3DXMatrixTranslation(&baseDestTranslation, 0.5f * m_d3dpp.BackBufferWidth, 0.5f * m_d3dpp.BackBufferHeight, 0.0f);
+
+				D3DXMATRIX temp;
+				D3DXMatrixMultiply(&temp, &baseDestScale, &rotation);
+				D3DXMatrixMultiply(&postRectTransform, &temp, &baseDestTranslation);
+			}
+
+			auto rectDrawer = [this, &preRectTransform, &postRectTransform](
+				const POINT& srcPos,
+				const SIZE& srcSize,
+				const POINT& destPos,
+				const SIZE& destSize,
+				const SIZE& playRegionSize,
+				RotationAngle rotation)
+			{
+				POINT correctedSrcPos = srcPos;
+				SIZE correctedSrcSize = srcSize;
+
+				SIZE srcRectTopLeftOffset{ 0, 0 };
+#ifdef TOUHOU_ON_D3D8
+				// 負の座標値がある場合、D3DX8では描画が行われないため、クランプ
+				if (correctedSrcPos.x < 0)
+				{
+					srcRectTopLeftOffset.cx = -correctedSrcPos.x;
+					correctedSrcPos.x = 0;
+					correctedSrcSize.cx -= srcRectTopLeftOffset.cx;
+				}
+
+				if (correctedSrcPos.y < 0)
+				{
+					srcRectTopLeftOffset.cy = -correctedSrcPos.y;
+					correctedSrcPos.y = 0;
+					correctedSrcSize.cy -= srcRectTopLeftOffset.cy;
+				}
+#endif
+
+				D3DXMATRIX translateSrcCenterToOrigin;
+				D3DXMatrixTranslation(&translateSrcCenterToOrigin,
+					-0.5f * srcSize.cx + srcRectTopLeftOffset.cx,
+					-0.5f * srcSize.cy + srcRectTopLeftOffset.cy, 0.0f);
+
+				D3DXMATRIX rectScaleSrcInv;
+				D3DXMatrixScaling(&rectScaleSrcInv, 1.0f / srcSize.cx, 1.0f / srcSize.cy, 1.0f);
+
+				D3DXMATRIX rectRotation;
+				D3DXMatrixRotationZ(&rectRotation, RotationAngleToRadian(rotation));
+
+				D3DXMATRIX rectScaleDest;
+				D3DXMatrixScaling(&rectScaleDest, static_cast<float>(destSize.cx), static_cast<float>(destSize.cy), 1.0f);
+
+				D3DXMATRIX rectTranslation;
+				D3DXMatrixTranslation(&rectTranslation,
+					static_cast<float>(destPos.x) + 0.5f * (destSize.cx - playRegionSize.cx),
+					static_cast<float>(destPos.y) + 0.5f * (destSize.cy - playRegionSize.cy), 0.0f);
+
+				D3DXMATRIX finalTransform, temp;
+				D3DXMatrixMultiply(&temp, &preRectTransform, &translateSrcCenterToOrigin);
+				D3DXMatrixMultiply(&finalTransform, &temp, &rectScaleSrcInv);
+				D3DXMatrixMultiply(&temp, &finalTransform, &rectRotation);
+				D3DXMatrixMultiply(&finalTransform, &temp, &rectScaleDest);
+				D3DXMatrixMultiply(&temp, &finalTransform, &rectTranslation);
+				D3DXMatrixMultiply(&finalTransform, &temp, &postRectTransform);
+
+				RECT scaledSourceRect;
+				float scaleFactorForSourceX = static_cast<float>(m_requestedWidth) / BASE_SCREEN_WIDTH;
+				float scaleFactorForSourceY = static_cast<float>(m_requestedHeight) / BASE_SCREEN_HEIGHT;
+				scaledSourceRect.left = static_cast<LONG>(correctedSrcPos.x * scaleFactorForSourceX);
+				scaledSourceRect.right = static_cast<LONG>((correctedSrcPos.x + correctedSrcSize.cx) * scaleFactorForSourceX);
+				scaledSourceRect.top = static_cast<LONG>(correctedSrcPos.y * scaleFactorForSourceY);
+				scaledSourceRect.bottom = static_cast<LONG>((correctedSrcPos.y + correctedSrcSize.cy) * scaleFactorForSourceY);
+
+#ifdef TOUHOU_ON_D3D8
+				m_pSprite->DrawTransform(m_pTex.Get(), &scaledSourceRect, &finalTransform, 0xffffffff);
+#else
+				m_pSprite->SetTransform(&finalTransform);
+				m_pSprite->Draw(m_pTex.Get(), &scaledSourceRect, &D3DXVECTOR3(0, 0, 0), NULL, 0xffffffff);
+#endif
+			};
+
+			if (!bNeedsRearrangeHUD)
+			{
+				rectDrawer(
+					POINT{ 0, 0 }, SIZE{ BASE_SCREEN_WIDTH, BASE_SCREEN_HEIGHT },
+					POINT{ 0, 0 }, SIZE{ BASE_SCREEN_WIDTH, BASE_SCREEN_HEIGHT },
+					SIZE{ BASE_SCREEN_WIDTH, BASE_SCREEN_HEIGHT }, Rotation_0);
+			}
+			else
+			{
+				// エネミーマーカーと周囲の枠が表示されるよう、ゲーム画面の矩形を拡張
+
+				POINT prPosition{ static_cast<LONG>(m_playRegionLeft), static_cast<LONG>(m_playRegionTop) };
+				SIZE prSize{ static_cast<LONG>(m_playRegionWidth), static_cast<LONG>(m_playRegionHeight) };
+				if (m_playRegionWidth * 4 < m_playRegionHeight * 3)
+				{
+					prPosition.x = (LONG)m_playRegionLeft + ((LONG)m_playRegionWidth - (LONG)m_playRegionHeight * 3 / 4) / 2;
+					prSize.cx = m_playRegionHeight * 3 / 4;
+				}
+				else if (m_playRegionWidth * 4 > m_playRegionHeight * 3)
+				{
+					prPosition.y = (LONG)m_playRegionTop + ((LONG)m_playRegionHeight - (LONG)m_playRegionWidth * 4 / 3) / 2;
+					prSize.cy = m_playRegionWidth * 4 / 3;
+				}
+
+				prPosition.y -= m_yOffset;
+
+				rectDrawer(prPosition, prSize, POINT{ 0, 0 }, prSize, prSize, Rotation_0);
+
+				for (const auto& rectData : m_currentRectTransfers)
+				{
+					if (rectData.rcSrc.right == 0 || rectData.rcSrc.bottom == 0)
+					{
+						continue;
+					}
+
+					if (rectData.rcDest.right == 0 || rectData.rcDest.bottom == 0)
+					{
+						continue;
+					}
+
+					rectDrawer(
+						POINT{ rectData.rcSrc.left, rectData.rcSrc.top }, SIZE{ rectData.rcSrc.right, rectData.rcSrc.bottom },
+						POINT{ rectData.rcDest.left, rectData.rcDest.top }, SIZE{ rectData.rcDest.right, rectData.rcDest.bottom },
+						prSize,
+						rectData.rotation);
+				}
+			}
+
+#ifdef TOUHOU_ON_D3D8
+			m_pd3dDev->SetTextureStageState(0, D3DTSS_MAGFILTER, prevFilter);
+			m_pd3dDev->SetTextureStageState(0, D3DTSS_MINFILTER, prevFilter2);
+#endif
+
+			m_pSprite->End();
+		}
+
+#if defined(_DEBUG) && !defined(TOUHOU_ON_D3D8)
+		RECT rcText;
+		rcText.right = m_d3dpp.BackBufferWidth;
+		rcText.left = rcText.right - 128;
+		rcText.bottom = m_d3dpp.BackBufferHeight;
+		rcText.top = rcText.bottom - 24;
+		TCHAR text[64];
+		_stprintf_s(text, _T("%5.2f fps"), m_FPS);
+		m_pFont->DrawText(NULL, text, -1, &rcText, 0, D3DCOLOR_XRGB(0xff, (unsigned)(0xff * max(0, m_FPS - 30.f) / 30.f), (unsigned)(0xff * max(0, m_FPS - 30.f) / 30.f)));
+#endif
+	}
+#ifdef TOUHOU_ON_D3D8
+	m_pd3dDev->SetRenderTarget(m_pRenderTarget.Get(), m_pDepthStencil.Get());
+#else
+	m_pd3dDev->SetRenderTarget(0, m_pRenderTarget.Get());
+#endif
+	return m_pd3dDev->EndScene();
+}
+
+HRESULT WINAPI THRotatorDirect3DDevice::Present(CONST RECT *pSourceRect,
+	CONST RECT *pDestRect,
+	HWND hDestWindowOverride,
+	CONST RGNDATA *pDirtyRegion)
+{
+	m_judgeCountPrev = m_judgeCount;
+	m_judgeCount = 0;
+#ifdef _DEBUG
+	//std::cout << "present" << m_count << std::endl;
+#endif
+	HRESULT ret = m_pd3dDev->Present(pSourceRect, pDestRect,
+		hDestWindowOverride, pDirtyRegion);
+	if (FAILED(ret))
+	{
+		return ret;
+	}
+
+	if (m_bResetQueued)
+	{
+		return D3DERR_DEVICENOTRESET;
+	}
+
+#ifdef _DEBUG
+	QueryPerformanceCounter(&m_cur);
+	float FPS = float(m_freq.QuadPart) / float(m_cur.QuadPart - m_prev.QuadPart);
+	if (FPS < m_FPSNew)
+		m_FPSNew = FPS;
+
+	if (m_fpsCount % 30 == 0)
+	{
+		m_FPS = m_FPSNew;
+		m_FPSNew = 60.f;
+	}
+	m_fpsCount++;
+
+	m_prev = m_cur;
+
+#endif
+	return ret;
+}
+
+HRESULT WINAPI THRotatorDirect3DDevice::Reset(D3DPRESENT_PARAMETERS* pPresentationParameters)
+{
+	assert(m_bInitialized);
+
+#ifdef _DEBUG
+	::OutputDebugStringA("Resetting D3D device\n");
+#endif
+	ReleaseResources();
+
+	m_d3dpp = *pPresentationParameters;
+
+	if (m_d3dpp.BackBufferWidth != 0)
+	{
+		m_requestedWidth = m_d3dpp.BackBufferWidth;
+	}
+
+	if (m_d3dpp.BackBufferHeight != 0)
+	{
+		m_requestedHeight = m_d3dpp.BackBufferHeight;
+	}
+
+	UpdateBackBufferResolution();
+
+	HRESULT ret = m_pd3dDev->Reset(&m_d3dpp);
+
+	if (FAILED(ret))
+	{
+		return ret;
+	}
+
+	m_bResetQueued = false;
+	return InitResources();
 }
 
 extern "C" {
