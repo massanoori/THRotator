@@ -14,34 +14,38 @@
 #include <wrl.h>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
+#include <cstdint>
 
 #ifdef TOUHOU_ON_D3D8
 #include <d3d8.h>
 #include <d3dx8.h>
 #pragma comment(lib, "d3dx8.lib")
-#pragma comment(lib, "legacy_stdio_definitions.lib")
 
-using Direct3DBase = IDirect3D8;
-using Direct3DDeviceBase = IDirect3DDevice8;
-using Direct3DSurfaceBase = IDirect3DSurface8;
-using Direct3DTextureBase = IDirect3DTexture8;
-using Direct3DBaseTextureBase = IDirect3DBaseTexture8;
-using Direct3DVertexBufferBase = IDirect3DVertexBuffer8;
-using Direct3DIndexBufferBase = IDirect3DIndexBuffer8;
-using Direct3DSwapChainBase = IDirect3DSwapChain8;
+#if _MSC_VER >= 1900
+#pragma comment(lib, "legacy_stdio_definitions.lib")
+#endif
+
+typedef IDirect3D8 Direct3DBase;
+typedef IDirect3DDevice8 Direct3DDeviceBase;
+typedef IDirect3DSurface8 Direct3DSurfaceBase;
+typedef IDirect3DTexture8 Direct3DTextureBase;
+typedef IDirect3DBaseTexture8 Direct3DBaseTextureBase;
+typedef IDirect3DVertexBuffer8 Direct3DVertexBufferBase;
+typedef IDirect3DIndexBuffer8 Direct3DIndexBufferBase;
+typedef IDirect3DSwapChain8 Direct3DSwapChainBase;
 #else
 #include <d3d9.h>
 #include <d3dx9.h>
 #pragma comment(lib,"d3dx9.lib")
 
-using Direct3DBase = IDirect3D9;
-using Direct3DDeviceBase = IDirect3DDevice9;
-using Direct3DSurfaceBase = IDirect3DSurface9;
-using Direct3DTextureBase = IDirect3DTexture9;
-using Direct3DBaseTextureBase = IDirect3DBaseTexture9;
-using Direct3DVertexBufferBase = IDirect3DVertexBuffer9;
-using Direct3DIndexBufferBase = IDirect3DIndexBuffer9;
-using Direct3DSwapChainBase = IDirect3DSwapChain9;
+typedef IDirect3D9 Direct3DBase;
+typedef IDirect3DDevice9 Direct3DDeviceBase;
+typedef IDirect3DSurface9 Direct3DSurfaceBase;
+typedef IDirect3DTexture9 Direct3DTextureBase;
+typedef IDirect3DBaseTexture9 Direct3DBaseTextureBase;
+typedef IDirect3DVertexBuffer9 Direct3DVertexBufferBase;
+typedef IDirect3DIndexBuffer9 Direct3DIndexBufferBase;
+typedef IDirect3DSwapChain9 Direct3DSwapChainBase;
 #endif
 
 #pragma comment(lib,"comctl32.lib")
@@ -355,6 +359,8 @@ private:
 
 	HMENU m_hSysMenu;
 	HWND m_hEditorWin, m_hTouhouWin;
+	bool m_bNeedModalEditor;
+	int m_modalEditorWindowPosX, m_modalEditorWindowPosY;
 
 
 #ifdef _DEBUG
@@ -380,7 +386,11 @@ private:
 
 	static HHOOK ms_hWinHookToTouhouWin;
 
-	void SetVisibility(BOOL vis);
+private:
+	// エディタウィンドウの可視性を設定
+	// エディタウィンドウをモーダルで開かなければならない場合は、
+	// 既存のウィンドウの表示非表示を切り替えることはできないので、呼んではいけない
+	void SetEditorWindowVisibility(BOOL bVisible);
 
 	void InitListView(HWND hLV);
 
@@ -388,7 +398,12 @@ private:
 
 	static BOOL CALLBACK EditRectProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-	BOOL ApplyChange();
+	BOOL ApplyChangeFromEditorWindow(HWND hEditorWin);
+
+	BOOL ApplyChangeFromEditorWindow()
+	{
+		return ApplyChangeFromEditorWindow(m_hEditorWin);
+	}
 
 	void SaveSettings();
 
@@ -396,14 +411,14 @@ private:
 
 	static LRESULT CALLBACK CallWndHook(int nCode, WPARAM wParam, LPARAM lParam);
 
+	THRotatorDirect3DDevice(const THRotatorDirect3DDevice&) {}
+	THRotatorDirect3DDevice(THRotatorDirect3DDevice&&) {}
+	THRotatorDirect3DDevice& operator=(const THRotatorDirect3DDevice&) {}
+	THRotatorDirect3DDevice& operator=(THRotatorDirect3D&&) {}
+
 public:
 	THRotatorDirect3DDevice();
 	virtual ~THRotatorDirect3DDevice();
-
-	THRotatorDirect3DDevice(const THRotatorDirect3DDevice&) = delete;
-	THRotatorDirect3DDevice(THRotatorDirect3DDevice&&) = delete;
-	THRotatorDirect3DDevice& operator=(const THRotatorDirect3DDevice&) = delete;
-	THRotatorDirect3DDevice& operator=(THRotatorDirect3D&&) = delete;
 
 	void SetVerticallyLongWindow(BOOL bVerticallyLongWindow);
 
@@ -1749,6 +1764,13 @@ THRotatorDirect3DDevice::THRotatorDirect3DDevice()
 	, m_judgeCount(0)
 	, m_judgeCountPrev(0)
 	, m_bTouhouWithoutScreenCapture(false)
+	, m_modalEditorWindowPosX(0)
+	, m_modalEditorWindowPosY(0)
+#ifdef TOUHOU_ON_D3D8
+	, m_bNeedModalEditor(true)
+#else
+	, m_bNeedModalEditor(false)
+#endif
 #ifdef _DEBUG
 	, m_FPSNew(60.f)
 	, m_fpsCount(0)
@@ -1796,8 +1818,10 @@ THRotatorDirect3DDevice::~THRotatorDirect3DDevice()
 	}
 }
 
-void THRotatorDirect3DDevice::SetVisibility(BOOL bVisible)
+void THRotatorDirect3DDevice::SetEditorWindowVisibility(BOOL bVisible)
 {
+	assert(!m_bNeedModalEditor);
+
 	m_bVisible = bVisible;
 	MENUITEMINFO mi;
 	ZeroMemory(&mi, sizeof(mi));
@@ -1847,7 +1871,7 @@ BOOL CALLBACK THRotatorDirect3DDevice::DlgProc(HWND hWnd, UINT msg, WPARAM wPara
 	switch (msg)
 	{
 	case WM_INITDIALOG:
-		hwnd2devMap[hWnd] = (THRotatorDirect3DDevice*)lParam;
+		hwnd2devMap[hWnd] = reinterpret_cast<THRotatorDirect3DDevice*>(lParam);
 		SetDlgItemInt(hWnd, IDC_JUDGETHRESHOLD, hwnd2devMap[hWnd]->m_judgeThreshold, TRUE);
 		SetDlgItemInt(hWnd, IDC_PRLEFT, hwnd2devMap[hWnd]->m_playRegionLeft, FALSE);
 		SetDlgItemInt(hWnd, IDC_PRTOP, hwnd2devMap[hWnd]->m_playRegionTop, FALSE);
@@ -1925,8 +1949,27 @@ BOOL CALLBACK THRotatorDirect3DDevice::DlgProc(HWND hWnd, UINT msg, WPARAM wPara
 		case IDC_GETVPCOUNT:
 			SetDlgItemInt(hWnd, IDC_VPCOUNT, hwnd2devMap[hWnd]->m_judgeCountPrev, FALSE);
 			return TRUE;
+
 		case IDOK:
-			return hwnd2devMap[hWnd]->ApplyChange();
+		{
+			auto pDev = hwnd2devMap[hWnd];
+
+			BOOL bResult = pDev->ApplyChangeFromEditorWindow(hWnd);
+			if (!bResult)
+			{
+				return FALSE;
+			}
+
+			if (pDev->m_bNeedModalEditor)
+			{
+				RECT rc;
+				GetWindowRect(hWnd, &rc);
+				pDev->m_modalEditorWindowPosX = rc.top;
+				pDev->m_modalEditorWindowPosY = rc.bottom;
+				EndDialog(hWnd, IDOK);
+			}
+			return TRUE;
+		}
 
 		case IDC_RESET:
 			SetDlgItemInt(hWnd, IDC_JUDGETHRESHOLD, hwnd2devMap[hWnd]->m_judgeThreshold, FALSE);
@@ -1988,7 +2031,20 @@ BOOL CALLBACK THRotatorDirect3DDevice::DlgProc(HWND hWnd, UINT msg, WPARAM wPara
 			return TRUE;
 
 		case IDCANCEL:
-			hwnd2devMap[hWnd]->SetVisibility(FALSE);
+			if (hwnd2devMap[hWnd]->m_bNeedModalEditor)
+			{
+				auto pDev = hwnd2devMap[hWnd];
+
+				RECT rc;
+				GetWindowRect(hWnd, &rc);
+				pDev->m_modalEditorWindowPosX = rc.top;
+				pDev->m_modalEditorWindowPosY = rc.bottom;
+				EndDialog(hWnd, IDCANCEL);
+			}
+			else
+			{
+				hwnd2devMap[hWnd]->SetEditorWindowVisibility(FALSE);
+			}
 			return TRUE;
 
 		case IDC_ADDRECT:
@@ -2305,21 +2361,23 @@ BOOL CALLBACK THRotatorDirect3DDevice::EditRectProc(HWND hWnd, UINT msg, WPARAM 
 	return FALSE;
 }
 
-BOOL THRotatorDirect3DDevice::ApplyChange()
+BOOL THRotatorDirect3DDevice::ApplyChangeFromEditorWindow(HWND hEditorWin)
 {
+	assert(hEditorWin);
+
 #define GETANDSET(id,var,bSig,errmsg) {\
 			BOOL bRet;UINT ret;\
-			ret = GetDlgItemInt( m_hEditorWin, id, &bRet, bSig );\
+			ret = GetDlgItemInt( hEditorWin, id, &bRet, bSig );\
 			if( !bRet )\
 			{\
-				MessageBox( m_hEditorWin, errmsg, NULL, MB_ICONSTOP );\
+				MessageBox( hEditorWin, errmsg, NULL, MB_ICONSTOP );\
 				return FALSE;\
 			}\
 			if( bSig )\
 				var=(signed)ret;\
 			else\
 				var=ret;\
-			SetDlgItemInt( m_hEditorWin, id, ret, bSig );\
+			SetDlgItemInt( hEditorWin, id, ret, bSig );\
 		}
 
 	DWORD pl, pt, pw, ph;
@@ -2330,13 +2388,13 @@ BOOL THRotatorDirect3DDevice::ApplyChange()
 	GETANDSET(IDC_PRWIDTH, pw, FALSE, _T("プレイ画面領域の幅の入力が不正です。"));
 	if (pw == 0)
 	{
-		MessageBox(m_hEditorWin, _T("プレイ画面領域の幅は0以外の値でなければいけません。"), NULL, MB_ICONSTOP);
+		MessageBox(hEditorWin, _T("プレイ画面領域の幅は0以外の値でなければいけません。"), NULL, MB_ICONSTOP);
 		return FALSE;
 	}
 	GETANDSET(IDC_PRHEIGHT, ph, FALSE, _T("プレイ画面領域の高さの入力が不正です。"));
 	if (ph == 0)
 	{
-		MessageBox(m_hEditorWin, _T("プレイ画面領域の高さは0以外の値でなければいけません。"), NULL, MB_ICONSTOP);
+		MessageBox(hEditorWin, _T("プレイ画面領域の高さは0以外の値でなければいけません。"), NULL, MB_ICONSTOP);
 		return FALSE;
 	}
 	GETANDSET(IDC_YOFFSET, yo, TRUE, _T("プレイ画面領域のオフセットの入力が不正です。"));
@@ -2349,21 +2407,21 @@ BOOL THRotatorDirect3DDevice::ApplyChange()
 	m_yOffset = yo;
 #undef GETANDSET
 
-	BOOL bVerticallyLong = BST_CHECKED == SendDlgItemMessage(m_hEditorWin, IDC_VERTICALWINDOW, BM_GETCHECK, 0, 0);
+	BOOL bVerticallyLong = BST_CHECKED == SendDlgItemMessage(hEditorWin, IDC_VERTICALWINDOW, BM_GETCHECK, 0, 0);
 	SetVerticallyLongWindow(bVerticallyLong);
 
-	BOOL bFilterTypeNone = BST_CHECKED == SendDlgItemMessage(m_hEditorWin, IDC_FILTERNONE, BM_GETCHECK, 0, 0);
+	BOOL bFilterTypeNone = BST_CHECKED == SendDlgItemMessage(hEditorWin, IDC_FILTERNONE, BM_GETCHECK, 0, 0);
 	m_filterType = bFilterTypeNone ? D3DTEXF_NONE : D3DTEXF_LINEAR;
 
-	if (BST_CHECKED == SendDlgItemMessage(m_hEditorWin, IDC_ROT0_2, BM_GETCHECK, 0, 0))
+	if (BST_CHECKED == SendDlgItemMessage(hEditorWin, IDC_ROT0_2, BM_GETCHECK, 0, 0))
 	{
 		m_RotationAngle = Rotation_0;
 	}
-	else if (BST_CHECKED == SendDlgItemMessage(m_hEditorWin, IDC_ROT90_2, BM_GETCHECK, 0, 0))
+	else if (BST_CHECKED == SendDlgItemMessage(hEditorWin, IDC_ROT90_2, BM_GETCHECK, 0, 0))
 	{
 		m_RotationAngle = Rotation_90;
 	}
-	else if (BST_CHECKED == SendDlgItemMessage(m_hEditorWin, IDC_ROT180_2, BM_GETCHECK, 0, 0))
+	else if (BST_CHECKED == SendDlgItemMessage(hEditorWin, IDC_ROT180_2, BM_GETCHECK, 0, 0))
 	{
 		m_RotationAngle = Rotation_180;
 	}
@@ -2372,7 +2430,7 @@ BOOL THRotatorDirect3DDevice::ApplyChange()
 		m_RotationAngle = Rotation_270;
 	}
 
-	m_bVisible = SendDlgItemMessage(m_hEditorWin, IDC_VISIBLE, BM_GETCHECK, 0, 0) == BST_CHECKED ? TRUE : FALSE;
+	m_bVisible = SendDlgItemMessage(hEditorWin, IDC_VISIBLE, BM_GETCHECK, 0, 0) == BST_CHECKED ? TRUE : FALSE;
 
 	m_currentRectTransfers = m_editedRectTransfers;
 
@@ -2522,7 +2580,16 @@ LRESULT CALLBACK THRotatorDirect3DDevice::CallWndHook(int nCode, WPARAM wParam, 
 			{
 			case WM_SYSCOMMAND:
 				if (pMsg->wParam == ms_switchVisibilityID)
-					pDev->SetVisibility(!pDev->m_bVisible);
+				{
+					if (pDev->m_bNeedModalEditor)
+					{
+						DialogBoxParam((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDD_MAINDLG), GetFocus(), DlgProc, (LPARAM)pDev);
+					}
+					else
+					{
+						pDev->SetEditorWindowVisibility(!pDev->m_bVisible);
+					}
+				}
 				break;
 
 			case WM_KEYDOWN:
@@ -2559,6 +2626,14 @@ LRESULT CALLBACK THRotatorDirect3DDevice::CallWndHook(int nCode, WPARAM wParam, 
 					if ((HIWORD(pMsg->lParam) & KF_ALTDOWN) && !(HIWORD(pMsg->lParam) & KF_REPEAT))
 					{
 						auto nextRotationAngle = static_cast<RotationAngle>((pDev->m_RotationAngle + 1) % 4);
+
+						if (pDev->m_bNeedModalEditor)
+						{
+							pDev->m_RotationAngle = nextRotationAngle;
+							pDev->SaveSettings();
+							break;
+						}
+
 						switch ((pDev->m_RotationAngle + 1) % 4)
 						{
 						case Rotation_0:
@@ -2593,7 +2668,8 @@ LRESULT CALLBACK THRotatorDirect3DDevice::CallWndHook(int nCode, WPARAM wParam, 
 							//if( pDev->m_d3dpp.Windowed ) pDev->SetVerticallyLongWindow( 1 );
 							break;
 						}
-						pDev->ApplyChange();
+
+						pDev->ApplyChangeFromEditorWindow();
 					}
 					break;
 
@@ -2601,6 +2677,14 @@ LRESULT CALLBACK THRotatorDirect3DDevice::CallWndHook(int nCode, WPARAM wParam, 
 					if (HIWORD(pMsg->lParam) & KF_ALTDOWN && !(HIWORD(pMsg->lParam) & KF_REPEAT))
 					{
 						auto nextRotationAngle = static_cast<RotationAngle>((pDev->m_RotationAngle + Rotation_Num - 1) % 4);
+
+						if (pDev->m_bNeedModalEditor)
+						{
+							pDev->m_RotationAngle = nextRotationAngle;
+							pDev->SaveSettings();
+							break;
+						}
+
 						switch (nextRotationAngle)
 						{
 						case 0:
@@ -2635,7 +2719,8 @@ LRESULT CALLBACK THRotatorDirect3DDevice::CallWndHook(int nCode, WPARAM wParam, 
 							//if( pDev->m_d3dpp.Windowed ) pDev->SetVerticallyLongWindow( 1 );
 							break;
 						}
-						pDev->ApplyChange();
+
+						pDev->ApplyChangeFromEditorWindow();
 					}
 					break;
 				}
@@ -2723,7 +2808,7 @@ HRESULT THRotatorDirect3DDevice::init(UINT Adapter, THRotatorDirect3D* pMyD3D, D
 	//	メニューを改造
 	HMENU hMenu = GetSystemMenu(m_hTouhouWin, FALSE);
 	AppendMenu(hMenu, MF_SEPARATOR, 0, NULL);
-	AppendMenu(hMenu, MF_STRING, ms_switchVisibilityID, _T(""));
+	AppendMenu(hMenu, MF_STRING, ms_switchVisibilityID, _T("THRotatorを開く"));
 
 	m_hSysMenu = hMenu;
 
@@ -2733,17 +2818,30 @@ HRESULT THRotatorDirect3DDevice::init(UINT Adapter, THRotatorDirect3D* pMyD3D, D
 	HMODULE hDllModule = ::GetModuleHandleA("d3d9");
 #endif
 
-	HWND hWnd = m_hEditorWin = CreateDialogParam(hDllModule, MAKEINTRESOURCE(IDD_MAINDLG), NULL, DlgProc, (LPARAM)this);
-	th_hwnd2hwndMap[m_hTouhouWin] = hWnd;
-	if (hWnd == NULL)
+	if (m_bNeedModalEditor)
 	{
-		MessageBox(NULL, _T("ダイアログの作成に失敗"), NULL, MB_ICONSTOP);
+		th_hwnd2hwndMap[m_hTouhouWin] = nullptr;
+		m_hEditorWin = nullptr;
 	}
+	else
+	{
+		HWND hWnd = m_hEditorWin = CreateDialogParam(hDllModule, MAKEINTRESOURCE(IDD_MAINDLG), NULL, DlgProc, (LPARAM)this);
+		th_hwnd2hwndMap[m_hTouhouWin] = hWnd;
+		if (hWnd == NULL)
+		{
+			MessageBox(NULL, _T("ダイアログの作成に失敗"), NULL, MB_ICONSTOP);
+		}
+	}
+
+	hwnd2devMap[m_hEditorWin] = this;
 
 	m_requestedWidth = requestedWidth;
 	m_requestedHeight = requestedHeight;
 
-	SetVisibility(m_bVisible);
+	if (!m_bNeedModalEditor)
+	{
+		SetEditorWindowVisibility(m_bVisible);
+	}
 
 	UpdateBackBufferResolution();
 
@@ -3057,7 +3155,7 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 				POINT correctedSrcPos = srcPos;
 				SIZE correctedSrcSize = srcSize;
 
-				SIZE srcRectTopLeftOffset{ 0, 0 };
+				SIZE srcRectTopLeftOffset = {};
 #ifdef TOUHOU_ON_D3D8
 				// 負の座標値がある場合、D3DX8では描画が行われないため、クランプ
 				if (correctedSrcPos.x < 0)
@@ -3120,17 +3218,16 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 
 			if (!bNeedsRearrangeHUD)
 			{
-				rectDrawer(
-					POINT{ 0, 0 }, SIZE{ BASE_SCREEN_WIDTH, BASE_SCREEN_HEIGHT },
-					POINT{ 0, 0 }, SIZE{ BASE_SCREEN_WIDTH, BASE_SCREEN_HEIGHT },
-					SIZE{ BASE_SCREEN_WIDTH, BASE_SCREEN_HEIGHT }, Rotation_0);
+				POINT pointZero = {};
+				SIZE rectSize = { BASE_SCREEN_WIDTH, BASE_SCREEN_HEIGHT };
+				rectDrawer(pointZero, rectSize, pointZero, rectSize, rectSize, Rotation_0);
 			}
 			else
 			{
 				// エネミーマーカーと周囲の枠が表示されるよう、ゲーム画面の矩形を拡張
 
-				POINT prPosition{ static_cast<LONG>(m_playRegionLeft), static_cast<LONG>(m_playRegionTop) };
-				SIZE prSize{ static_cast<LONG>(m_playRegionWidth), static_cast<LONG>(m_playRegionHeight) };
+				POINT prPosition = { static_cast<LONG>(m_playRegionLeft), static_cast<LONG>(m_playRegionTop) };
+				SIZE prSize = { static_cast<LONG>(m_playRegionWidth), static_cast<LONG>(m_playRegionHeight) };
 				if (m_playRegionWidth * 4 < m_playRegionHeight * 3)
 				{
 					prPosition.x = (LONG)m_playRegionLeft + ((LONG)m_playRegionWidth - (LONG)m_playRegionHeight * 3 / 4) / 2;
@@ -3144,7 +3241,8 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 
 				prPosition.y -= m_yOffset;
 
-				rectDrawer(prPosition, prSize, POINT{ 0, 0 }, prSize, prSize, Rotation_0);
+				POINT pointZero = {};
+				rectDrawer(prPosition, prSize, pointZero, prSize, prSize, Rotation_0);
 
 				for (const auto& rectData : m_currentRectTransfers)
 				{
@@ -3158,11 +3256,12 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 						continue;
 					}
 
-					rectDrawer(
-						POINT{ rectData.rcSrc.left, rectData.rcSrc.top }, SIZE{ rectData.rcSrc.right, rectData.rcSrc.bottom },
-						POINT{ rectData.rcDest.left, rectData.rcDest.top }, SIZE{ rectData.rcDest.right, rectData.rcDest.bottom },
-						prSize,
-						rectData.rotation);
+					POINT srcPos = { rectData.rcSrc.left, rectData.rcSrc.top };
+					SIZE srcSize = { rectData.rcSrc.right, rectData.rcSrc.bottom };
+					POINT destPos = { rectData.rcDest.left, rectData.rcDest.top };
+					SIZE destSize = { rectData.rcDest.right, rectData.rcDest.bottom };
+
+					rectDrawer(srcPos, srcSize, destPos, destSize, prSize, rectData.rotation);
 				}
 			}
 
