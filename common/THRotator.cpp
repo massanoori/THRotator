@@ -1,3 +1,5 @@
+// (c) 2017 massanoori
+
 #include <windows.h>
 #include <CommCtrl.h>
 #include <map>
@@ -43,6 +45,8 @@ using Direct3DSwapChainBase = IDirect3DSwapChain9;
 #endif
 
 #pragma comment(lib,"comctl32.lib")
+
+static LPCTSTR THROTATOR_VERSION_STRING = "1.2.0";
 
 using Microsoft::WRL::ComPtr;
 
@@ -1849,6 +1853,13 @@ BOOL CALLBACK THRotatorDirect3DDevice::DlgProc(HWND hWnd, UINT msg, WPARAM wPara
 		SetDlgItemInt(hWnd, IDC_PRWIDTH, hwnd2devMap[hWnd]->m_playRegionWidth, FALSE);
 		SetDlgItemInt(hWnd, IDC_PRHEIGHT, hwnd2devMap[hWnd]->m_playRegionHeight, FALSE);
 		SetDlgItemInt(hWnd, IDC_YOFFSET, hwnd2devMap[hWnd]->m_yOffset, TRUE);
+
+		{
+			std::basic_string<TCHAR> versionUiString("Version: ");
+			versionUiString += THROTATOR_VERSION_STRING;
+			SetDlgItemText(hWnd, IDC_VERSION, versionUiString.c_str());
+		}
+
 		SendDlgItemMessage(hWnd, IDC_VISIBLE, BM_SETCHECK, hwnd2devMap[hWnd]->m_bVisible ? BST_CHECKED : BST_UNCHECKED, 0);
 		switch (((THRotatorDirect3DDevice*)lParam)->m_filterType)
 		{
@@ -1860,20 +1871,6 @@ BOOL CALLBACK THRotatorDirect3DDevice::DlgProc(HWND hWnd, UINT msg, WPARAM wPara
 			SendDlgItemMessage(hWnd, IDC_FILTERBILINEAR, BM_SETCHECK, BST_CHECKED, 0);
 			break;
 		}
-		/*switch( hwnd2devMap[hWnd]->m_bVerticallyLongWindow )
-		{
-		case 0:
-		SendDlgItemMessage( hWnd, IDC_PIV0, BM_SETCHECK, BST_CHECKED, 0 );
-		break;
-
-		case 1:
-		SendDlgItemMessage( hWnd, IDC_PIV90, BM_SETCHECK, BST_CHECKED, 0 );
-		break;
-
-		case 3:
-		SendDlgItemMessage( hWnd, IDC_PIV270, BM_SETCHECK, BST_CHECKED, 0 );
-		break;
-		}*/
 
 		if (hwnd2devMap[hWnd]->m_bVerticallyLongWindow == 1)
 			SendDlgItemMessage(hWnd, IDC_VERTICALWINDOW, BM_SETCHECK, BST_CHECKED, 0);
