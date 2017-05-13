@@ -351,6 +351,11 @@ private:
 	ComPtr<Direct3DDeviceBase> m_pd3dDev;
 	ComPtr<ID3DXSprite> m_pSprite;
 	ComPtr<Direct3DSurfaceBase> m_pBackBuffer, m_pTexSurface;
+
+	// thXX.exeにレンダリングを行ってもらうレンダーターゲット。
+	// ただ画面回転するだけであればm_pTexSurfaceをバックバッファ代わりにすればよいが、
+	// Homeキーによるスクリーンキャプチャでクラッシュするので、別で用意
+	ComPtr<Direct3DSurfaceBase> m_pRenderTarget;
 #ifdef TOUHOU_ON_D3D8
 	ComPtr<Direct3DSurfaceBase> m_pDepthStencil;
 #endif
@@ -1484,6 +1489,19 @@ public:
 		}
 #endif
 
+		hr = m_pd3dDev->CreateRenderTarget(m_requestedWidth, m_requestedHeight,
+			m_d3dpp.BackBufferFormat, m_d3dpp.MultiSampleType,
+#ifdef TOUHOU_ON_D3D8
+			TRUE, &m_pRenderTarget);
+#else
+			m_d3dpp.MultiSampleQuality, TRUE, &m_pRenderTarget, nullptr);
+#endif
+			
+		if (FAILED(hr))
+		{
+			return hr;
+		}
+
 #ifdef TOUHOU_ON_D3D8
 		ComPtr<Direct3DSurfaceBase> pSurf;
 
@@ -1509,7 +1527,7 @@ public:
 			return hr;
 		}
 
-		if (FAILED(hr = m_pd3dDev->SetRenderTarget(m_pTexSurface.Get(), m_pDepthStencil.Get())))
+		if (FAILED(hr = m_pd3dDev->SetRenderTarget(m_pRenderTarget.Get(), m_pDepthStencil.Get())))
 		{
 			return hr;
 		}
@@ -1519,7 +1537,7 @@ public:
 			return hr;
 		}
 
-		if (FAILED(hr = m_pd3dDev->SetRenderTarget(0, m_pTexSurface.Get())))
+		if (FAILED(hr = m_pd3dDev->SetRenderTarget(0, m_pRenderTarget.Get())))
 		{
 			return hr;
 		}
@@ -1546,6 +1564,7 @@ public:
 #endif
 #endif
 
+		m_pRenderTarget.Reset();
 		m_pTexSurface.Reset();
 		m_pTex.Reset();
 		m_pBackBuffer.Reset();
@@ -1927,6 +1946,9 @@ public:
 #else
 		m_pd3dDev->SetRenderTarget(0, m_pBackBuffer.Get());
 #endif
+		D3DXLoadSurfaceFromSurface(m_pTexSurface.Get(), nullptr, nullptr,
+			m_pRenderTarget.Get(), nullptr, nullptr, D3DX_FILTER_NONE, 0);
+
 		m_pd3dDev->Clear( 0, NULL, D3DCLEAR_TARGET, 0x00000000, 1.f, 0 );
 		//if( SUCCEEDED( m_pd3dDev->BeginScene() ) )
 		{
@@ -2146,9 +2168,9 @@ public:
 #endif
 		}
 #ifdef TOUHOU_ON_D3D8
-		m_pd3dDev->SetRenderTarget(m_pTexSurface.Get(), m_pDepthStencil.Get());
+		m_pd3dDev->SetRenderTarget(m_pRenderTarget.Get(), m_pDepthStencil.Get());
 #else
-		m_pd3dDev->SetRenderTarget(0, m_pTexSurface.Get());
+		m_pd3dDev->SetRenderTarget(0, m_pRenderTarget.Get());
 #endif
 		return m_pd3dDev->EndScene();
 	}
@@ -2180,7 +2202,7 @@ public:
 		D3DBACKBUFFER_TYPE Type,
 		Direct3DSurfaceBase** ppBackBuffer) override
 	{
-		*ppBackBuffer = m_pTexSurface.Get();
+		*ppBackBuffer = m_pRenderTarget.Get();
 		(*ppBackBuffer)->AddRef();
 		return S_OK;
 	}
