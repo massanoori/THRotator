@@ -1886,6 +1886,8 @@ BOOL CALLBACK THRotatorDirect3DDevice::DlgProc(HWND hWnd, UINT msg, WPARAM wPara
 		}
 
 		SendDlgItemMessage(hWnd, IDC_VISIBLE, BM_SETCHECK, hwnd2devMap[hWnd]->m_bVisible ? BST_CHECKED : BST_UNCHECKED, 0);
+		EnableWindow(GetDlgItem(hWnd, IDC_VISIBLE), !reinterpret_cast<THRotatorDirect3DDevice*>(lParam)->m_bNeedModalEditor);
+
 		switch (((THRotatorDirect3DDevice*)lParam)->m_filterType)
 		{
 		case D3DTEXF_NONE:
