@@ -1193,6 +1193,7 @@ public:
 		CONST D3DVIEWPORT9* pViewport) override
 #endif
 	{
+		m_judgeCount++;
 		return m_pd3dDev->SetViewport(pViewport);
 	}
 
