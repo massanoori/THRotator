@@ -1418,6 +1418,9 @@ public:
 			MessageBox(NULL, _T("ダイアログの作成に失敗"), NULL, MB_ICONSTOP);
 		}
 
+		m_requestedWidth = requestedWidth;
+		m_requestedHeight = requestedHeight;
+
 		SetVisibility(m_bVisible);
 
 		UpdateBackBufferResolution();
@@ -1431,9 +1434,6 @@ public:
 		{
 			return ret;
 		}
-
-		m_requestedWidth = requestedWidth;
-		m_requestedHeight = requestedHeight;
 
 		ret = InitResources();
 		if (FAILED(ret))
@@ -1560,11 +1560,20 @@ public:
 			m_d3dpp.BackBufferWidth = rc.right - rc.left;
 			m_d3dpp.BackBufferHeight = rc.bottom - rc.top;
 
-			//	640より小さいと画面が描画されないことがあるので修正
-			if (m_d3dpp.BackBufferWidth < 640)
+			// バックバッファの幅がリクエストの幅より小さい場合、バッファに何も描画されなくなるため、
+			// バックバッファの幅がリクエストの幅以上になるように補正
+			if (m_d3dpp.BackBufferWidth < m_d3dpp.BackBufferHeight)
 			{
-				m_d3dpp.BackBufferHeight = 720 * m_d3dpp.BackBufferHeight / m_d3dpp.BackBufferWidth;
-				m_d3dpp.BackBufferWidth = 720;
+				UINT newWidth = m_d3dpp.BackBufferHeight;
+
+				// アスペクト比を掛けて小数点以下が発生しないようにする
+				while ((newWidth * m_requestedWidth) % m_requestedHeight != 0)
+				{
+					newWidth++;
+				}
+
+				m_d3dpp.BackBufferHeight = newWidth * m_requestedWidth / m_requestedHeight;
+				m_d3dpp.BackBufferWidth = newWidth;
 			}
 		}
 		else
@@ -2124,7 +2133,6 @@ public:
 
 				m_pSprite->End();
 			}
-
 
 #if defined(_DEBUG) && !defined(TOUHOU_ON_D3D8)
 			RECT rcText;
