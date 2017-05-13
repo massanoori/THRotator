@@ -394,6 +394,7 @@ private:
 	BOOL m_bVerticallyLongWindow;
 	RotationAngle m_RotationAngle;
 	std::vector<RectTransferData> m_editedRectTransfers, m_currentRectTransfers;
+	bool m_bTouhouWithoutScreenCapture;
 
 
 	/****************************************
@@ -402,11 +403,6 @@ private:
 
 	HMENU m_hSysMenu;
 	HWND m_hEditorWin, m_hTouhouWin;
-
-#ifdef TOUHOU_ON_D3D8
-	bool m_bCaptureUnsupported;
-	int m_newPivRot;
-#endif
 
 
 #ifdef _DEBUG
@@ -1112,13 +1108,12 @@ private:
 						pDev->SetVisibility(!pDev->m_bVisible);
 					break;
 
-#ifdef TOUHOU_ON_D3D8
 				case WM_KEYDOWN:
 					switch (pMsg->wParam)
 					{
-
-					case VK_OEM_3:
-						if (pDev->m_d3dpp.BackBufferFormat == D3DFMT_X8R8G8B8)
+					case VK_HOME:
+						if (pDev->m_bTouhouWithoutScreenCapture && pDev->m_d3dpp.BackBufferFormat == D3DFMT_X8R8G8B8)
+						{
 							if ((HIWORD(pMsg->lParam) & KF_REPEAT) == 0)
 							{
 								namespace fs = boost::filesystem;
@@ -1130,15 +1125,15 @@ private:
 									wsprintfA(fname, (pDev->m_workingDir / "snapshot/thRot%03d.bmp").string().c_str(), i);
 									if (!fs::exists(fname))
 									{
-										::D3DXSaveTextureToFileA(fname, D3DXIFF_BMP, pDev->m_pTex.Get(), NULL);
+										::D3DXSaveSurfaceToFileA(fname, D3DXIFF_BMP, pDev->m_pRenderTarget.Get(), nullptr, nullptr);
 										break;
 									}
 								}
 							}
+						}
 						break;
 					}
 					break;
-#endif
 
 				case WM_SYSKEYDOWN:
 					switch (pMsg->wParam)
@@ -1243,6 +1238,7 @@ public:
 		, m_bResetQueued(false)
 		, m_judgeCount(0)
 		, m_judgeCountPrev(0)
+		, m_bTouhouWithoutScreenCapture(false)
 #ifdef _DEBUG
 		, m_FPSNew(60.f)
 		, m_fpsCount(0)
@@ -1329,21 +1325,31 @@ public:
 		size_t retSize;
 		errno_t en = getenv_s(&retSize, path, "APPDATA");
 
-		char dummy[128]; double v = 0.;
+		double touhouIndex = 0.0;
 		if (pth.filename().generic_string().compare("東方紅魔郷") == 0)
-			v = 6.;
+		{
+			touhouIndex = 6.0;
+		}
 		else
-			sscanf(pth.filename().generic_string().c_str(), "th%lf%s", &v, dummy);
-		while (v > 90.)
-			v /= 10.;
+		{
+			char dummy[128];
+			sscanf_s(pth.filename().generic_string().c_str(), "th%lf%s", &touhouIndex, dummy, (unsigned)_countof(dummy));
+		}
 
-		if (v > 12.3 && en == 0 && retSize > 0)
+		while (touhouIndex > 90.0)
+		{
+			touhouIndex /= 10.0;
+		}
+
+		if (touhouIndex > 12.3 && en == 0 && retSize > 0)
 		{
 			m_workingDir = boost::filesystem::path(path) / "ShanghaiAlice" / pth.filename();
 			boost::filesystem::create_directory(m_workingDir);
 		}
 		else
+		{
 			m_workingDir = boost::filesystem::current_path();
+		}
 		m_iniPath = (m_workingDir / "throt.ini").string();
 
 		m_judgeThreshold = GetPrivateProfileIntA(m_appName.c_str(), "JC", 999, m_iniPath.c_str());
@@ -1356,6 +1362,9 @@ public:
 		m_bVerticallyLongWindow = GetPrivateProfileIntA(m_appName.c_str(), "PivRot", 0, m_iniPath.c_str());
 		m_RotationAngle = static_cast<RotationAngle>(GetPrivateProfileIntA(m_appName.c_str(), "Rot", 0, m_iniPath.c_str()));
 		m_filterType = static_cast<D3DTEXTUREFILTERTYPE>(GetPrivateProfileIntA(m_appName.c_str(), "Filter", D3DTEXF_LINEAR, m_iniPath.c_str()));
+
+		// スクリーンキャプチャ機能がないのは紅魔郷
+		m_bTouhouWithoutScreenCapture = touhouIndex == 6.0;
 
 		m_hTouhouWin = GetActiveWindow();
 
@@ -2163,7 +2172,7 @@ public:
 			rcText.bottom = m_d3dpp.BackBufferHeight;
 			rcText.top = rcText.bottom - 24;
 			TCHAR text[64];
-			_stprintf(text, _T("%5.2f fps"), m_FPS);
+			_stprintf_s(text, _T("%5.2f fps"), m_FPS);
 			m_pFont->DrawText(NULL, text, -1, &rcText, 0, D3DCOLOR_XRGB(0xff, (unsigned)(0xff * max(0, m_FPS - 30.f) / 30.f), (unsigned)(0xff * max(0, m_FPS - 30.f) / 30.f)));
 #endif
 		}
