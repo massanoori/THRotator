@@ -17,6 +17,8 @@
 # Documents
 !*.html
 !*.png
+!*.css
+!*.jpg
 
 # Sample .ini files
 !/sample_ini/*.ini
