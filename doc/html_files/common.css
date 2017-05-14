@@ -7,3 +7,8 @@ body {
 h1 {
     border-bottom: 2px solid black;
 }
+
+pre {
+    border: double;
+    font-family: Consolas, Menlo, 'Liberation Mono', Courier, monospace;
+}

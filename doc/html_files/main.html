@@ -7,7 +7,7 @@
 <body>
     <a name="_top">
         本ツールは上海アリス幻樂団の弾幕系シューティング東方Projectのみ(同じエンジンを使っている呑んべぇ会の黄昏酒場も含む)に向けたものです。ほかのゲーム(萃夢想、緋想天、非想天則を含む)は動作確認を行っておりません。<br />
-        また、開発ツール(Visual Studio 2010)の関係で、Windows 2000以前のOSは未対応です。
+        動作確認はWindows 10のみで行っています。
     </a>
     <h1><a name="_supported_works">対応作品</a></h1>
     <p>
@@ -99,17 +99,18 @@
                     ダブルスポイラー、妖精大戦争、東方神霊廟体験版の場合：
                     <ul>
                         <li>OSがWindows XPの場合：<br /><font color="red">C:\Documents and Settings\&lt;ログインユーザ名&gt;\Application Data\ShanghaiAlice\th&lt;作品ナンバリング&gt;\</font></li>
-                        <li>OSがWindows Vista/7の場合：<br /><font color="red">C:\Users\&lt;ログインユーザ名&gt;\AppData\Roaming\ShanghaiAlice\th&lt;作品ナンバリング&gt;\</font></li>
+                        <li>
+                            OSがWindows Vista/7/8/10の場合：<br /><font color="red">C:\Users\&lt;ログインユーザ名&gt;\AppData\Roaming\ShanghaiAlice\th&lt;作品ナンバリング&gt;\</font>
+                            <ul>
+                                <li>体験版の場合は、末尾の"tr"は作品ナンバリングに含まれません。</li>
+                            </ul>
+                        </li>
                         <li>
                             次のようなインストールディレクトリと同じ場所にセーブするためのバッチファイルを使って東方を起動している場合：<font color="red">インストールディレクトリ</font>
-                            <table border="1">
-                                <tr>
-                                    <td>
-                                        set APPDATA=<br />
-                                        start 実行ファイル名
-                                    </td>
-                                </tr>
-                            </table>
+<pre>
+set APPDATA=
+start 実行ファイル名
+</pre>
                         </li>
                     </ul>
                 </li>
@@ -178,6 +179,7 @@
         <li>東方文花帖　～ Shoot the Bullet. (数値の桁をすべて表示するため)</li>
         <li>ダブルスポイラー　～ 東方文花帖 (数値の桁をすべて表示するため)</li>
         <li>妖精大戦争　～ 東方三月精 (パーフェクトフリーズの文字はすべて表示するため)</li>
+        <li>東方神霊廟以降 (かけらの分母を表示するため)</li>
     </ol>
     <h1><a name="_uninstall">アンインストール方法</a></h1>
 
@@ -237,21 +239,21 @@
     </p>
     <h1><a name="_release_notes">リリースノート</a></h1>
     <h2>2017/5/? Ver. 1.2.0</h2>
+    <h3>機能追加</h3>
     <p>
-        機能追加：
         <ul>
             <li>東方紅魔郷でホームキーを押せば、スクリーンショットをインストールディレクトリ以下のsnapshotフォルダに保存できるようにしました。</li>
         </ul>
     </p>
+    <h3>バグ修正</h3>
     <p>
-        バグ修正：
         <ul>
             <li>東方紺珠伝で画面が黒くなる現象を修正しました。</li>
             <li>960x720、1280x960の解像度に対応しました。</li>
         </ul>
     </p>
+    <h3>その他</h3>
     <p>
-        その他：
         <ul>
             <li>
                 throt.iniのファイル入出力を高速化しました。
