@@ -2619,7 +2619,7 @@ LRESULT CALLBACK THRotatorDirect3DDevice::CallWndHook(int nCode, WPARAM wParam, 
 				{
 					if (pDev->m_bNeedModalEditor)
 					{
-						DialogBoxParam((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDD_MAINDLG), GetFocus(), DlgProc, (LPARAM)pDev);
+						DialogBoxParam((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDD_MAINDLG), pMsg->hwnd, DlgProc, (LPARAM)pDev);
 					}
 					else
 					{
@@ -2833,7 +2833,7 @@ HRESULT THRotatorDirect3DDevice::init(UINT Adapter, THRotatorDirect3D* pMyD3D, D
 	// スクリーンキャプチャ機能がないのは紅魔郷
 	m_bTouhouWithoutScreenCapture = touhouIndex == 6.0;
 
-	m_hTouhouWin = GetActiveWindow();
+	m_hTouhouWin = hFocusWindow;
 
 	int bVerticallyLongWindow = m_bVerticallyLongWindow;
 	m_bVerticallyLongWindow = 0;
