@@ -2287,13 +2287,13 @@ BOOL CALLBACK THRotatorDirect3DDevice::DlgProc(HWND hWnd, UINT msg, WPARAM wPara
 
 BOOL CALLBACK THRotatorDirect3DDevice::EditRectProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	static std::map<HWND, RectTransferData*> hwnd2erdMap;
 	switch (msg)
 	{
 	case WM_INITDIALOG:
 	{
+		SetWindowLongPtr(hWnd, DWLP_USER, static_cast<LONG_PTR>(lParam));
 		RectTransferData* pErd = reinterpret_cast<RectTransferData*>(lParam);
-		hwnd2erdMap[hWnd] = pErd;
+
 		SetDlgItemInt(hWnd, IDC_SRCLEFT, pErd->rcSrc.left, TRUE);
 		SetDlgItemInt(hWnd, IDC_SRCWIDTH, pErd->rcSrc.right, TRUE);
 		SetDlgItemInt(hWnd, IDC_SRCTOP, pErd->rcSrc.top, TRUE);
@@ -2322,13 +2322,15 @@ BOOL CALLBACK THRotatorDirect3DDevice::EditRectProc(HWND hWnd, UINT msg, WPARAM 
 		}
 
 		SetDlgItemText(hWnd, IDC_RECTNAME, pErd->name);
+
+		return TRUE;
 	}
-	return TRUE;
 
 	case WM_COMMAND:
 		switch (wParam)
 		{
 		case IDOK:
+		{
 #define GETANDSET_E(id,var,bSig,errmsg) {\
 					BOOL bRet;UINT ret;\
 					ret = GetDlgItemInt( hWnd, id, &bRet, bSig );\
@@ -2343,7 +2345,6 @@ BOOL CALLBACK THRotatorDirect3DDevice::EditRectProc(HWND hWnd, UINT msg, WPARAM 
 						var=ret;\
 				}
 
-		{
 			RECT rcSrc, rcDest;
 			GETANDSET_E(IDC_SRCLEFT, rcSrc.left, TRUE, _T("矩形転送元の左座標の入力が不正です。"));
 			GETANDSET_E(IDC_SRCTOP, rcSrc.top, TRUE, _T("矩形転送元の上座標の入力が不正です。"));
@@ -2353,29 +2354,41 @@ BOOL CALLBACK THRotatorDirect3DDevice::EditRectProc(HWND hWnd, UINT msg, WPARAM 
 			GETANDSET_E(IDC_DESTTOP, rcDest.top, TRUE, _T("矩形転送先の上座標の入力が不正です。"));
 			GETANDSET_E(IDC_DESTWIDTH, rcDest.right, TRUE, _T("矩形転送先の幅の入力が不正です。"));
 			GETANDSET_E(IDC_DESTHEIGHT, rcDest.bottom, TRUE, _T("矩形転送先の高さの入力が不正です。"));
+#undef GETANDSET_E
+
+			RectTransferData* pErd = reinterpret_cast<RectTransferData*>(GetWindowLongPtr(hWnd, DWLP_USER));
 
 			if (rcSrc.right == 0 || rcSrc.bottom == 0 || rcDest.right == 0 || rcDest.bottom == 0)
+			{
 				MessageBox(hWnd, _T("入力された幅と高さに0が含まれています。この場合、矩形は描画されません。\r\n描画するにはあとで変更してください。"), NULL, MB_ICONEXCLAMATION);
+			}
 
 			if (SendDlgItemMessage(hWnd, IDC_ROT0, BM_GETCHECK, 0, 0) == BST_CHECKED)
-				hwnd2erdMap[hWnd]->rotation = Rotation_0;
+			{
+				pErd->rotation = Rotation_0;
+			}
 			else if (SendDlgItemMessage(hWnd, IDC_ROT90, BM_GETCHECK, 0, 0) == BST_CHECKED)
-				hwnd2erdMap[hWnd]->rotation = Rotation_90;
+			{
+				pErd->rotation = Rotation_90;
+			}
 			else if (SendDlgItemMessage(hWnd, IDC_ROT180, BM_GETCHECK, 0, 0) == BST_CHECKED)
-				hwnd2erdMap[hWnd]->rotation = Rotation_180;
+			{
+				pErd->rotation = Rotation_180;
+			}
 			else if (SendDlgItemMessage(hWnd, IDC_ROT270, BM_GETCHECK, 0, 0) == BST_CHECKED)
-				hwnd2erdMap[hWnd]->rotation = Rotation_270;
-			hwnd2erdMap[hWnd]->rcSrc = rcSrc;
-			hwnd2erdMap[hWnd]->rcDest = rcDest;
+			{
+				pErd->rotation = Rotation_270;
+			}
+			pErd->rcSrc = rcSrc;
+			pErd->rcDest = rcDest;
 			GetDlgItemText(hWnd, IDC_RECTNAME,
-				hwnd2erdMap[hWnd]->name, sizeof(((RectTransferData*)NULL)->name) / sizeof(TCHAR));
+				pErd->name, sizeof(((RectTransferData*)NULL)->name) / sizeof(TCHAR));
+
+			EndDialog(hWnd, IDOK);
+			return TRUE;
 		}
-		hwnd2erdMap.erase(hWnd);
-		EndDialog(hWnd, IDOK);
-		return TRUE;
 
 		case IDCANCEL:
-			hwnd2erdMap.erase(hWnd);
 			EndDialog(hWnd, IDCANCEL);
 			return TRUE;
 		}
@@ -2500,7 +2513,7 @@ void THRotatorDirect3DDevice::SaveSettings()
 #undef WRITE_INI_PARAM
 
 	proptree::write_ini(m_iniPath, tree);
-	}
+}
 
 void THRotatorDirect3DDevice::LoadSettings()
 {
