@@ -77,9 +77,6 @@ struct RectTransferData
 	TCHAR name[64];
 };
 
-UINT FullScreenWidth;
-UINT FullScreenHeight;
-
 const UINT BASE_SCREEN_WIDTH = 640u;
 const UINT BASE_SCREEN_HEIGHT = 480u;
 
@@ -1573,7 +1570,7 @@ public:
 		return m_deviceResetRevision;
 	}
 
-	void GetBackBufferResolution(BOOL bWindowed, UINT requestedWidth, UINT requestedHeight, UINT& outBackBufferWidth, UINT& outBackBufferHeight) const;
+	void GetBackBufferResolution(Direct3DBase* pd3d, D3DFORMAT Format, UINT Adapter, BOOL bWindowed, UINT requestedWidth, UINT requestedHeight, UINT& outBackBufferWidth, UINT& outBackBufferHeight) const;
 
 	// ビューポート設定回数を増やす
 	void AddViewportSetCount()
@@ -1898,61 +1895,6 @@ HRESULT WINAPI THRotatorDirect3D::CreateDevice(UINT Adapter,
 	Direct3DDeviceBase** ppReturnedDeviceInterface)
 {
 	D3DPRESENT_PARAMETERS d3dpp = *pPresentationParameters;
-
-	D3DDISPLAYMODE d3ddm;
-	UINT count = m_pd3d->GetAdapterModeCount(
-#ifdef TOUHOU_ON_D3D8
-		Adapter);
-#else
-		Adapter, d3dpp.BackBufferFormat);
-#endif
-	std::vector<D3DDISPLAYMODE> availableModes;
-
-	//	ディスプレイの最大解像度を探す＆60Hzの解像度を列挙
-	for (UINT i = 0; i < count; ++i)
-	{
-		m_pd3d->EnumAdapterModes(Adapter,
-#ifndef TOUHOU_ON_D3D8
-			d3dpp.BackBufferFormat,
-#endif
-			i, &d3ddm);
-		if (d3ddm.RefreshRate == 60)
-		{
-			availableModes.push_back(d3ddm);
-			if (FullScreenWidth*FullScreenHeight < d3ddm.Width*d3ddm.Height)
-			{
-				FullScreenWidth = d3ddm.Width;
-				FullScreenHeight = d3ddm.Height;
-			}
-		}
-	}
-
-	//	最大解像度と同じアスペクト比で、できるだけ低い解像度を選ぶ
-	for (std::vector<D3DDISPLAYMODE>::const_iterator itr = availableModes.cbegin();
-		itr != availableModes.cend(); ++itr)
-	{
-		if (FullScreenWidth * itr->Height != FullScreenHeight * itr->Width)
-		{
-			continue;
-		}
-
-		if (FullScreenWidth <= itr->Width || FullScreenHeight <= itr->Height)
-		{
-			continue;
-		}
-
-		if (itr->Width >= pPresentationParameters->BackBufferWidth && itr->Height >= pPresentationParameters->BackBufferHeight)
-		{
-			FullScreenWidth = itr->Width;
-			FullScreenHeight = itr->Height;
-		}
-	}
-
-	if (pPresentationParameters->Windowed == FALSE)
-	{
-		d3dpp.BackBufferHeight = FullScreenHeight;
-		d3dpp.BackBufferWidth = FullScreenWidth;
-	}
 
 	auto pRetDev = new THRotatorDirect3DDevice();
 	HRESULT ret = pRetDev->init(Adapter, this, DeviceType, hFocusWindow, BehaviorFlags,
@@ -2960,7 +2902,8 @@ HRESULT THRotatorDirect3DDevice::init(UINT Adapter, THRotatorDirect3D* pMyD3D, D
 
 	m_resetRevision = m_pEditorContext->GetResetRevision();
 
-	m_pEditorContext->GetBackBufferResolution(d3dpp.Windowed, m_requestedWidth, m_requestedHeight, m_d3dpp.BackBufferWidth, m_d3dpp.BackBufferHeight);
+	m_pEditorContext->GetBackBufferResolution(pMyD3D->m_pd3d, d3dpp.BackBufferFormat, Adapter, d3dpp.Windowed,
+		m_requestedWidth, m_requestedHeight, m_d3dpp.BackBufferWidth, m_d3dpp.BackBufferHeight);
 
 	HRESULT ret = pMyD3D->m_pd3d->CreateDevice(Adapter,
 		DeviceType, hFocusWindow, BehaviorFlags,
@@ -3100,7 +3043,7 @@ void THRotatorDirect3DDevice::ReleaseResources()
 	m_pBackBuffer.Reset();
 }
 
-void THRotatorEditorContext::GetBackBufferResolution(BOOL bWindowed, UINT requestedWidth, UINT requestedHeight, UINT& outBackBufferWidth, UINT& outBackBufferHeight) const
+void THRotatorEditorContext::GetBackBufferResolution(Direct3DBase* pd3d, D3DFORMAT Format, UINT Adapter, BOOL bWindowed, UINT requestedWidth, UINT requestedHeight, UINT& outBackBufferWidth, UINT& outBackBufferHeight) const
 {
 	if (bWindowed)
 	{
@@ -3127,8 +3070,57 @@ void THRotatorEditorContext::GetBackBufferResolution(BOOL bWindowed, UINT reques
 	}
 	else
 	{
-		outBackBufferHeight = FullScreenHeight;
-		outBackBufferWidth = FullScreenWidth;
+		outBackBufferWidth = GetSystemMetrics(SM_CXSCREEN);
+		outBackBufferHeight = GetSystemMetrics(SM_CYSCREEN);
+
+		D3DDISPLAYMODE d3ddm;
+		UINT count = pd3d->GetAdapterModeCount(
+#ifdef TOUHOU_ON_D3D8
+			Adapter);
+#else
+			Adapter, Format);
+#endif
+		std::vector<D3DDISPLAYMODE> availableModes;
+
+		//	ディスプレイの最大解像度を探す＆60Hzの解像度を列挙
+		for (UINT i = 0; i < count; ++i)
+		{
+			pd3d->EnumAdapterModes(Adapter,
+#ifndef TOUHOU_ON_D3D8
+				Format,
+#endif
+				i, &d3ddm);
+			if (d3ddm.RefreshRate == 60)
+			{
+				availableModes.push_back(d3ddm);
+				if (outBackBufferWidth*outBackBufferHeight < d3ddm.Width*d3ddm.Height)
+				{
+					outBackBufferWidth = d3ddm.Width;
+					outBackBufferHeight = d3ddm.Height;
+				}
+			}
+		}
+
+		//	最大解像度と同じアスペクト比で、できるだけ低い解像度を選ぶ
+		for (std::vector<D3DDISPLAYMODE>::const_iterator itr = availableModes.cbegin();
+			itr != availableModes.cend(); ++itr)
+		{
+			if (outBackBufferWidth * itr->Height != outBackBufferHeight * itr->Width)
+			{
+				continue;
+			}
+
+			if (outBackBufferWidth <= itr->Width || outBackBufferHeight <= itr->Height)
+			{
+				continue;
+			}
+
+			if (itr->Width >= requestedWidth && itr->Height >= requestedHeight)
+			{
+				outBackBufferWidth = itr->Width;
+				outBackBufferHeight = itr->Height;
+			}
+		}
 	}
 }
 
@@ -3502,7 +3494,10 @@ HRESULT WINAPI THRotatorDirect3DDevice::Reset(D3DPRESENT_PARAMETERS* pPresentati
 		m_requestedHeight = m_d3dpp.BackBufferHeight;
 	}
 
-	m_pEditorContext->GetBackBufferResolution(m_d3dpp.Windowed, m_requestedWidth, m_requestedHeight, m_d3dpp.BackBufferWidth, m_d3dpp.BackBufferHeight);
+	D3DDEVICE_CREATION_PARAMETERS creationParameters;
+	m_pd3dDev->GetCreationParameters(&creationParameters);
+	m_pEditorContext->GetBackBufferResolution(m_pMyD3D->m_pd3d, m_d3dpp.BackBufferFormat, creationParameters.AdapterOrdinal,
+		m_d3dpp.Windowed, m_requestedWidth, m_requestedHeight, m_d3dpp.BackBufferWidth, m_d3dpp.BackBufferHeight);
 
 	HRESULT ret = m_pd3dDev->Reset(&m_d3dpp);
 
@@ -3566,8 +3561,6 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 	switch (ul_reason_for_call)
 	{
 	case DLL_PROCESS_ATTACH:
-		FullScreenWidth = GetSystemMetrics(SM_CXSCREEN);
-		FullScreenHeight = GetSystemMetrics(SM_CYSCREEN);
 		{
 			INITCOMMONCONTROLSEX InitCtrls;
 			InitCtrls.dwSize = sizeof(InitCtrls);
