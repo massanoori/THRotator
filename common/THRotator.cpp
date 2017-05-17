@@ -3127,8 +3127,8 @@ void THRotatorEditorContext::GetBackBufferResolution(BOOL bWindowed, UINT reques
 	}
 	else
 	{
-		outBackBufferHeight  = FullScreenWidth;
-		outBackBufferWidth = FullScreenHeight;
+		outBackBufferHeight = FullScreenHeight;
+		outBackBufferWidth = FullScreenWidth;
 	}
 }
 
