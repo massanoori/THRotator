@@ -19,7 +19,7 @@ namespace
 LPCTSTR THROTATOR_VERSION_STRING = "1.2.0";
 HHOOK ms_hHook;
 std::map<HWND, std::weak_ptr<THRotatorEditorContext>> ms_touhouWinToContext;
-int ms_switchVisibilityID = 12345;
+UINT ms_switchVisibilityID = 12345u;
 }
 
 THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
@@ -757,30 +757,27 @@ BOOL CALLBACK THRotatorEditorContext::EditRectDialogProc(HWND hWnd, UINT msg, WP
 		{
 		case IDOK:
 		{
-#define GETANDSET_E(id,var,bSig,errmsg) {\
+#define GETANDSET(id, var, errmsg) {\
 					BOOL bRet;UINT ret;\
-					ret = GetDlgItemInt( hWnd, id, &bRet, bSig );\
+					ret = GetDlgItemInt( hWnd, id, &bRet, std::is_signed<decltype(var)>::value );\
 					if( !bRet )\
 					{\
 						MessageBox( hWnd, errmsg, NULL, MB_ICONSTOP );\
 						return FALSE;\
 					}\
-					if( bSig )\
-						var=(signed)ret;\
-					else\
-						var=ret;\
+					var = static_cast<decltype(var)>(ret);\
 				}
 
 			RECT rcSrc, rcDest;
-			GETANDSET_E(IDC_SRCLEFT, rcSrc.left, TRUE, _T("矩形転送元の左座標の入力が不正です。"));
-			GETANDSET_E(IDC_SRCTOP, rcSrc.top, TRUE, _T("矩形転送元の上座標の入力が不正です。"));
-			GETANDSET_E(IDC_SRCWIDTH, rcSrc.right, TRUE, _T("矩形転送元の幅の入力が不正です。"));
-			GETANDSET_E(IDC_SRCHEIGHT, rcSrc.bottom, TRUE, _T("矩形転送元の高さの入力が不正です。"));
-			GETANDSET_E(IDC_DESTLEFT, rcDest.left, TRUE, _T("矩形転送先の左座標の入力が不正です。"));
-			GETANDSET_E(IDC_DESTTOP, rcDest.top, TRUE, _T("矩形転送先の上座標の入力が不正です。"));
-			GETANDSET_E(IDC_DESTWIDTH, rcDest.right, TRUE, _T("矩形転送先の幅の入力が不正です。"));
-			GETANDSET_E(IDC_DESTHEIGHT, rcDest.bottom, TRUE, _T("矩形転送先の高さの入力が不正です。"));
-#undef GETANDSET_E
+			GETANDSET(IDC_SRCLEFT, rcSrc.left, _T("矩形転送元の左座標の入力が不正です。"));
+			GETANDSET(IDC_SRCTOP, rcSrc.top, _T("矩形転送元の上座標の入力が不正です。"));
+			GETANDSET(IDC_SRCWIDTH, rcSrc.right, _T("矩形転送元の幅の入力が不正です。"));
+			GETANDSET(IDC_SRCHEIGHT, rcSrc.bottom, _T("矩形転送元の高さの入力が不正です。"));
+			GETANDSET(IDC_DESTLEFT, rcDest.left, _T("矩形転送先の左座標の入力が不正です。"));
+			GETANDSET(IDC_DESTTOP, rcDest.top, _T("矩形転送先の上座標の入力が不正です。"));
+			GETANDSET(IDC_DESTWIDTH, rcDest.right, _T("矩形転送先の幅の入力が不正です。"));
+			GETANDSET(IDC_DESTHEIGHT, rcDest.bottom, _T("矩形転送先の高さの入力が不正です。"));
+#undef GETANDSET
 
 			RectTransferData* pErd = reinterpret_cast<RectTransferData*>(GetWindowLongPtr(hWnd, DWLP_USER));
 
@@ -827,39 +824,36 @@ BOOL THRotatorEditorContext::ApplyChangeFromEditorWindow(HWND hEditorWin)
 {
 	assert(hEditorWin);
 
-#define GETANDSET(id,var,bSig,errmsg) {\
+#define GETANDSET(id, var, errmsg) {\
 			BOOL bRet;UINT ret;\
-			ret = GetDlgItemInt( hEditorWin, id, &bRet, bSig );\
+			ret = GetDlgItemInt( hEditorWin, id, &bRet, std::is_signed<decltype(var)>::value );\
 			if( !bRet )\
 			{\
 				MessageBox( hEditorWin, errmsg, NULL, MB_ICONSTOP );\
 				return FALSE;\
 			}\
-			if( bSig )\
-				var=(signed)ret;\
-			else\
-				var=ret;\
-			SetDlgItemInt( hEditorWin, id, ret, bSig );\
+			var = static_cast<decltype(var)>(ret);\
+			SetDlgItemInt( hEditorWin, id, ret, std::is_signed<decltype(var)>::value );\
 		}
 
 	DWORD pl, pt, pw, ph;
 	int jthres, yo;
-	GETANDSET(IDC_JUDGETHRESHOLD, jthres, TRUE, _T("判定の回数閾値の入力が不正です。"));
-	GETANDSET(IDC_PRLEFT, pl, FALSE, _T("プレイ画面領域の左座標の入力が不正です。"));
-	GETANDSET(IDC_PRTOP, pt, FALSE, _T("プレイ画面領域の上座標の入力が不正です。"));
-	GETANDSET(IDC_PRWIDTH, pw, FALSE, _T("プレイ画面領域の幅の入力が不正です。"));
+	GETANDSET(IDC_JUDGETHRESHOLD, jthres, _T("判定の回数閾値の入力が不正です。"));
+	GETANDSET(IDC_PRLEFT, pl, _T("プレイ画面領域の左座標の入力が不正です。"));
+	GETANDSET(IDC_PRTOP, pt, _T("プレイ画面領域の上座標の入力が不正です。"));
+	GETANDSET(IDC_PRWIDTH, pw, _T("プレイ画面領域の幅の入力が不正です。"));
 	if (pw == 0)
 	{
 		MessageBox(hEditorWin, _T("プレイ画面領域の幅は0以外の値でなければいけません。"), NULL, MB_ICONSTOP);
 		return FALSE;
 	}
-	GETANDSET(IDC_PRHEIGHT, ph, FALSE, _T("プレイ画面領域の高さの入力が不正です。"));
+	GETANDSET(IDC_PRHEIGHT, ph, _T("プレイ画面領域の高さの入力が不正です。"));
 	if (ph == 0)
 	{
 		MessageBox(hEditorWin, _T("プレイ画面領域の高さは0以外の値でなければいけません。"), NULL, MB_ICONSTOP);
 		return FALSE;
 	}
-	GETANDSET(IDC_YOFFSET, yo, TRUE, _T("プレイ画面領域のオフセットの入力が不正です。"));
+	GETANDSET(IDC_YOFFSET, yo, _T("プレイ画面領域のオフセットの入力が不正です。"));
 
 	m_judgeThreshold = jthres;
 	m_playRegionLeft = pl;

@@ -44,17 +44,17 @@
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(ProjectDir)d3d8\include;C:\boost\boost_1_60_0;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)d3d8\lib;C:\boost\boost_1_60_0\stage\lib;$(LibraryPath)</LibraryPath>
-    <OutDir>J:\game\上海アリス幻樂団\東方妖々夢\</OutDir>
+    <OutDir>J:\game\上海アリス幻樂団\東方紅魔郷\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(ProjectDir)d3d8\include;C:\boost\boost_1_60_0;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)d3d8\lib;C:\boost\boost_1_60_0\stage\lib;$(LibraryPath)</LibraryPath>
-    <OutDir>J:\game\上海アリス幻樂団\東方妖々夢\</OutDir>
+    <OutDir>J:\game\上海アリス幻樂団\東方紅魔郷\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;TOUHOU_ON_D3D8;_DEBUG;_WINDOWS;_USRDLL;D3D8_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -70,7 +70,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
