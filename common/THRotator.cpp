@@ -41,6 +41,7 @@ FARPROC p_DebugSetMute;
 #else
 
 typedef IDirect3D9* (WINAPI * DIRECT3DCREATE9PROC)(UINT);
+typedef HRESULT(WINAPI * DIRECT3DCREATE9EXPROC)(UINT, Direct3DExBase**);
 
 FARPROC p_Direct3DShaderValidatorCreate9;
 FARPROC p_PSGPError;
@@ -55,23 +56,27 @@ FARPROC p_D3DPERF_SetRegion;
 FARPROC p_DebugSetLevel;
 FARPROC p_DebugSetMute;
 DIRECT3DCREATE9PROC p_Direct3DCreate9;
-FARPROC p_Direct3DCreate9Ex;
+DIRECT3DCREATE9EXPROC p_Direct3DCreate9Ex;
 
 #endif
 
 class THRotatorDirect3DDevice;
 
-class THRotatorDirect3D : public Direct3DBase
+class THRotatorDirect3D : public Direct3DExBase
 {
 	friend class THRotatorDirect3DDevice;
 	Direct3DBase* m_pd3d;
+	ComPtr<Direct3DExBase> m_pd3dEx;
 	ULONG m_referenceCount;
-	
+
 public:
 	THRotatorDirect3D();
 	virtual ~THRotatorDirect3D();
 
-	bool init(UINT v);
+	bool Init(UINT v);
+#ifndef TOUHOU_ON_D3D8
+	HRESULT initEx(UINT v);
+#endif
 
 	ULONG WINAPI AddRef(VOID) override;
 	HRESULT WINAPI QueryInterface(REFIID riid, LPVOID* ppvObj) override;
@@ -146,7 +151,7 @@ public:
 			pQualityLevels);
 #endif
 	}
-	
+
 	HRESULT WINAPI CheckDeviceType(UINT Adapter,
 		D3DDEVTYPE DeviceType,
 		D3DFORMAT DisplayFormat,
@@ -199,7 +204,7 @@ public:
 			Flags,
 			pIdentifier);
 	}
-	
+
 #ifdef TOUHOU_ON_D3D8
 	UINT WINAPI GetAdapterModeCount(UINT Adapter) override
 #else
@@ -234,11 +239,50 @@ public:
 	{
 		return m_pd3d->RegisterSoftwareDevice(pInitializeFunction);
 	}
+
+#ifndef TOUHOU_ON_D3D8
+	UINT WINAPI GetAdapterModeCountEx(UINT Adapter, const D3DDISPLAYMODEFILTER *pFilter) override
+	{
+		return m_pd3dEx->GetAdapterModeCountEx(Adapter, pFilter);
+	}
+
+	HRESULT WINAPI EnumAdapterModesEx(
+		UINT Adapter,
+		const D3DDISPLAYMODEFILTER *pFilter,
+		UINT Mode,
+		D3DDISPLAYMODEEX* pMode) override
+	{
+		return m_pd3dEx->EnumAdapterModesEx(Adapter, pFilter, Mode, pMode);
+	}
+
+	HRESULT WINAPI GetAdapterDisplayModeEx(
+		UINT               Adapter,
+		D3DDISPLAYMODEEX   *pMode,
+		D3DDISPLAYROTATION *pRotation) override
+	{
+		return m_pd3dEx->GetAdapterDisplayModeEx(Adapter, pMode, pRotation);
+	}
+
+	HRESULT WINAPI GetAdapterLUID(
+		UINT Adapter,
+		LUID *pLUID) override
+	{
+		return m_pd3dEx->GetAdapterLUID(Adapter, pLUID);
+	}
+
+	HRESULT WINAPI CreateDeviceEx(UINT Adapter,
+		D3DDEVTYPE DeviceType,
+		HWND hFocusWindow,
+		DWORD BehaviorFlags,
+		D3DPRESENT_PARAMETERS *pPresentationParameters,
+		D3DDISPLAYMODEEX *pFullscreenDisplayMode,
+		IDirect3DDevice9Ex **ppReturnedDeviceInterface) override;
+#endif
 };
 
 class THRotatorEditorContext;
 
-class THRotatorDirect3DDevice : public Direct3DDeviceBase
+class THRotatorDirect3DDevice : public Direct3DDeviceExBase
 {
 private:
 	friend class THRotatorDirect3D;
@@ -251,6 +295,7 @@ private:
 	 ****************************************/
 
 	ComPtr<Direct3DDeviceBase> m_pd3dDev;
+	ComPtr<Direct3DDeviceExBase> m_pd3dDevEx;
 	ComPtr<ID3DXSprite> m_pSprite;
 	ComPtr<Direct3DSurfaceBase> m_pBackBuffer, m_pTexSurface;
 
@@ -306,13 +351,25 @@ private:
 	THRotatorDirect3DDevice& operator=(const THRotatorDirect3DDevice&) {}
 	THRotatorDirect3DDevice& operator=(THRotatorDirect3D&&) {}
 
+	HRESULT InternalInit(UINT Adapter, THRotatorDirect3D* pMyD3D, D3DDEVTYPE DeviceType, HWND hFocusWindow,
+		DWORD BehaviorFlags,
+#ifdef TOUHOU_ON_D3D8
+		const D3DPRESENT_PARAMETERS& d3dpp);
+#else
+		const D3DPRESENT_PARAMETERS& d3dpp, bool bIsEx, D3DDISPLAYMODEEX* pModeEx);
+#endif
+
 public:
 	THRotatorDirect3DDevice();
 	virtual ~THRotatorDirect3DDevice();
 
-	HRESULT init(UINT Adapter, THRotatorDirect3D* pMyD3D, D3DDEVTYPE DeviceType, HWND hFocusWindow,
-		DWORD BehaviorFlags, const D3DPRESENT_PARAMETERS& d3dpp,
-		UINT requestedWidth, UINT requestedHeight);
+	HRESULT Init(UINT Adapter, THRotatorDirect3D* pMyD3D, D3DDEVTYPE DeviceType, HWND hFocusWindow,
+		DWORD BehaviorFlags, const D3DPRESENT_PARAMETERS& d3dpp);
+
+#ifndef TOUHOU_ON_D3D8
+	HRESULT InitEx(UINT Adapter, THRotatorDirect3D* pMyD3D, D3DDEVTYPE DeviceType, HWND hFocusWindow,
+		DWORD BehaviorFlags, const D3DPRESENT_PARAMETERS& d3dpp, D3DDISPLAYMODEEX* pModeEx);
+#endif
 
 	HRESULT InitResources();
 	void ReleaseResources();
@@ -325,8 +382,27 @@ public:
 		CONST RECT *pDestRect,
 		HWND hDestWindowOverride,
 		CONST RGNDATA *pDirtyRegion) override;
+
+	HRESULT InternalPresent(CONST RECT *pSourceRect,
+		CONST RECT *pDestRect,
+		HWND hDestWindowOverride,
+#ifdef TOUHOU_ON_D3D8
+		CONST RGNDATA *pDirtyRegion);
+#else
+		CONST RGNDATA *pDirtyRegion,
+		bool bIsEx,
+		DWORD dwFlags);
+#endif
+
 	HRESULT WINAPI EndScene(VOID) override;
 	HRESULT WINAPI Reset(D3DPRESENT_PARAMETERS* pPresentationParameters) override;
+
+	HRESULT InternalReset(
+#ifdef TOUHOU_ON_D3D8
+		D3DPRESENT_PARAMETERS* pPresentationParameters);
+#else
+		D3DPRESENT_PARAMETERS* pPresentationParameters, bool bIsEx, D3DDISPLAYMODEEX* pFullscreenDisplayMode);
+#endif
 
 	HRESULT WINAPI BeginScene(VOID) override
 	{
@@ -1488,6 +1564,131 @@ public:
 		return m_pd3dDev->UpdateSurface(pSourceSurface, pSourceRect,
 			pDestinationSurface, pDestinationPoint);
 	}
+
+	HRESULT WINAPI CheckDeviceState(HWND hWindow) override
+	{
+		return m_pd3dDevEx->CheckDeviceState(hWindow);
+	}
+
+	HRESULT WINAPI CheckResourceResidency(
+		IDirect3DResource9** pResourceArray,
+		UINT32 NumResources) override
+	{
+		return m_pd3dDevEx->CheckResourceResidency(pResourceArray, NumResources);
+	}
+
+	HRESULT WINAPI ComposeRects(
+		IDirect3DSurface9 *pSource,
+		IDirect3DSurface9 *pDestination,
+		IDirect3DVertexBuffer9 *pSrcRectDescriptors,
+		UINT NumRects,
+		IDirect3DVertexBuffer9 *pDstRectDescriptors,
+		D3DCOMPOSERECTSOP Operation,
+		INT XOffset,
+		INT YOffset) override
+	{
+		return m_pd3dDevEx->ComposeRects(pSource, pDestination, pSrcRectDescriptors, NumRects, pDstRectDescriptors, Operation, XOffset, YOffset);
+	}
+
+	HRESULT WINAPI CreateDepthStencilSurfaceEx(
+		UINT Width,
+		UINT Height,
+		D3DFORMAT Format,
+		D3DMULTISAMPLE_TYPE MultiSample,
+		DWORD MultisampleQuality,
+		BOOL Discard,
+		IDirect3DSurface9 **ppSurface,
+		HANDLE *pSharedHandle,
+		DWORD Usage) override
+	{
+		return m_pd3dDevEx->CreateDepthStencilSurfaceEx(Width, Height, Format, MultiSample, MultisampleQuality,
+			Discard, ppSurface, pSharedHandle, Usage);
+	}
+
+	HRESULT WINAPI CreateOffscreenPlainSurfaceEx(
+		UINT Width,
+		UINT Height,
+		D3DFORMAT Format,
+		D3DPOOL Pool,
+		IDirect3DSurface9 **ppSurface,
+		HANDLE *pSharedHandle,
+		DWORD Usage) override
+	{
+		return m_pd3dDevEx->CreateOffscreenPlainSurfaceEx(Width, Height, Format, Pool, ppSurface, pSharedHandle, Usage);
+	}
+
+	HRESULT WINAPI CreateRenderTargetEx(
+		UINT Width,
+		UINT Height,
+		D3DFORMAT Format,
+		D3DMULTISAMPLE_TYPE MultiSample,
+		DWORD MultisampleQuality,
+		BOOL Lockable,
+		IDirect3DSurface9 **ppSurface,
+		HANDLE *pSharedHandle,
+		DWORD Usage) override
+	{
+		return m_pd3dDevEx->CreateRenderTargetEx(Width, Height, Format, MultiSample, MultisampleQuality,
+			Lockable, ppSurface, pSharedHandle, Usage);
+	}
+
+	HRESULT WINAPI GetDisplayModeEx(
+		UINT  iSwapChain,
+		D3DDISPLAYMODEEX *pMode,
+		D3DDISPLAYROTATION *pRotation) override
+	{
+		return m_pd3dDevEx->GetDisplayModeEx(iSwapChain, pMode, pRotation);
+	}
+
+	HRESULT WINAPI GetGPUThreadPriority(
+		INT *pPriority) override
+	{
+		return m_pd3dDevEx->GetGPUThreadPriority(pPriority);
+	}
+
+	HRESULT WINAPI GetMaximumFrameLatency(
+		UINT *pMaxLatency) override
+	{
+		return m_pd3dDevEx->GetMaximumFrameLatency(pMaxLatency);
+	}
+
+	HRESULT WINAPI PresentEx(
+		CONST RECT *pSourceRect,
+		CONST RECT *pDestRect,
+		HWND hDestWindowOverride,
+		CONST RGNDATA *pDirtyRegion,
+		DWORD dwFlags) override;
+
+	HRESULT WINAPI ResetEx(
+		D3DPRESENT_PARAMETERS* pPresentationParameters,
+		D3DDISPLAYMODEEX* pFullscreenDisplayMode) override;
+
+	HRESULT WINAPI SetConvolutionMonoKernel(
+		UINT Width,
+		UINT Height,
+		float *RowWeights,
+		float *ColumnWeights) override
+	{
+		return m_pd3dDevEx->SetConvolutionMonoKernel(Width, Height, RowWeights, ColumnWeights);
+	}
+
+	HRESULT WINAPI SetGPUThreadPriority(
+		INT Priority) override
+	{
+		return m_pd3dDevEx->SetGPUThreadPriority(Priority);
+	}
+
+	HRESULT WINAPI SetMaximumFrameLatency(
+		UINT MaxLatency) override
+	{
+		return m_pd3dDevEx->SetMaximumFrameLatency(MaxLatency);
+	}
+
+	HRESULT WINAPI WaitForVBlank(
+		UINT SwapChainIndex) override
+	{
+		return m_pd3dDevEx->WaitForVBlank(SwapChainIndex);
+	}
 #endif // #ifdef TOUHOU_ON_D3D8 #else
 };
 
@@ -1505,15 +1706,40 @@ THRotatorDirect3D::~THRotatorDirect3D()
 	}
 }
 
-bool THRotatorDirect3D::init(UINT v)
+bool THRotatorDirect3D::Init(UINT v)
 {
 #ifdef TOUHOU_ON_D3D8
 	m_pd3d = p_Direct3DCreate8(v);
 #else
+	if (m_pd3d)
+	{
+		m_pd3d->Release();
+	}
+
+	m_pd3dEx.Reset();
+
 	m_pd3d = p_Direct3DCreate9(v);
 #endif
 	return m_pd3d != NULL;
 }
+
+#ifndef TOUHOU_ON_D3D8
+HRESULT THRotatorDirect3D::initEx(UINT v)
+{
+	HRESULT ret = p_Direct3DCreate9Ex(v, &m_pd3dEx);
+	if (FAILED(ret))
+	{
+		return ret;
+	}
+
+	if (m_pd3d)
+	{
+		m_pd3d->Release();
+	}
+	m_pd3dEx.Get()->QueryInterface(__uuidof(Direct3DBase), reinterpret_cast<void**>(&m_pd3d));
+	return ret;
+}
+#endif
 
 ULONG WINAPI THRotatorDirect3D::AddRef(VOID)
 {
@@ -1537,6 +1763,14 @@ HRESULT WINAPI THRotatorDirect3D::QueryInterface(REFIID riid, LPVOID* ppvObj)
 		*ppvObj = this;
 		return S_OK;
 	}
+#ifndef TOUHOU_ON_D3D8
+	else if (m_pd3dEx && riid == __uuidof(Direct3DExBase))
+	{
+		AddRef();
+		*ppvObj = this;
+		return S_OK;
+	}
+#endif
 	else
 	{
 		return E_NOINTERFACE;
@@ -1557,14 +1791,12 @@ HRESULT WINAPI THRotatorDirect3D::CreateDevice(UINT Adapter,
 	D3DDEVTYPE DeviceType,
 	HWND hFocusWindow,
 	DWORD BehaviorFlags,
-	D3DPRESENT_PARAMETERS* pPresentationParameters,
-	Direct3DDeviceBase** ppReturnedDeviceInterface)
+	D3DPRESENT_PARAMETERS *pPresentationParameters,
+	Direct3DDeviceBase **ppReturnedDeviceInterface)
 {
-	D3DPRESENT_PARAMETERS d3dpp = *pPresentationParameters;
-
 	auto pRetDev = new THRotatorDirect3DDevice();
-	HRESULT ret = pRetDev->init(Adapter, this, DeviceType, hFocusWindow, BehaviorFlags,
-		d3dpp, pPresentationParameters->BackBufferWidth, pPresentationParameters->BackBufferHeight);
+	HRESULT ret = pRetDev->Init(Adapter, this, DeviceType, hFocusWindow, BehaviorFlags,
+		*pPresentationParameters);
 
 	if (FAILED(ret))
 	{
@@ -1575,6 +1807,30 @@ HRESULT WINAPI THRotatorDirect3D::CreateDevice(UINT Adapter,
 
 	return ret;
 }
+
+#ifndef TOUHOU_ON_D3D8
+HRESULT THRotatorDirect3D::CreateDeviceEx(UINT Adapter,
+	D3DDEVTYPE DeviceType,
+	HWND hFocusWindow,
+	DWORD BehaviorFlags,
+	D3DPRESENT_PARAMETERS* pPresentationParameters,
+	D3DDISPLAYMODEEX* pFullscreenDisplayMode,
+	IDirect3DDevice9Ex** ppReturnedDeviceInterface)
+{
+	auto pRetDev = new THRotatorDirect3DDevice();
+	HRESULT ret = pRetDev->InitEx(Adapter, this, DeviceType, hFocusWindow, BehaviorFlags,
+		*pPresentationParameters, pFullscreenDisplayMode);
+
+	if (FAILED(ret))
+	{
+		pRetDev->Release();
+		return ret;
+	}
+	*ppReturnedDeviceInterface = pRetDev;
+
+	return ret;
+}
+#endif
 
 THRotatorDirect3DDevice::THRotatorDirect3DDevice()
 	: m_bInitialized(false)
@@ -1597,14 +1853,41 @@ THRotatorDirect3DDevice::~THRotatorDirect3DDevice()
 {
 }
 
-HRESULT THRotatorDirect3DDevice::init(UINT Adapter, THRotatorDirect3D* pMyD3D, D3DDEVTYPE DeviceType, HWND hFocusWindow,
-	DWORD BehaviorFlags, const D3DPRESENT_PARAMETERS& d3dpp,
-	UINT requestedWidth, UINT requestedHeight)
+HRESULT THRotatorDirect3DDevice::Init(UINT Adapter, THRotatorDirect3D* pMyD3D, D3DDEVTYPE DeviceType, HWND hFocusWindow,
+	DWORD BehaviorFlags, const D3DPRESENT_PARAMETERS& d3dpp)
+{
+	return InternalInit(Adapter, pMyD3D, DeviceType, hFocusWindow, BehaviorFlags,
+#ifdef TOUHOU_ON_D3D8
+		d3dpp);
+#else
+		d3dpp, false, nullptr);
+#endif
+}
+
+#ifndef TOUHOU_ON_D3D8
+HRESULT THRotatorDirect3DDevice::InitEx(UINT Adapter, THRotatorDirect3D * pMyD3D, D3DDEVTYPE DeviceType, HWND hFocusWindow, DWORD BehaviorFlags, const D3DPRESENT_PARAMETERS & d3dpp, D3DDISPLAYMODEEX * pModeEx)
+{
+	return InternalInit(Adapter, pMyD3D, DeviceType, hFocusWindow, BehaviorFlags, d3dpp, true, pModeEx);
+}
+#endif
+
+HRESULT THRotatorDirect3DDevice::InternalInit(UINT Adapter,
+	THRotatorDirect3D* pMyD3D,
+	D3DDEVTYPE DeviceType,
+	HWND hFocusWindow,
+	DWORD BehaviorFlags,
+#ifdef TOUHOU_ON_D3D8
+	const D3DPRESENT_PARAMETERS& d3dpp)
+#else
+	const D3DPRESENT_PARAMETERS& d3dpp,
+	bool bIsEx,
+	D3DDISPLAYMODEEX* pModeEx)
+#endif
 {
 	m_d3dpp = d3dpp;
 
-	m_requestedWidth = requestedWidth;
-	m_requestedHeight = requestedHeight;
+	m_requestedWidth = d3dpp.BackBufferWidth;
+	m_requestedHeight = d3dpp.BackBufferHeight;
 
 	m_pEditorContext = THRotatorEditorContext::CreateOrGetEditorContext(hFocusWindow);
 	if (!m_pEditorContext)
@@ -1618,12 +1901,33 @@ HRESULT THRotatorDirect3DDevice::init(UINT Adapter, THRotatorDirect3D* pMyD3D, D
 	GetBackBufferResolution(d3dpp.BackBufferFormat, Adapter, d3dpp.Windowed,
 		m_requestedWidth, m_requestedHeight, m_d3dpp.BackBufferWidth, m_d3dpp.BackBufferHeight);
 
-	HRESULT ret = pMyD3D->m_pd3d->CreateDevice(Adapter,
-		DeviceType, hFocusWindow, BehaviorFlags,
-		&m_d3dpp, &m_pd3dDev);
-	if (FAILED(ret))
+	HRESULT ret;
+
+#ifndef TOUHOU_ON_D3D8
+	if (bIsEx)
 	{
-		return ret;
+		ret = pMyD3D->m_pd3dEx->CreateDeviceEx(Adapter,
+			DeviceType, hFocusWindow, BehaviorFlags,
+			&m_d3dpp, pModeEx, &m_pd3dDevEx);
+		if (FAILED(ret))
+		{
+			return ret;
+		}
+
+		m_pd3dDev = m_pd3dDevEx;
+	}
+	else
+#endif
+	{
+		ret = pMyD3D->m_pd3d->CreateDevice(Adapter,
+			DeviceType, hFocusWindow, BehaviorFlags,
+			&m_d3dpp, &m_pd3dDev);
+		if (FAILED(ret))
+		{
+			return ret;
+		}
+
+		//m_pd3dDev.As<Direct3DDeviceExBase>(&m_pd3dDevEx);
 	}
 
 	ret = InitResources();
@@ -1866,6 +2170,14 @@ HRESULT WINAPI THRotatorDirect3DDevice::QueryInterface(REFIID riid, LPVOID* ppvO
 		*ppvObj = this;
 		return S_OK;
 	}
+#ifndef TOUHOU_ON_D3D8
+	else if (m_pd3dDevEx && riid == __uuidof(IDirect3DDevice9Ex))
+	{
+		AddRef();
+		*ppvObj = this;
+		return S_OK;
+	}
+#endif
 	else
 	{
 		return E_NOINTERFACE;
@@ -2144,10 +2456,52 @@ HRESULT WINAPI THRotatorDirect3DDevice::Present(CONST RECT *pSourceRect,
 	HWND hDestWindowOverride,
 	CONST RGNDATA *pDirtyRegion)
 {
+	return InternalPresent(pSourceRect, pDestRect, hDestWindowOverride,
+#ifdef TOUHOU_ON_D3D8
+		pDirtyRegion);
+#else
+		pDirtyRegion, false, 0);
+#endif
+}
+
+#ifndef TOUHOU_ON_D3D8
+HRESULT WINAPI THRotatorDirect3DDevice::PresentEx(CONST RECT *pSourceRect,
+	CONST RECT *pDestRect,
+	HWND hDestWindowOverride,
+	CONST RGNDATA *pDirtyRegion,
+	DWORD dwFlags)
+{
+	return InternalPresent(pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion, true, dwFlags);
+}
+#endif
+
+HRESULT THRotatorDirect3DDevice::InternalPresent(CONST RECT *pSourceRect,
+	CONST RECT *pDestRect,
+	HWND hDestWindowOverride,
+#ifdef TOUHOU_ON_D3D8
+	CONST RGNDATA *pDirtyRegion)
+#else
+	CONST RGNDATA *pDirtyRegion,
+	bool bIsEx,
+	DWORD dwFlags)
+#endif
+{
 	m_pEditorContext->SubmitViewportSetCountToEditor();
 
-	HRESULT ret = m_pd3dDev->Present(pSourceRect, pDestRect,
-		hDestWindowOverride, pDirtyRegion);
+	HRESULT ret;
+#ifndef TOUHOU_ON_D3D8
+	if (bIsEx)
+	{
+		ret = m_pd3dDevEx->PresentEx(pSourceRect, pDestRect,
+			hDestWindowOverride, pDirtyRegion, dwFlags);
+	}
+	else
+#endif
+	{
+		ret = m_pd3dDev->Present(pSourceRect, pDestRect,
+			hDestWindowOverride, pDirtyRegion);
+	}
+
 	if (FAILED(ret))
 	{
 		return ret;
@@ -2197,6 +2551,27 @@ HRESULT WINAPI THRotatorDirect3DDevice::Present(CONST RECT *pSourceRect,
 
 HRESULT WINAPI THRotatorDirect3DDevice::Reset(D3DPRESENT_PARAMETERS* pPresentationParameters)
 {
+#ifdef TOUHOU_ON_D3D8
+	return InternalReset(pPresentationParameters);
+#else
+	return InternalReset(pPresentationParameters, false, nullptr);
+#endif
+}
+
+#ifndef TOUHOU_ON_D3D8
+HRESULT WINAPI THRotatorDirect3DDevice::ResetEx(D3DPRESENT_PARAMETERS* pPresentationParameters, D3DDISPLAYMODEEX* pFullscreenDisplayMode)
+{
+	return InternalReset(pPresentationParameters, true, pFullscreenDisplayMode);
+}
+#endif
+
+HRESULT THRotatorDirect3DDevice::InternalReset(
+#ifdef TOUHOU_ON_D3D8
+	D3DPRESENT_PARAMETERS* pPresentationParameters)
+#else
+	D3DPRESENT_PARAMETERS* pPresentationParameters, bool bIsEx, D3DDISPLAYMODEEX* pFullscreenDisplayMode)
+#endif
+{
 	assert(m_bInitialized);
 
 #ifdef _DEBUG
@@ -2221,7 +2596,17 @@ HRESULT WINAPI THRotatorDirect3DDevice::Reset(D3DPRESENT_PARAMETERS* pPresentati
 	GetBackBufferResolution(m_d3dpp.BackBufferFormat, creationParameters.AdapterOrdinal,
 		m_d3dpp.Windowed, m_requestedWidth, m_requestedHeight, m_d3dpp.BackBufferWidth, m_d3dpp.BackBufferHeight);
 
-	HRESULT ret = m_pd3dDev->Reset(&m_d3dpp);
+	HRESULT ret;
+#ifndef TOUHOU_ON_D3D8
+	if (bIsEx)
+	{
+		ret = m_pd3dDevEx->ResetEx(&m_d3dpp, pFullscreenDisplayMode);
+	}
+	else
+#endif
+	{
+		ret = m_pd3dDev->Reset(&m_d3dpp);
+	}
 
 	if (FAILED(ret))
 	{
@@ -2252,7 +2637,22 @@ extern "C" {
 	__declspec(naked) void WINAPI d_DebugSetLevel() { _asm { jmp p_DebugSetLevel } }
 	__declspec(naked) void WINAPI d_DebugSetMute() { _asm { jmp p_DebugSetMute } }
 
-	__declspec(naked) void WINAPI d_Direct3DCreate9Ex() { _asm { jmp p_Direct3DCreate9Ex } }
+	__declspec(dllexport) HRESULT WINAPI d_Direct3DCreate9Ex(UINT v, Direct3DExBase** pp)
+	{
+		auto pd3dEx = new THRotatorDirect3D();
+
+		HRESULT ret = pd3dEx->initEx(v);
+		if (FAILED(ret))
+		{
+			pd3dEx->Release();
+			return ret;
+		}
+
+		*pp = pd3dEx;
+		return ret;
+	}
+
+
 #endif
 	__declspec(dllexport) Direct3DBase* WINAPI
 #ifdef TOUHOU_ON_D3D8
@@ -2264,7 +2664,7 @@ extern "C" {
 	{
 		auto pd3d = new THRotatorDirect3D();
 
-		if (!pd3d->init(v))
+		if (!pd3d->Init(v))
 		{
 			pd3d->Release();
 			return nullptr;
@@ -2326,7 +2726,7 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 		p_DebugSetLevel = GetProcAddress(h_original, "DebugSetLevel");
 		p_DebugSetMute = GetProcAddress(h_original, "DebugSetMute");
 		p_Direct3DCreate9 = reinterpret_cast<DIRECT3DCREATE9PROC>(GetProcAddress(h_original, "Direct3DCreate9"));
-		p_Direct3DCreate9Ex = GetProcAddress(h_original, "Direct3DCreate9Ex");
+		p_Direct3DCreate9Ex = reinterpret_cast<DIRECT3DCREATE9EXPROC>(GetProcAddress(h_original, "Direct3DCreate9Ex"));
 #endif
 		break;
 
