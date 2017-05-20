@@ -97,8 +97,8 @@ private:
 	int m_judgeThreshold;
 	int m_judgeCount, m_judgeCountPrev;
 	BOOL m_bVisible;
-	std::string m_iniPath;
-	std::string m_appName;
+	boost::filesystem::path m_iniPath;
+	std::string m_appName; // マルチバイト文字列で.iniの入出力するため、std::string
 	BOOL m_bVerticallyLongWindow;
 	RotationAngle m_RotationAngle;
 	std::vector<RectTransferData> m_editedRectTransfers, m_currentRectTransfers;

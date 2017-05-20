@@ -1971,7 +1971,7 @@ HRESULT THRotatorDirect3DDevice::InitResources()
 		return hr;
 	}
 	else if (FAILED(hr = D3DXCreateFont(m_pd3dDev.Get(),
-		0, 0, 0, 0, 0, 0, 0, 0, 0, "Arial", &m_pFont)))
+		0, 0, 0, 0, 0, 0, 0, 0, 0, _T("Arial"), &m_pFont)))
 	{
 		return hr;
 	}
@@ -2511,15 +2511,15 @@ HRESULT THRotatorDirect3DDevice::InternalPresent(CONST RECT *pSourceRect,
 	if (m_pEditorContext->ConsumeScreenCaptureRequest())
 	{
 		namespace fs = boost::filesystem;
-		char fname[MAX_PATH];
+		TCHAR fname[MAX_PATH];
 
-		fs::create_directory(m_pEditorContext->GetWorkingDirectory() / "snapshot");
+		fs::create_directory(m_pEditorContext->GetWorkingDirectory() / _T("snapshot"));
 		for (int i = 0; i >= 0; ++i)
 		{
-			wsprintfA(fname, (m_pEditorContext->GetWorkingDirectory() / "snapshot/thRot%03d.bmp").string().c_str(), i);
+			wsprintf(fname, (m_pEditorContext->GetWorkingDirectory() / _T("snapshot/thRot%03d.bmp")).string<std::basic_string<TCHAR>>().c_str(), i);
 			if (!fs::exists(fname))
 			{
-				::D3DXSaveSurfaceToFileA(fname, D3DXIFF_BMP, m_pRenderTarget.Get(), nullptr, nullptr);
+				::D3DXSaveSurfaceToFile(fname, D3DXIFF_BMP, m_pRenderTarget.Get(), nullptr, nullptr);
 				break;
 			}
 		}
@@ -2695,9 +2695,9 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 				sysDir[lstrlen(sysDir)] = '\\';
 			}
 #ifdef TOUHOU_ON_D3D8
-			lstrcatA(sysDir, "d3d8.dll");
+			lstrcat(sysDir, _T("d3d8.dll"));
 #else
-			lstrcatA(sysDir, "d3d9.dll");
+			lstrcat(sysDir, _T("d3d9.dll"));
 #endif
 			h_original = LoadLibrary(sysDir);
 		}

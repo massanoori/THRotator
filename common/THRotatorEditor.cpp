@@ -6,6 +6,7 @@
 #include <map>
 #include <CommCtrl.h>
 #include <ShlObj.h>
+#include <sstream>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
 
@@ -16,10 +17,12 @@
 
 namespace
 {
-LPCTSTR THROTATOR_VERSION_STRING = "1.2.0";
+LPCTSTR THROTATOR_VERSION_STRING = _T("1.2.0");
 HHOOK ms_hHook;
 std::map<HWND, std::weak_ptr<THRotatorEditorContext>> ms_touhouWinToContext;
 UINT ms_switchVisibilityID = 12345u;
+
+typedef std::basic_string<TCHAR> std_tstring;
 }
 
 THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
@@ -60,25 +63,25 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 
 	static MessageHook messageHook;
 
-	char fname[MAX_PATH];
+	TCHAR fname[MAX_PATH];
 	GetModuleFileName(NULL, fname, MAX_PATH);
-	*strrchr(fname, '.') = '\0';
+	*_tcsrchr(fname, '.') = '\0';
 	boost::filesystem::path pth(fname);
 
 	m_appName = std::string("THRotator_") + pth.filename().generic_string();
-	char path[MAX_PATH];
+	TCHAR path[MAX_PATH];
 	size_t retSize;
-	errno_t en = getenv_s(&retSize, path, "APPDATA");
+	errno_t en = _tgetenv_s(&retSize, path, _T("APPDATA"));
 
 	double touhouIndex = 0.0;
-	if (pth.filename().generic_string().compare("ìåï˚çgñÇãΩ") == 0)
+	if (pth.filename().generic_string<std_tstring>().compare(_T("ìåï˚çgñÇãΩ")) == 0)
 	{
 		touhouIndex = 6.0;
 	}
 	else
 	{
-		char dummy[128];
-		sscanf_s(pth.filename().generic_string().c_str(), "th%lf%s", &touhouIndex, dummy, (unsigned)_countof(dummy));
+		TCHAR dummy[128];
+		_stscanf_s(pth.filename().generic_string<std_tstring>().c_str(), _T("th%lf%s"), &touhouIndex, dummy, _countof(dummy));
 	}
 
 	while (touhouIndex > 90.0)
@@ -88,14 +91,14 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 
 	if (touhouIndex > 12.3 && en == 0 && retSize > 0)
 	{
-		m_workingDir = boost::filesystem::path(path) / "ShanghaiAlice" / pth.filename();
+		m_workingDir = boost::filesystem::path(path) / _T("ShanghaiAlice") / pth.filename();
 		boost::filesystem::create_directory(m_workingDir);
 	}
 	else
 	{
 		m_workingDir = boost::filesystem::current_path();
 	}
-	m_iniPath = (m_workingDir / "throt.ini").string();
+	m_iniPath = m_workingDir / _T("throt.ini");
 
 	LoadSettings();
 
@@ -309,7 +312,7 @@ BOOL CALLBACK THRotatorEditorContext::MainDialogProc(HWND hWnd, UINT msg, WPARAM
 		SetDlgItemInt(hWnd, IDC_YOFFSET, pContext->m_yOffset, TRUE);
 
 		{
-			std::basic_string<TCHAR> versionUiString("Version: ");
+			std_tstring versionUiString(_T("Version: "));
 			versionUiString += THROTATOR_VERSION_STRING;
 			SetDlgItemText(hWnd, IDC_VERSION, versionUiString.c_str());
 		}
@@ -898,7 +901,7 @@ BOOL THRotatorEditorContext::ApplyChangeFromEditorWindow(HWND hEditorWin)
 void THRotatorEditorContext::SaveSettings()
 {
 	namespace proptree = boost::property_tree;
-	proptree::ptree tree;
+	proptree::basic_ptree<std::string, std::string> tree;
 
 #define WRITE_INI_PARAM(name, value) tree.add(m_appName + "." + name, value)
 	WRITE_INI_PARAM("JC", m_judgeThreshold);
@@ -913,36 +916,67 @@ void THRotatorEditorContext::SaveSettings()
 	WRITE_INI_PARAM("Rot", m_RotationAngle);
 
 	int i = 0;
-	TCHAR name[64];
+	std::ostringstream ss(std::ios::ate);
 	for (std::vector<RectTransferData>::iterator itr = m_currentRectTransfers.begin();
 		itr != m_currentRectTransfers.cend(); ++itr, ++i)
 	{
-		wsprintf(name, _T("Name%d"), i); WRITE_INI_PARAM(name, itr->name);
-		wsprintf(name, _T("OSL%d"), i); WRITE_INI_PARAM(name, itr->rcSrc.left);
-		wsprintf(name, _T("OST%d"), i); WRITE_INI_PARAM(name, itr->rcSrc.top);
-		wsprintf(name, _T("OSW%d"), i); WRITE_INI_PARAM(name, itr->rcSrc.right);
-		wsprintf(name, _T("OSH%d"), i); WRITE_INI_PARAM(name, itr->rcSrc.bottom);
-		wsprintf(name, _T("ODL%d"), i); WRITE_INI_PARAM(name, itr->rcDest.left);
-		wsprintf(name, _T("ODT%d"), i); WRITE_INI_PARAM(name, itr->rcDest.top);
-		wsprintf(name, _T("ODW%d"), i); WRITE_INI_PARAM(name, itr->rcDest.right);
-		wsprintf(name, _T("ODH%d"), i); WRITE_INI_PARAM(name, itr->rcDest.bottom);
-		wsprintf(name, _T("OR%d"), i); WRITE_INI_PARAM(name, itr->rotation);
-		wsprintf(name, _T("ORHas%d"), i); WRITE_INI_PARAM(name, TRUE);
+#ifdef _UNICODE
+		auto bufferSize = WideCharToMultiByte(CP_ACP, 0, itr->name, -1, nullptr, 0, nullptr, nullptr);
+		std::unique_ptr<CHAR[]> nameBuffer(new CHAR[bufferSize / sizeof(CHAR)]);
+		WideCharToMultiByte(CP_ACP, 0, itr->name, -1, nameBuffer.get(), bufferSize, nullptr, nullptr);
+		const auto* nameBufferPtr = nameBuffer.get();
+#else
+		const auto* nameBufferPtr = itr->name;
+#endif
+		ss.str("Name"); ss << i;
+		WRITE_INI_PARAM(ss.str(), nameBufferPtr);
+
+		ss.str("OSL"); ss << i;
+		WRITE_INI_PARAM(ss.str(), itr->rcSrc.left);
+
+		ss.str("OST"); ss << i;
+		WRITE_INI_PARAM(ss.str(), itr->rcSrc.top);
+
+		ss.str("OSW"); ss << i;
+		WRITE_INI_PARAM(ss.str(), itr->rcSrc.right);
+
+		ss.str("OSH"); ss << i;
+		WRITE_INI_PARAM(ss.str(), itr->rcSrc.bottom);
+
+		ss.str("ODL"); ss << i;
+		WRITE_INI_PARAM(ss.str(), itr->rcDest.left);
+
+		ss.str("ODT"); ss << i;
+		WRITE_INI_PARAM(ss.str(), itr->rcDest.top);
+
+		ss.str("ODW"); ss << i;
+		WRITE_INI_PARAM(ss.str(), itr->rcDest.right);
+
+		ss.str("ODH"); ss << i;
+		WRITE_INI_PARAM(ss.str(), itr->rcDest.bottom);
+
+		ss.str("OR"); ss << i;
+		WRITE_INI_PARAM(ss.str(), itr->rotation);
+
+		ss.str("ORHas"); ss << i;
+		WRITE_INI_PARAM(ss.str(), TRUE);
 	}
-	wsprintf(name, _T("ORHas%d"), i); WRITE_INI_PARAM(name, FALSE);
+
+	ss.str("ORHas"); ss << i;
+	WRITE_INI_PARAM(ss.str(), FALSE);
 #undef WRITE_INI_PARAM
 
-	proptree::write_ini(m_iniPath, tree);
+	proptree::write_ini(m_iniPath.generic_string(), tree);
 }
 
 void THRotatorEditorContext::LoadSettings()
 {
 	namespace proptree = boost::property_tree;
 
-	proptree::ptree tree;
+	proptree::basic_ptree<std::string, std::string> tree;
 	try
 	{
-		proptree::read_ini(m_iniPath, tree);
+		proptree::read_ini(m_iniPath.generic_string(), tree);
 	}
 	catch (const proptree::ptree_error&)
 	{
@@ -963,42 +997,51 @@ void THRotatorEditorContext::LoadSettings()
 
 	BOOL bHasNext = READ_INI_PARAM(BOOL, "ORHas0", FALSE);
 	int cnt = 0;
+	std::ostringstream ss(std::ios::ate);
 	while (bHasNext)
 	{
 		RectTransferData erd;
-		TCHAR name[64];
 
-		wsprintf(name, _T("Name%d"), cnt);
-		std::basic_string<TCHAR> rectName = READ_INI_PARAM(std::basic_string<TCHAR>, name, "");
-		strcpy_s(erd.name, rectName.c_str());
-		erd.name[rectName.length()] = '\0';
+		ss.str("Name"); ss << cnt;
+		std::string rectName = READ_INI_PARAM(std::string, ss.str(), "");
+#ifdef _UNICODE
+		MultiByteToWideChar(CP_ACP, 0, rectName.c_str(), -1, erd.name, _countof(erd.name));
+#else
+		lstrcpy(erd.name, rectName.c_str());
+#endif
 
-		wsprintf(name, _T("OSL%d"), cnt);
-		erd.rcSrc.left = READ_INI_PARAM(int, name, 0);
-		wsprintf(name, _T("OST%d"), cnt);
-		erd.rcSrc.top = READ_INI_PARAM(int, name, 0);
-		wsprintf(name, _T("OSW%d"), cnt);
-		erd.rcSrc.right = READ_INI_PARAM(int, name, 0);
-		wsprintf(name, _T("OSH%d"), cnt);
-		erd.rcSrc.bottom = READ_INI_PARAM(int, name, 0);
+		ss.str("OSL"); ss << cnt;
+		erd.rcSrc.left = READ_INI_PARAM(int, ss.str(), 0);
 
-		wsprintf(name, _T("ODL%d"), cnt);
-		erd.rcDest.left = READ_INI_PARAM(int, name, 0);
-		wsprintf(name, _T("ODT%d"), cnt);
-		erd.rcDest.top = READ_INI_PARAM(int, name, 0);
-		wsprintf(name, _T("ODW%d"), cnt);
-		erd.rcDest.right = READ_INI_PARAM(int, name, 0);
-		wsprintf(name, _T("ODH%d"), cnt);
-		erd.rcDest.bottom = READ_INI_PARAM(int, name, 0);
+		ss.str("OST"); ss << cnt;
+		erd.rcSrc.top = READ_INI_PARAM(int, ss.str(), 0);
 
-		wsprintf(name, _T("OR%d"), cnt);
-		erd.rotation = static_cast<RotationAngle>(READ_INI_PARAM(int, name, 0));
+		ss.str("OSW"); ss << cnt;
+		erd.rcSrc.right = READ_INI_PARAM(int, ss.str(), 0);
+
+		ss.str("OSH"); ss << cnt;
+		erd.rcSrc.bottom = READ_INI_PARAM(int, ss.str(), 0);
+
+		ss.str("ODL"); ss << cnt;
+		erd.rcDest.left = READ_INI_PARAM(int, ss.str(), 0);
+
+		ss.str("ODT"); ss << cnt;
+		erd.rcDest.top = READ_INI_PARAM(int, ss.str(), 0);
+
+		ss.str("ODW"); ss << cnt;
+		erd.rcDest.right = READ_INI_PARAM(int, ss.str(), 0);
+
+		ss.str("ODH"); ss << cnt;
+		erd.rcDest.bottom = READ_INI_PARAM(int, ss.str(), 0);
+
+		ss.str("OR"); ss << cnt;
+		erd.rotation = static_cast<RotationAngle>(READ_INI_PARAM(int, ss.str(), 0));
 
 		m_editedRectTransfers.push_back(erd);
 		cnt++;
 
-		wsprintf(name, _T("ORHas%d"), cnt);
-		bHasNext = READ_INI_PARAM(BOOL, name, FALSE);
+		ss.str("ORHas"); ss << cnt;
+		bHasNext = READ_INI_PARAM(BOOL, ss.str(), FALSE);
 	}
 #undef READ_INI_PARAM
 }
