@@ -21,7 +21,7 @@ struct RectTransferData
 	SIZE destSize;
 
 	RotationAngle rotation;
-	TCHAR name[64];
+	std::basic_string<TCHAR> name;
 };
 
 inline bool IsZeroSize(const SIZE& size)

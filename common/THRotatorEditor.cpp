@@ -274,7 +274,7 @@ void THRotatorEditorContext::InitListView(HWND hLV)
 
 		lvi.mask = LVIF_TEXT;
 		lvi.iItem = i;
-		lvi.pszText = itr->name;
+		lvi.pszText = const_cast<LPTSTR>(itr->name.c_str()); // LVITEM::pszTextは出力先バッファとして使われない
 		ListView_InsertItem(hLV, &lvi);
 
 		TCHAR str[64];
@@ -493,62 +493,73 @@ BOOL CALLBACK THRotatorEditorContext::MainDialogProc(HWND hWnd, UINT msg, WPARAM
 		{
 			auto pContext = reinterpret_cast<THRotatorEditorContext*>(GetWindowLongPtr(hWnd, DWLP_USER));
 
-			RectTransferData erd;
-			ZeroMemory(&erd, sizeof(erd));
-		reedit1:
-			if (IDOK == DialogBoxParam((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDD_EDITRECTDLG), hWnd, EditRectDialogProc, reinterpret_cast<LPARAM>(&erd)))
 			{
-				for (std::vector<RectTransferData>::const_iterator itr = pContext->m_editedRectTransfers.cbegin(); itr != pContext->m_editedRectTransfers.cend();
-					++itr)
+				RectTransferData erd = {};
+			reedit1:
+				if (IDOK != DialogBoxParam((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDD_EDITRECTDLG), hWnd, EditRectDialogProc, reinterpret_cast<LPARAM>(&erd)))
 				{
-					if (lstrcmp(itr->name, erd.name) == 0)
-					{
-						MessageBox(hWnd, _T("この矩形名はすでに存在しています。別の矩形名前を入力してください。"), NULL, MB_ICONSTOP);
-						goto reedit1;
-					}
+					return FALSE;
 				}
-				TCHAR str[64];
-				pContext->m_editedRectTransfers.push_back(erd);
-				LVITEM lvi;
-				ZeroMemory(&lvi, sizeof(lvi));
-				lvi.mask = LVIF_TEXT;
-				lvi.iItem = ListView_GetItemCount(GetDlgItem(hWnd, IDC_ORLIST));
-				lvi.pszText = erd.name;
-				ListView_InsertItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
 
-				lvi.pszText = str;
-
-				lvi.iSubItem = 1;
-				wsprintf(str, _T("%d,%d,%d,%d"), erd.sourcePosition.x, erd.sourcePosition.y, erd.sourceSize.cx, erd.sourceSize.cy);
-				ListView_SetItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
-
-				lvi.iSubItem = 2;
-				wsprintf(str, _T("%d,%d,%d,%d"), erd.destPosition.x, erd.destPosition.y, erd.destSize.cx, erd.destSize.cy);
-				ListView_SetItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
-
-				lvi.iSubItem = 3;
-				switch (erd.rotation)
+				auto overlappingNameItr = std::find_if(pContext->m_editedRectTransfers.cbegin(), pContext->m_editedRectTransfers.cend(),
+					[&erd](const RectTransferData& data)
 				{
-				case 0:
-					lvi.pszText = _T("0°");
-					break;
+					return data.name == erd.name;
+				});
 
-				case 1:
-					lvi.pszText = _T("90°");
-					break;
-
-				case 2:
-					lvi.pszText = _T("180°");
-					break;
-
-				case 3:
-					lvi.pszText = _T("270°");
-					break;
+				if (overlappingNameItr != pContext->m_editedRectTransfers.cend())
+				{
+					MessageBox(hWnd, _T("この矩形名はすでに存在しています。別の矩形名前を入力してください。"), NULL, MB_ICONSTOP);
+					goto reedit1;
 				}
-				ListView_SetItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
+
+				pContext->m_editedRectTransfers.emplace_back(erd);
 			}
+
+			const auto& insertedRect = pContext->m_editedRectTransfers.back();
+
+			TCHAR str[64];
+
+			LVITEM lvi;
+			ZeroMemory(&lvi, sizeof(lvi));
+			lvi.mask = LVIF_TEXT;
+			lvi.iItem = ListView_GetItemCount(GetDlgItem(hWnd, IDC_ORLIST));
+			lvi.pszText = const_cast<LPTSTR>(insertedRect.name.c_str()); // LVITEM::pszTextは出力先として使用されない
+			ListView_InsertItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
+
+			lvi.pszText = str;
+
+			lvi.iSubItem = 1;
+			wsprintf(str, _T("%d,%d,%d,%d"), insertedRect.sourcePosition.x, insertedRect.sourcePosition.y, insertedRect.sourceSize.cx, insertedRect.sourceSize.cy);
+			ListView_SetItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
+
+			lvi.iSubItem = 2;
+			wsprintf(str, _T("%d,%d,%d,%d"), insertedRect.destPosition.x, insertedRect.destPosition.y, insertedRect.destSize.cx, insertedRect.destSize.cy);
+			ListView_SetItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
+
+			lvi.iSubItem = 3;
+			switch (insertedRect.rotation)
+			{
+			case 0:
+				lvi.pszText = _T("0°");
+				break;
+
+			case 1:
+				lvi.pszText = _T("90°");
+				break;
+
+			case 2:
+				lvi.pszText = _T("180°");
+				break;
+
+			case 3:
+				lvi.pszText = _T("270°");
+				break;
+			}
+			ListView_SetItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
+
+			return TRUE;
 		}
-		return TRUE;
 
 		case IDC_EDITRECT:
 		{
@@ -560,60 +571,72 @@ BOOL CALLBACK THRotatorEditorContext::MainDialogProc(HWND hWnd, UINT msg, WPARAM
 				MessageBox(hWnd, _T("矩形が選択されていません。"), NULL, MB_ICONEXCLAMATION);
 				return FALSE;
 			}
-			RectTransferData& erd = pContext->m_editedRectTransfers[i];
-		reedit2:
-			if (IDOK == DialogBoxParam((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDD_EDITRECTDLG), hWnd, EditRectDialogProc, reinterpret_cast<LPARAM>(&erd)))
+
 			{
-				for (std::vector<RectTransferData>::const_iterator itr = pContext->m_editedRectTransfers.cbegin(); itr != pContext->m_editedRectTransfers.cend();
-					++itr)
+				RectTransferData erd = pContext->m_editedRectTransfers[i];
+			reedit2:
+				if (IDOK != DialogBoxParam((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDD_EDITRECTDLG), hWnd, EditRectDialogProc, reinterpret_cast<LPARAM>(&erd)))
 				{
-					if (itr == pContext->m_editedRectTransfers.begin() + i)
-						continue;
-					if (lstrcmp(itr->name, erd.name) == 0)
-					{
-						MessageBox(hWnd, _T("この矩形名はすでに存在しています。別の矩形名前を入力してください。"), NULL, MB_ICONSTOP);
-						goto reedit2;
-					}
+					return FALSE;
 				}
-				TCHAR str[64];
-				LVITEM lvi;
-				ZeroMemory(&lvi, sizeof(lvi));
-				lvi.mask = LVIF_TEXT;
-				lvi.iItem = i;
-				lvi.pszText = erd.name;
-				ListView_SetItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
 
-				lvi.pszText = str;
-
-				lvi.iSubItem = 1;
-				wsprintf(str, _T("%d,%d,%d,%d"), erd.sourcePosition.x, erd.sourcePosition.y, erd.sourceSize.cx, erd.sourceSize.cy);
-				ListView_SetItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
-
-				lvi.iSubItem = 2;
-				wsprintf(str, _T("%d,%d,%d,%d"), erd.destPosition.x, erd.destPosition.y, erd.destSize.cx, erd.destSize.cy);
-				ListView_SetItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
-
-				lvi.iSubItem = 3;
-				switch (erd.rotation)
+				auto overlappingNameItr = std::find_if(pContext->m_editedRectTransfers.cbegin(), pContext->m_editedRectTransfers.cend(),
+					[&erd](const RectTransferData& data)
 				{
-				case 0:
-					lvi.pszText = _T("0°");
-					break;
+					return data.name == erd.name;
+				});
 
-				case 1:
-					lvi.pszText = _T("90°");
-					break;
-
-				case 2:
-					lvi.pszText = _T("180°");
-					break;
-
-				case 3:
-					lvi.pszText = _T("270°");
-					break;
+				if (overlappingNameItr != pContext->m_editedRectTransfers.cend() &&
+					overlappingNameItr != pContext->m_editedRectTransfers.cbegin() + i) // 自分自身と一致するのはOK
+				{
+					MessageBox(hWnd, _T("この矩形名はすでに存在しています。別の矩形名前を入力してください。"), NULL, MB_ICONSTOP);
+					goto reedit2;
 				}
-				ListView_SetItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
+
+				pContext->m_editedRectTransfers[i] = std::move(erd);
 			}
+
+			const auto& editedRect = pContext->m_editedRectTransfers[i];
+
+			TCHAR str[64];
+			LVITEM lvi;
+			ZeroMemory(&lvi, sizeof(lvi));
+			lvi.mask = LVIF_TEXT;
+			lvi.iItem = i;
+			lvi.pszText = const_cast<LPTSTR>(editedRect.name.c_str()); // LVITEM::pszTextは出力先として使用されない
+			ListView_SetItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
+
+			lvi.pszText = str;
+
+			lvi.iSubItem = 1;
+			wsprintf(str, _T("%d,%d,%d,%d"), editedRect.sourcePosition.x, editedRect.sourcePosition.y, editedRect.sourceSize.cx, editedRect.sourceSize.cy);
+			ListView_SetItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
+
+			lvi.iSubItem = 2;
+			wsprintf(str, _T("%d,%d,%d,%d"), editedRect.destPosition.x, editedRect.destPosition.y, editedRect.destSize.cx, editedRect.destSize.cy);
+			ListView_SetItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
+
+			lvi.iSubItem = 3;
+			switch (editedRect.rotation)
+			{
+			case 0:
+				lvi.pszText = _T("0°");
+				break;
+
+			case 1:
+				lvi.pszText = _T("90°");
+				break;
+
+			case 2:
+				lvi.pszText = _T("180°");
+				break;
+
+			case 3:
+				lvi.pszText = _T("270°");
+				break;
+			}
+			ListView_SetItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
+
 			return TRUE;
 		}
 
@@ -750,7 +773,7 @@ BOOL CALLBACK THRotatorEditorContext::EditRectDialogProc(HWND hWnd, UINT msg, WP
 			break;
 		}
 
-		SetDlgItemText(hWnd, IDC_RECTNAME, pErd->name);
+		SetDlgItemText(hWnd, IDC_RECTNAME, pErd->name.c_str());
 
 		return TRUE;
 	}
@@ -812,8 +835,12 @@ BOOL CALLBACK THRotatorEditorContext::EditRectDialogProc(HWND hWnd, UINT msg, WP
 			pErd->sourceSize = sourceSize;
 			pErd->destPosition = destPosition;
 			pErd->destSize = destSize;
+
+			std::vector<TCHAR> nameBuffer(1 + GetWindowTextLength(GetDlgItem(hWnd, IDC_RECTNAME)));
+
 			GetDlgItemText(hWnd, IDC_RECTNAME,
-				pErd->name, sizeof(((RectTransferData*)NULL)->name) / sizeof(TCHAR));
+				nameBuffer.data(), static_cast<int>(nameBuffer.size()));
+			pErd->name = nameBuffer.data();
 
 			EndDialog(hWnd, IDOK);
 			return TRUE;
@@ -926,12 +953,12 @@ void THRotatorEditorContext::SaveSettings()
 		itr != m_currentRectTransfers.cend(); ++itr, ++i)
 	{
 #ifdef _UNICODE
-		auto bufferSize = WideCharToMultiByte(CP_ACP, 0, itr->name, -1, nullptr, 0, nullptr, nullptr);
+		auto bufferSize = WideCharToMultiByte(CP_ACP, 0, itr->name.c_str(), -1, nullptr, 0, nullptr, nullptr);
 		std::unique_ptr<CHAR[]> nameBuffer(new CHAR[bufferSize / sizeof(CHAR)]);
-		WideCharToMultiByte(CP_ACP, 0, itr->name, -1, nameBuffer.get(), bufferSize, nullptr, nullptr);
+		WideCharToMultiByte(CP_ACP, 0, itr->name.c_str(), -1, nameBuffer.get(), bufferSize, nullptr, nullptr);
 		const auto* nameBufferPtr = nameBuffer.get();
 #else
-		const auto* nameBufferPtr = itr->name;
+		const auto* nameBufferPtr = itr->name.c_str();
 #endif
 		ss.str("Name"); ss << i;
 		WRITE_INI_PARAM(ss.str(), nameBufferPtr);
@@ -1010,9 +1037,12 @@ void THRotatorEditorContext::LoadSettings()
 		ss.str("Name"); ss << cnt;
 		std::string rectName = READ_INI_PARAM(std::string, ss.str(), "");
 #ifdef _UNICODE
-		MultiByteToWideChar(CP_ACP, 0, rectName.c_str(), -1, erd.name, _countof(erd.name));
+		auto bufferSize = MultiByteToWideChar(CP_ACP, 0, rectName.c_str(), -1, nullptr, 0);
+		std::unique_ptr<TCHAR> nameBuffer(new TCHAR[bufferSize]);
+		MultiByteToWideChar(CP_ACP, 0, rectName.c_str(), -1, nameBuffer.get(), bufferSize);
+		erd.name = nameBuffer.get();
 #else
-		lstrcpy(erd.name, rectName.c_str());
+		erd.name = std::move(rectName);
 #endif
 
 		ss.str("OSL"); ss << cnt;
