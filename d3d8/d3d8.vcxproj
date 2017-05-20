@@ -44,13 +44,15 @@
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(ProjectDir)d3d8\include;C:\boost\boost_1_60_0;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)d3d8\lib;C:\boost\boost_1_60_0\stage\lib;$(LibraryPath)</LibraryPath>
-    <OutDir>J:\game\上海アリス幻樂団\東方紅魔郷\</OutDir>
+    <CustomBuildAfterTargets>BuildLink</CustomBuildAfterTargets>
+    <GenerateManifest>false</GenerateManifest>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(ProjectDir)d3d8\include;C:\boost\boost_1_60_0;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)d3d8\lib;C:\boost\boost_1_60_0\stage\lib;$(LibraryPath)</LibraryPath>
-    <OutDir>J:\game\上海アリス幻樂団\東方紅魔郷\</OutDir>
+    <CustomBuildAfterTargets>BuildLink</CustomBuildAfterTargets>
+    <GenerateManifest>false</GenerateManifest>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -67,6 +69,11 @@
       <UACExecutionLevel>AsInvoker</UACExecutionLevel>
       <EnableUAC>false</EnableUAC>
     </Link>
+    <CustomBuildStep>
+      <Command>$(SolutionDir)localization\make_localization_ready.bat $(OutDir)$(TargetName)$(TargetExt)</Command>
+      <Outputs>$(OutDir)$(TargetName)$(TargetExt).mui</Outputs>
+      <Inputs>$(SolutionDir)common\THRotator.rc</Inputs>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -93,6 +100,11 @@
       <EnableUAC>false</EnableUAC>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
+    <CustomBuildStep>
+      <Command>$(SolutionDir)localization\make_localization_ready.bat $(OutDir)$(TargetName)$(TargetExt)</Command>
+      <Outputs>$(OutDir)$(TargetName)$(TargetExt).mui</Outputs>
+      <Inputs>$(SolutionDir)common\THRotator.rc</Inputs>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="my_d3d8.def" />

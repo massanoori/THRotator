@@ -20,6 +20,10 @@
 !*.css
 !*.jpg
 
+# Internationalization
+!*.rcconfig
+!*.bat
+
 # Sample .ini files
 !/sample_ini/*.ini
 
