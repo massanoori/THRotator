@@ -44,7 +44,6 @@ public:
 	int GetResetRevision() const;
 
 	HWND GetTouhouWindow() const;
-	void GetBackBufferResolution(Direct3DBase* pd3d, D3DFORMAT Format, UINT Adapter, BOOL bWindowed, UINT requestedWidth, UINT requestedHeight, UINT& outBackBufferWidth, UINT& outBackBufferHeight) const;
 
 	// ビューポート設定回数を増やす
 	void AddViewportSetCount();
