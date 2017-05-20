@@ -281,11 +281,11 @@ void THRotatorEditorContext::InitListView(HWND hLV)
 		lvi.pszText = str;
 
 		lvi.iSubItem = 1;
-		wsprintf(str, _T("%d,%d,%d,%d"), itr->rcSrc.left, itr->rcSrc.top, itr->rcSrc.right, itr->rcSrc.bottom);
+		wsprintf(str, _T("%d,%d,%d,%d"), itr->sourcePosition.x, itr->sourcePosition.y, itr->sourceSize.cx, itr->sourceSize.cy);
 		ListView_SetItem(hLV, &lvi);
 
 		lvi.iSubItem = 2;
-		wsprintf(str, _T("%d,%d,%d,%d"), itr->rcDest.left, itr->rcDest.top, itr->rcDest.right, itr->rcDest.bottom);
+		wsprintf(str, _T("%d,%d,%d,%d"), itr->destPosition.x, itr->destPosition.y, itr->destSize.cx, itr->destSize.cy);
 		ListView_SetItem(hLV, &lvi);
 
 		lvi.iSubItem = 3;
@@ -519,11 +519,11 @@ BOOL CALLBACK THRotatorEditorContext::MainDialogProc(HWND hWnd, UINT msg, WPARAM
 				lvi.pszText = str;
 
 				lvi.iSubItem = 1;
-				wsprintf(str, _T("%d,%d,%d,%d"), erd.rcSrc.left, erd.rcSrc.top, erd.rcSrc.right, erd.rcSrc.bottom);
+				wsprintf(str, _T("%d,%d,%d,%d"), erd.sourcePosition.x, erd.sourcePosition.y, erd.sourceSize.cx, erd.sourceSize.cy);
 				ListView_SetItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
 
 				lvi.iSubItem = 2;
-				wsprintf(str, _T("%d,%d,%d,%d"), erd.rcDest.left, erd.rcDest.top, erd.rcDest.right, erd.rcDest.bottom);
+				wsprintf(str, _T("%d,%d,%d,%d"), erd.destPosition.x, erd.destPosition.y, erd.destSize.cx, erd.destSize.cy);
 				ListView_SetItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
 
 				lvi.iSubItem = 3;
@@ -586,11 +586,11 @@ BOOL CALLBACK THRotatorEditorContext::MainDialogProc(HWND hWnd, UINT msg, WPARAM
 				lvi.pszText = str;
 
 				lvi.iSubItem = 1;
-				wsprintf(str, _T("%d,%d,%d,%d"), erd.rcSrc.left, erd.rcSrc.top, erd.rcSrc.right, erd.rcSrc.bottom);
+				wsprintf(str, _T("%d,%d,%d,%d"), erd.sourcePosition.x, erd.sourcePosition.y, erd.sourceSize.cx, erd.sourceSize.cy);
 				ListView_SetItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
 
 				lvi.iSubItem = 2;
-				wsprintf(str, _T("%d,%d,%d,%d"), erd.rcDest.left, erd.rcDest.top, erd.rcDest.right, erd.rcDest.bottom);
+				wsprintf(str, _T("%d,%d,%d,%d"), erd.destPosition.x, erd.destPosition.y, erd.destSize.cx, erd.destSize.cy);
 				ListView_SetItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
 
 				lvi.iSubItem = 3;
@@ -723,14 +723,14 @@ BOOL CALLBACK THRotatorEditorContext::EditRectDialogProc(HWND hWnd, UINT msg, WP
 		SetWindowLongPtr(hWnd, DWLP_USER, static_cast<LONG_PTR>(lParam));
 		RectTransferData* pErd = reinterpret_cast<RectTransferData*>(lParam);
 
-		SetDlgItemInt(hWnd, IDC_SRCLEFT, pErd->rcSrc.left, TRUE);
-		SetDlgItemInt(hWnd, IDC_SRCWIDTH, pErd->rcSrc.right, TRUE);
-		SetDlgItemInt(hWnd, IDC_SRCTOP, pErd->rcSrc.top, TRUE);
-		SetDlgItemInt(hWnd, IDC_SRCHEIGHT, pErd->rcSrc.bottom, TRUE);
-		SetDlgItemInt(hWnd, IDC_DESTLEFT, pErd->rcDest.left, TRUE);
-		SetDlgItemInt(hWnd, IDC_DESTWIDTH, pErd->rcDest.right, TRUE);
-		SetDlgItemInt(hWnd, IDC_DESTTOP, pErd->rcDest.top, TRUE);
-		SetDlgItemInt(hWnd, IDC_DESTHEIGHT, pErd->rcDest.bottom, TRUE);
+		SetDlgItemInt(hWnd, IDC_SRCLEFT, pErd->sourcePosition.x, TRUE);
+		SetDlgItemInt(hWnd, IDC_SRCWIDTH, pErd->sourceSize.cx, TRUE);
+		SetDlgItemInt(hWnd, IDC_SRCTOP, pErd->sourcePosition.y, TRUE);
+		SetDlgItemInt(hWnd, IDC_SRCHEIGHT, pErd->sourceSize.cy, TRUE);
+		SetDlgItemInt(hWnd, IDC_DESTLEFT, pErd->destPosition.x, TRUE);
+		SetDlgItemInt(hWnd, IDC_DESTWIDTH, pErd->destSize.cx, TRUE);
+		SetDlgItemInt(hWnd, IDC_DESTTOP, pErd->destPosition.y, TRUE);
+		SetDlgItemInt(hWnd, IDC_DESTHEIGHT, pErd->destSize.cy, TRUE);
 		switch (pErd->rotation)
 		{
 		case 0:
@@ -771,20 +771,23 @@ BOOL CALLBACK THRotatorEditorContext::EditRectDialogProc(HWND hWnd, UINT msg, WP
 					var = static_cast<decltype(var)>(ret);\
 				}
 
-			RECT rcSrc, rcDest;
-			GETANDSET(IDC_SRCLEFT, rcSrc.left, _T("矩形転送元の左座標の入力が不正です。"));
-			GETANDSET(IDC_SRCTOP, rcSrc.top, _T("矩形転送元の上座標の入力が不正です。"));
-			GETANDSET(IDC_SRCWIDTH, rcSrc.right, _T("矩形転送元の幅の入力が不正です。"));
-			GETANDSET(IDC_SRCHEIGHT, rcSrc.bottom, _T("矩形転送元の高さの入力が不正です。"));
-			GETANDSET(IDC_DESTLEFT, rcDest.left, _T("矩形転送先の左座標の入力が不正です。"));
-			GETANDSET(IDC_DESTTOP, rcDest.top, _T("矩形転送先の上座標の入力が不正です。"));
-			GETANDSET(IDC_DESTWIDTH, rcDest.right, _T("矩形転送先の幅の入力が不正です。"));
-			GETANDSET(IDC_DESTHEIGHT, rcDest.bottom, _T("矩形転送先の高さの入力が不正です。"));
+			POINT sourcePosition;
+			SIZE sourceSize;
+			POINT destPosition;
+			SIZE destSize;
+			GETANDSET(IDC_SRCLEFT, sourcePosition.x, _T("矩形転送元の左座標の入力が不正です。"));
+			GETANDSET(IDC_SRCTOP, sourcePosition.y, _T("矩形転送元の上座標の入力が不正です。"));
+			GETANDSET(IDC_SRCWIDTH, sourceSize.cx, _T("矩形転送元の幅の入力が不正です。"));
+			GETANDSET(IDC_SRCHEIGHT, sourceSize.cy, _T("矩形転送元の高さの入力が不正です。"));
+			GETANDSET(IDC_DESTLEFT, destPosition.x, _T("矩形転送先の左座標の入力が不正です。"));
+			GETANDSET(IDC_DESTTOP, destPosition.y, _T("矩形転送先の上座標の入力が不正です。"));
+			GETANDSET(IDC_DESTWIDTH, destSize.cx, _T("矩形転送先の幅の入力が不正です。"));
+			GETANDSET(IDC_DESTHEIGHT, destSize.cy, _T("矩形転送先の高さの入力が不正です。"));
 #undef GETANDSET
 
 			RectTransferData* pErd = reinterpret_cast<RectTransferData*>(GetWindowLongPtr(hWnd, DWLP_USER));
 
-			if (rcSrc.right == 0 || rcSrc.bottom == 0 || rcDest.right == 0 || rcDest.bottom == 0)
+			if (IsZeroSize(sourceSize) || IsZeroSize(destSize))
 			{
 				MessageBox(hWnd, _T("入力された幅と高さに0が含まれています。この場合、矩形は描画されません。\r\n描画するにはあとで変更してください。"), NULL, MB_ICONEXCLAMATION);
 			}
@@ -805,8 +808,10 @@ BOOL CALLBACK THRotatorEditorContext::EditRectDialogProc(HWND hWnd, UINT msg, WP
 			{
 				pErd->rotation = Rotation_270;
 			}
-			pErd->rcSrc = rcSrc;
-			pErd->rcDest = rcDest;
+			pErd->sourcePosition = sourcePosition;
+			pErd->sourceSize = sourceSize;
+			pErd->destPosition = destPosition;
+			pErd->destSize = destSize;
 			GetDlgItemText(hWnd, IDC_RECTNAME,
 				pErd->name, sizeof(((RectTransferData*)NULL)->name) / sizeof(TCHAR));
 
@@ -932,28 +937,28 @@ void THRotatorEditorContext::SaveSettings()
 		WRITE_INI_PARAM(ss.str(), nameBufferPtr);
 
 		ss.str("OSL"); ss << i;
-		WRITE_INI_PARAM(ss.str(), itr->rcSrc.left);
+		WRITE_INI_PARAM(ss.str(), itr->sourcePosition.x);
 
 		ss.str("OST"); ss << i;
-		WRITE_INI_PARAM(ss.str(), itr->rcSrc.top);
+		WRITE_INI_PARAM(ss.str(), itr->sourcePosition.y);
 
 		ss.str("OSW"); ss << i;
-		WRITE_INI_PARAM(ss.str(), itr->rcSrc.right);
+		WRITE_INI_PARAM(ss.str(), itr->sourceSize.cx);
 
 		ss.str("OSH"); ss << i;
-		WRITE_INI_PARAM(ss.str(), itr->rcSrc.bottom);
+		WRITE_INI_PARAM(ss.str(), itr->sourceSize.cy);
 
 		ss.str("ODL"); ss << i;
-		WRITE_INI_PARAM(ss.str(), itr->rcDest.left);
+		WRITE_INI_PARAM(ss.str(), itr->destPosition.x);
 
 		ss.str("ODT"); ss << i;
-		WRITE_INI_PARAM(ss.str(), itr->rcDest.top);
+		WRITE_INI_PARAM(ss.str(), itr->destPosition.y);
 
 		ss.str("ODW"); ss << i;
-		WRITE_INI_PARAM(ss.str(), itr->rcDest.right);
+		WRITE_INI_PARAM(ss.str(), itr->destSize.cx);
 
 		ss.str("ODH"); ss << i;
-		WRITE_INI_PARAM(ss.str(), itr->rcDest.bottom);
+		WRITE_INI_PARAM(ss.str(), itr->destSize.cy);
 
 		ss.str("OR"); ss << i;
 		WRITE_INI_PARAM(ss.str(), itr->rotation);
@@ -1011,28 +1016,28 @@ void THRotatorEditorContext::LoadSettings()
 #endif
 
 		ss.str("OSL"); ss << cnt;
-		erd.rcSrc.left = READ_INI_PARAM(int, ss.str(), 0);
+		erd.sourcePosition.x = READ_INI_PARAM(int, ss.str(), 0);
 
 		ss.str("OST"); ss << cnt;
-		erd.rcSrc.top = READ_INI_PARAM(int, ss.str(), 0);
+		erd.sourcePosition.y = READ_INI_PARAM(int, ss.str(), 0);
 
 		ss.str("OSW"); ss << cnt;
-		erd.rcSrc.right = READ_INI_PARAM(int, ss.str(), 0);
+		erd.sourceSize.cx = READ_INI_PARAM(int, ss.str(), 0);
 
 		ss.str("OSH"); ss << cnt;
-		erd.rcSrc.bottom = READ_INI_PARAM(int, ss.str(), 0);
+		erd.sourceSize.cy = READ_INI_PARAM(int, ss.str(), 0);
 
 		ss.str("ODL"); ss << cnt;
-		erd.rcDest.left = READ_INI_PARAM(int, ss.str(), 0);
+		erd.destPosition.x = READ_INI_PARAM(int, ss.str(), 0);
 
 		ss.str("ODT"); ss << cnt;
-		erd.rcDest.top = READ_INI_PARAM(int, ss.str(), 0);
+		erd.destPosition.y = READ_INI_PARAM(int, ss.str(), 0);
 
 		ss.str("ODW"); ss << cnt;
-		erd.rcDest.right = READ_INI_PARAM(int, ss.str(), 0);
+		erd.destSize.cx = READ_INI_PARAM(int, ss.str(), 0);
 
 		ss.str("ODH"); ss << cnt;
-		erd.rcDest.bottom = READ_INI_PARAM(int, ss.str(), 0);
+		erd.destSize.cy = READ_INI_PARAM(int, ss.str(), 0);
 
 		ss.str("OR"); ss << cnt;
 		erd.rotation = static_cast<RotationAngle>(READ_INI_PARAM(int, ss.str(), 0));

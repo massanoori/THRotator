@@ -14,10 +14,25 @@ enum RotationAngle : std::uint32_t
 
 struct RectTransferData
 {
-	RECT rcSrc, rcDest;
+	POINT sourcePosition;
+	SIZE sourceSize;
+
+	POINT destPosition;
+	SIZE destSize;
+
 	RotationAngle rotation;
 	TCHAR name[64];
 };
+
+inline bool IsZeroSize(const SIZE& size)
+{
+	return size.cx == 0 || size.cy == 0;
+}
+
+inline bool IsZeroSizedRectTransfer(const RectTransferData& rectTransfer)
+{
+	return IsZeroSize(rectTransfer.sourceSize) || IsZeroSize(rectTransfer.destSize);
+}
 
 extern HANDLE g_hModule;
 

@@ -2405,22 +2405,13 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 
 				for (const auto& rectData : m_pEditorContext->GetRectTransfers())
 				{
-					if (rectData.rcSrc.right == 0 || rectData.rcSrc.bottom == 0)
+					if (IsZeroSizedRectTransfer(rectData))
 					{
 						continue;
 					}
 
-					if (rectData.rcDest.right == 0 || rectData.rcDest.bottom == 0)
-					{
-						continue;
-					}
-
-					POINT srcPos = { rectData.rcSrc.left, rectData.rcSrc.top };
-					SIZE srcSize = { rectData.rcSrc.right, rectData.rcSrc.bottom };
-					POINT destPos = { rectData.rcDest.left, rectData.rcDest.top };
-					SIZE destSize = { rectData.rcDest.right, rectData.rcDest.bottom };
-
-					rectDrawer(srcPos, srcSize, destPos, destSize, prSize, rectData.rotation);
+					rectDrawer(rectData.sourcePosition, rectData.sourceSize, rectData.destPosition, rectData.destSize,
+						prSize, rectData.rotation);
 				}
 			}
 
