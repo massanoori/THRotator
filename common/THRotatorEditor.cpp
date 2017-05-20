@@ -495,24 +495,10 @@ BOOL CALLBACK THRotatorEditorContext::MainDialogProc(HWND hWnd, UINT msg, WPARAM
 
 			{
 				RectTransferData erd = {};
-			reedit1:
-				if (IDOK != DialogBoxParam((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDD_EDITRECTDLG), hWnd, EditRectDialogProc, reinterpret_cast<LPARAM>(&erd)))
+				if (!pContext->OpenEditRectDialog(erd, pContext->m_editedRectTransfers.cend()))
 				{
 					return FALSE;
 				}
-
-				auto overlappingNameItr = std::find_if(pContext->m_editedRectTransfers.cbegin(), pContext->m_editedRectTransfers.cend(),
-					[&erd](const RectTransferData& data)
-				{
-					return data.name == erd.name;
-				});
-
-				if (overlappingNameItr != pContext->m_editedRectTransfers.cend())
-				{
-					MessageBox(hWnd, _T("この矩形名はすでに存在しています。別の矩形名前を入力してください。"), NULL, MB_ICONSTOP);
-					goto reedit1;
-				}
-
 				pContext->m_editedRectTransfers.emplace_back(erd);
 			}
 
@@ -574,25 +560,10 @@ BOOL CALLBACK THRotatorEditorContext::MainDialogProc(HWND hWnd, UINT msg, WPARAM
 
 			{
 				RectTransferData erd = pContext->m_editedRectTransfers[i];
-			reedit2:
-				if (IDOK != DialogBoxParam((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDD_EDITRECTDLG), hWnd, EditRectDialogProc, reinterpret_cast<LPARAM>(&erd)))
+				if (!pContext->OpenEditRectDialog(erd, pContext->m_editedRectTransfers.begin() + i))
 				{
 					return FALSE;
 				}
-
-				auto overlappingNameItr = std::find_if(pContext->m_editedRectTransfers.cbegin(), pContext->m_editedRectTransfers.cend(),
-					[&erd](const RectTransferData& data)
-				{
-					return data.name == erd.name;
-				});
-
-				if (overlappingNameItr != pContext->m_editedRectTransfers.cend() &&
-					overlappingNameItr != pContext->m_editedRectTransfers.cbegin() + i) // 自分自身と一致するのはOK
-				{
-					MessageBox(hWnd, _T("この矩形名はすでに存在しています。別の矩形名前を入力してください。"), NULL, MB_ICONSTOP);
-					goto reedit2;
-				}
-
 				pContext->m_editedRectTransfers[i] = std::move(erd);
 			}
 
@@ -808,12 +779,14 @@ BOOL CALLBACK THRotatorEditorContext::EditRectDialogProc(HWND hWnd, UINT msg, WP
 			GETANDSET(IDC_DESTHEIGHT, destSize.cy, _T("矩形転送先の高さの入力が不正です。"));
 #undef GETANDSET
 
-			RectTransferData* pErd = reinterpret_cast<RectTransferData*>(GetWindowLongPtr(hWnd, DWLP_USER));
-
-			if (IsZeroSize(sourceSize) || IsZeroSize(destSize))
+			auto lengthOfName = GetWindowTextLength(GetDlgItem(hWnd, IDC_RECTNAME));
+			if (lengthOfName == 0)
 			{
-				MessageBox(hWnd, _T("入力された幅と高さに0が含まれています。この場合、矩形は描画されません。\r\n描画するにはあとで変更してください。"), NULL, MB_ICONEXCLAMATION);
+				MessageBox(hWnd, _T("矩形名が入力されていません。"), nullptr, MB_ICONSTOP);
+				return FALSE;
 			}
+
+			RectTransferData* pErd = reinterpret_cast<RectTransferData*>(GetWindowLongPtr(hWnd, DWLP_USER));
 
 			if (SendDlgItemMessage(hWnd, IDC_ROT0, BM_GETCHECK, 0, 0) == BST_CHECKED)
 			{
@@ -836,7 +809,7 @@ BOOL CALLBACK THRotatorEditorContext::EditRectDialogProc(HWND hWnd, UINT msg, WP
 			pErd->destPosition = destPosition;
 			pErd->destSize = destSize;
 
-			std::vector<TCHAR> nameBuffer(1 + GetWindowTextLength(GetDlgItem(hWnd, IDC_RECTNAME)));
+			std::vector<TCHAR> nameBuffer(1 + lengthOfName);
 
 			GetDlgItemText(hWnd, IDC_RECTNAME,
 				nameBuffer.data(), static_cast<int>(nameBuffer.size()));
@@ -853,6 +826,35 @@ BOOL CALLBACK THRotatorEditorContext::EditRectDialogProc(HWND hWnd, UINT msg, WP
 		return FALSE;
 	}
 	return FALSE;
+}
+
+bool THRotatorEditorContext::OpenEditRectDialog(RectTransferData& inoutRectTransfer, std::vector<RectTransferData>::const_iterator editedRectTransfer) const
+{
+RetryEdit:
+	if (IDOK != DialogBoxParam((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDD_EDITRECTDLG), m_hEditorWin, EditRectDialogProc, reinterpret_cast<LPARAM>(&inoutRectTransfer)))
+	{
+		return false;
+	}
+
+	auto overlappingNameItr = std::find_if(m_editedRectTransfers.cbegin(), m_editedRectTransfers.cend(),
+		[&inoutRectTransfer](const RectTransferData& data)
+	{
+		return data.name == inoutRectTransfer.name;
+	});
+
+	if (overlappingNameItr != m_editedRectTransfers.cend() &&
+		overlappingNameItr != editedRectTransfer)
+	{
+		MessageBox(m_hEditorWin, _T("この矩形名はすでに存在しています。別の矩形名前を入力してください。"), NULL, MB_ICONSTOP);
+		goto RetryEdit;
+	}
+
+	if (IsZeroSizedRectTransfer(inoutRectTransfer))
+	{
+		MessageBox(m_hEditorWin, _T("入力された幅と高さに0が含まれています。この場合、矩形は描画されません。\r\n描画するにはあとで変更してください。"), NULL, MB_ICONEXCLAMATION);
+	}
+
+	return true;
 }
 
 BOOL THRotatorEditorContext::ApplyChangeFromEditorWindow(HWND hEditorWin)

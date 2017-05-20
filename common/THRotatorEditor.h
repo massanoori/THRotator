@@ -100,6 +100,11 @@ private:
 	static BOOL CALLBACK MainDialogProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 	static BOOL CALLBACK EditRectDialogProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
+	/**
+	 * V‹K’Ç‰Á‚Ìê‡‚ÍAeditedRectTransfer‚Écend()‚ğ“n‚·
+	 */
+	bool OpenEditRectDialog(RectTransferData& inoutRectTransfer, std::vector<RectTransferData>::const_iterator editedRectTransfer) const;
+
 	boost::filesystem::path m_workingDir;
 
 	/****************************************
