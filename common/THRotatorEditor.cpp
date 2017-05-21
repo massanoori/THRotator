@@ -209,27 +209,27 @@ bool THRotatorEditorContext::IsViewportSetCountOverThreshold() const
 
 RotationAngle THRotatorEditorContext::GetRotationAngle() const
 {
-	return m_RotationAngle;
+	return m_rotationAngle;
 }
 
-DWORD THRotatorEditorContext::GetPlayRegionLeft() const
+DWORD THRotatorEditorContext::GetMainScreenLeft() const
 {
-	return m_playRegionLeft;
+	return m_mainScreenLeft;
 }
 
-DWORD THRotatorEditorContext::GetPlayRegionWidth() const
+DWORD THRotatorEditorContext::GetMainScreenWidth() const
 {
-	return m_playRegionWidth;
+	return m_mainScreenWidth;
 }
 
-DWORD THRotatorEditorContext::GetPlayRegionTop() const
+DWORD THRotatorEditorContext::GetMainScreenTop() const
 {
-	return m_playRegionTop;
+	return m_mainScreenTop;
 }
 
-DWORD THRotatorEditorContext::GetPlayRegionHeight() const
+DWORD THRotatorEditorContext::GetMainScreenHeight() const
 {
-	return m_playRegionHeight;
+	return m_mainScreenHeight;
 }
 
 LONG THRotatorEditorContext::GetYOffset() const
@@ -325,10 +325,10 @@ BOOL CALLBACK THRotatorEditorContext::MainDialogProc(HWND hWnd, UINT msg, WPARAM
 		assert(lParam == GetWindowLongPtr(hWnd, DWLP_USER));
 
 		SetDlgItemInt(hWnd, IDC_JUDGETHRESHOLD, pContext->m_judgeThreshold, TRUE);
-		SetDlgItemInt(hWnd, IDC_PRLEFT, pContext->m_playRegionLeft, FALSE);
-		SetDlgItemInt(hWnd, IDC_PRTOP, pContext->m_playRegionTop, FALSE);
-		SetDlgItemInt(hWnd, IDC_PRWIDTH, pContext->m_playRegionWidth, FALSE);
-		SetDlgItemInt(hWnd, IDC_PRHEIGHT, pContext->m_playRegionHeight, FALSE);
+		SetDlgItemInt(hWnd, IDC_PRLEFT, pContext->m_mainScreenLeft, FALSE);
+		SetDlgItemInt(hWnd, IDC_PRTOP, pContext->m_mainScreenTop, FALSE);
+		SetDlgItemInt(hWnd, IDC_PRWIDTH, pContext->m_mainScreenWidth, FALSE);
+		SetDlgItemInt(hWnd, IDC_PRHEIGHT, pContext->m_mainScreenHeight, FALSE);
 		SetDlgItemInt(hWnd, IDC_YOFFSET, pContext->m_yOffset, TRUE);
 
 		{
@@ -354,7 +354,7 @@ BOOL CALLBACK THRotatorEditorContext::MainDialogProc(HWND hWnd, UINT msg, WPARAM
 		if (pContext->m_bVerticallyLongWindow == 1)
 			SendDlgItemMessage(hWnd, IDC_VERTICALWINDOW, BM_SETCHECK, BST_CHECKED, 0);
 
-		switch (pContext->m_RotationAngle)
+		switch (pContext->m_rotationAngle)
 		{
 		case Rotation_0:
 			SendDlgItemMessage(hWnd, IDC_ROT0_2, BM_SETCHECK, BST_CHECKED, 0);
@@ -442,10 +442,10 @@ BOOL CALLBACK THRotatorEditorContext::MainDialogProc(HWND hWnd, UINT msg, WPARAM
 			auto pContext = reinterpret_cast<THRotatorEditorContext*>(GetWindowLongPtr(hWnd, DWLP_USER));
 
 			SetDlgItemInt(hWnd, IDC_JUDGETHRESHOLD, pContext->m_judgeThreshold, FALSE);
-			SetDlgItemInt(hWnd, IDC_PRLEFT, pContext->m_playRegionLeft, FALSE);
-			SetDlgItemInt(hWnd, IDC_PRTOP, pContext->m_playRegionTop, FALSE);
-			SetDlgItemInt(hWnd, IDC_PRWIDTH, pContext->m_playRegionWidth, FALSE);
-			SetDlgItemInt(hWnd, IDC_PRHEIGHT, pContext->m_playRegionHeight, FALSE);
+			SetDlgItemInt(hWnd, IDC_PRLEFT, pContext->m_mainScreenLeft, FALSE);
+			SetDlgItemInt(hWnd, IDC_PRTOP, pContext->m_mainScreenTop, FALSE);
+			SetDlgItemInt(hWnd, IDC_PRWIDTH, pContext->m_mainScreenWidth, FALSE);
+			SetDlgItemInt(hWnd, IDC_PRHEIGHT, pContext->m_mainScreenHeight, FALSE);
 			SetDlgItemInt(hWnd, IDC_YOFFSET, pContext->m_yOffset, TRUE);
 			pContext->m_editedRectTransfers = pContext->m_currentRectTransfers;
 			pContext->InitListView(GetDlgItem(hWnd, IDC_ORLIST));
@@ -455,7 +455,7 @@ BOOL CALLBACK THRotatorEditorContext::MainDialogProc(HWND hWnd, UINT msg, WPARAM
 			else
 				SendDlgItemMessage(hWnd, IDC_VERTICALWINDOW, BM_SETCHECK, BST_UNCHECKED, 0);
 
-			switch (pContext->m_RotationAngle)
+			switch (pContext->m_rotationAngle)
 			{
 			case 0:
 				SendDlgItemMessage(hWnd, IDC_ROT0_2, BM_SETCHECK, BST_CHECKED, 0);
@@ -934,10 +934,10 @@ BOOL THRotatorEditorContext::ApplyChangeFromEditorWindow(HWND hEditorWin)
 	GETANDSET(IDC_YOFFSET, yo, IDS_INVALID_MAIN_SCREEN_OFFSET);
 
 	m_judgeThreshold = jthres;
-	m_playRegionLeft = pl;
-	m_playRegionTop = pt;
-	m_playRegionWidth = pw;
-	m_playRegionHeight = ph;
+	m_mainScreenLeft = pl;
+	m_mainScreenTop = pt;
+	m_mainScreenWidth = pw;
+	m_mainScreenHeight = ph;
 	m_yOffset = yo;
 #undef GETANDSET
 
@@ -949,19 +949,19 @@ BOOL THRotatorEditorContext::ApplyChangeFromEditorWindow(HWND hEditorWin)
 
 	if (BST_CHECKED == SendDlgItemMessage(hEditorWin, IDC_ROT0_2, BM_GETCHECK, 0, 0))
 	{
-		m_RotationAngle = Rotation_0;
+		m_rotationAngle = Rotation_0;
 	}
 	else if (BST_CHECKED == SendDlgItemMessage(hEditorWin, IDC_ROT90_2, BM_GETCHECK, 0, 0))
 	{
-		m_RotationAngle = Rotation_90;
+		m_rotationAngle = Rotation_90;
 	}
 	else if (BST_CHECKED == SendDlgItemMessage(hEditorWin, IDC_ROT180_2, BM_GETCHECK, 0, 0))
 	{
-		m_RotationAngle = Rotation_180;
+		m_rotationAngle = Rotation_180;
 	}
 	else
 	{
-		m_RotationAngle = Rotation_270;
+		m_rotationAngle = Rotation_270;
 	}
 
 	m_bVisible = SendDlgItemMessage(hEditorWin, IDC_VISIBLE, BM_GETCHECK, 0, 0) == BST_CHECKED ? TRUE : FALSE;
@@ -980,15 +980,15 @@ void THRotatorEditorContext::SaveSettings()
 
 #define WRITE_INI_PARAM(name, value) tree.add(m_appName + "." + name, value)
 	WRITE_INI_PARAM("JC", m_judgeThreshold);
-	WRITE_INI_PARAM("PL", m_playRegionLeft);
-	WRITE_INI_PARAM("PT", m_playRegionTop);
-	WRITE_INI_PARAM("PW", m_playRegionWidth);
-	WRITE_INI_PARAM("PH", m_playRegionHeight);
+	WRITE_INI_PARAM("PL", m_mainScreenLeft);
+	WRITE_INI_PARAM("PT", m_mainScreenTop);
+	WRITE_INI_PARAM("PW", m_mainScreenWidth);
+	WRITE_INI_PARAM("PH", m_mainScreenHeight);
 	WRITE_INI_PARAM("YOffset", m_yOffset);
 	WRITE_INI_PARAM("Visible", m_bVisible);
 	WRITE_INI_PARAM("PivRot", m_bVerticallyLongWindow);
 	WRITE_INI_PARAM("Filter", m_filterType);
-	WRITE_INI_PARAM("Rot", m_RotationAngle);
+	WRITE_INI_PARAM("Rot", m_rotationAngle);
 
 	int i = 0;
 	std::ostringstream ss(std::ios::ate);
@@ -1060,14 +1060,14 @@ void THRotatorEditorContext::LoadSettings()
 
 #define READ_INI_PARAM(type, name, default_value) tree.get_optional<type>(m_appName + "." + name).get_value_or(default_value)
 	m_judgeThreshold = READ_INI_PARAM(int, "JC", 999);
-	m_playRegionLeft = READ_INI_PARAM(int, "PL", 32);
-	m_playRegionTop = READ_INI_PARAM(int, "PT", 16);
-	m_playRegionWidth = READ_INI_PARAM(int, "PW", 384);
-	m_playRegionHeight = READ_INI_PARAM(int, "PH", 448);
+	m_mainScreenLeft = READ_INI_PARAM(int, "PL", 32);
+	m_mainScreenTop = READ_INI_PARAM(int, "PT", 16);
+	m_mainScreenWidth = READ_INI_PARAM(int, "PW", 384);
+	m_mainScreenHeight = READ_INI_PARAM(int, "PH", 448);
 	m_yOffset = READ_INI_PARAM(int, "YOffset", 0);
 	m_bVisible = READ_INI_PARAM(BOOL, "Visible", FALSE);
 	m_bVerticallyLongWindow = READ_INI_PARAM(BOOL, "PivRot", FALSE);
-	m_RotationAngle = static_cast<RotationAngle>(READ_INI_PARAM(std::uint32_t, "Rot", Rotation_0));
+	m_rotationAngle = static_cast<RotationAngle>(READ_INI_PARAM(std::uint32_t, "Rot", Rotation_0));
 	m_filterType = static_cast<D3DTEXTUREFILTERTYPE>(READ_INI_PARAM(int, "Filter", D3DTEXF_LINEAR));
 
 	BOOL bHasNext = READ_INI_PARAM(BOOL, "ORHas0", FALSE);
@@ -1188,16 +1188,16 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 				case VK_LEFT:
 					if ((HIWORD(pMsg->lParam) & KF_ALTDOWN) && !(HIWORD(pMsg->lParam) & KF_REPEAT))
 					{
-						auto nextRotationAngle = static_cast<RotationAngle>((context->m_RotationAngle + 1) % 4);
+						auto nextRotationAngle = static_cast<RotationAngle>((context->m_rotationAngle + 1) % 4);
 
 						if (context->m_bNeedModalEditor)
 						{
-							context->m_RotationAngle = nextRotationAngle;
+							context->m_rotationAngle = nextRotationAngle;
 							context->SaveSettings();
 							break;
 						}
 
-						switch ((context->m_RotationAngle + 1) % 4)
+						switch ((context->m_rotationAngle + 1) % 4)
 						{
 						case Rotation_0:
 							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT0_2, BM_SETCHECK, BST_CHECKED, 0);
@@ -1239,11 +1239,11 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 				case VK_RIGHT:
 					if (HIWORD(pMsg->lParam) & KF_ALTDOWN && !(HIWORD(pMsg->lParam) & KF_REPEAT))
 					{
-						auto nextRotationAngle = static_cast<RotationAngle>((context->m_RotationAngle + Rotation_Num - 1) % 4);
+						auto nextRotationAngle = static_cast<RotationAngle>((context->m_rotationAngle + Rotation_Num - 1) % 4);
 
 						if (context->m_bNeedModalEditor)
 						{
-							context->m_RotationAngle = nextRotationAngle;
+							context->m_rotationAngle = nextRotationAngle;
 							context->SaveSettings();
 							break;
 						}

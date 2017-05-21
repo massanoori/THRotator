@@ -2273,14 +2273,14 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 			else
 				aspectLessThan133 = m_d3dpp.BackBufferHeight * 3 < m_d3dpp.BackBufferWidth * 4;
 
-			LONG playRegionLeft = static_cast<LONG>(m_pEditorContext->GetPlayRegionLeft());
-			LONG playRegionTop = static_cast<LONG>(m_pEditorContext->GetPlayRegionTop());
-			LONG playRegionWidth = static_cast<LONG>(m_pEditorContext->GetPlayRegionWidth());
-			LONG playRegionHeight = static_cast<LONG>(m_pEditorContext->GetPlayRegionHeight());
+			LONG mainScreenLeft = static_cast<LONG>(m_pEditorContext->GetMainScreenLeft());
+			LONG mainScreenTop = static_cast<LONG>(m_pEditorContext->GetMainScreenTop());
+			LONG mainScreenWidth = static_cast<LONG>(m_pEditorContext->GetMainScreenWidth());
+			LONG mainScreenHeight = static_cast<LONG>(m_pEditorContext->GetMainScreenHeight());
 
 			bool bNeedsRearrangeHUD = aspectLessThan133 && m_pEditorContext->IsViewportSetCountOverThreshold();
-			LONG baseDestRectWidth = bNeedsRearrangeHUD ? playRegionWidth : static_cast<LONG>(BASE_SCREEN_WIDTH);
-			LONG baseDestRectHeight = bNeedsRearrangeHUD ? playRegionHeight : static_cast<LONG>(BASE_SCREEN_HEIGHT);
+			LONG baseDestRectWidth = bNeedsRearrangeHUD ? mainScreenWidth : static_cast<LONG>(BASE_SCREEN_WIDTH);
+			LONG baseDestRectHeight = bNeedsRearrangeHUD ? mainScreenHeight : static_cast<LONG>(BASE_SCREEN_HEIGHT);
 
 
 
@@ -2333,7 +2333,7 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 				const SIZE& srcSize,
 				const POINT& destPos,
 				const SIZE& destSize,
-				const SIZE& playRegionSize,
+				const SIZE& mainScreenSize,
 				RotationAngle rotation)
 			{
 				POINT correctedSrcPos = srcPos;
@@ -2373,8 +2373,8 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 
 				D3DXMATRIX rectTranslation;
 				D3DXMatrixTranslation(&rectTranslation,
-					static_cast<float>(destPos.x) + 0.5f * (destSize.cx - playRegionSize.cx),
-					static_cast<float>(destPos.y) + 0.5f * (destSize.cy - playRegionSize.cy), 0.0f);
+					static_cast<float>(destPos.x) + 0.5f * (destSize.cx - mainScreenSize.cx),
+					static_cast<float>(destPos.y) + 0.5f * (destSize.cy - mainScreenSize.cy), 0.0f);
 
 				D3DXMATRIX finalTransform, temp;
 				D3DXMatrixMultiply(&temp, &preRectTransform, &translateSrcCenterToOrigin);
@@ -2412,17 +2412,17 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 			{
 				// エネミーマーカーと周囲の枠が表示されるよう、ゲーム画面の矩形を拡張
 
-				POINT prPosition = { playRegionLeft, playRegionTop };
-				SIZE prSize = { playRegionWidth, playRegionHeight };
-				if (playRegionWidth * 4 < playRegionHeight * 3)
+				POINT prPosition = { mainScreenLeft, mainScreenTop };
+				SIZE prSize = { mainScreenWidth, mainScreenHeight };
+				if (mainScreenWidth * 4 < mainScreenHeight * 3)
 				{
-					prPosition.x = playRegionLeft + (playRegionWidth - playRegionHeight * 3 / 4) / 2;
-					prSize.cx = playRegionHeight * 3 / 4;
+					prPosition.x = mainScreenLeft + (mainScreenWidth - mainScreenHeight * 3 / 4) / 2;
+					prSize.cx = mainScreenHeight * 3 / 4;
 				}
-				else if (playRegionWidth * 4 > playRegionHeight * 3)
+				else if (mainScreenWidth * 4 > mainScreenHeight * 3)
 				{
-					prPosition.y = playRegionTop + (playRegionHeight - playRegionWidth * 4 / 3) / 2;
-					prSize.cy = playRegionWidth * 4 / 3;
+					prPosition.y = mainScreenTop + (mainScreenHeight - mainScreenWidth * 4 / 3) / 2;
+					prSize.cy = mainScreenWidth * 4 / 3;
 				}
 
 				prPosition.y -= m_pEditorContext->GetYOffset();

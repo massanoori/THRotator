@@ -61,13 +61,13 @@ public:
 
 	RotationAngle GetRotationAngle() const;
 
-	DWORD GetPlayRegionLeft() const;
+	DWORD GetMainScreenLeft() const;
 
-	DWORD GetPlayRegionWidth() const;
+	DWORD GetMainScreenWidth() const;
 
-	DWORD GetPlayRegionTop() const;
+	DWORD GetMainScreenTop() const;
 
-	DWORD GetPlayRegionHeight() const;
+	DWORD GetMainScreenHeight() const;
 
 	LONG GetYOffset() const;
 
@@ -116,7 +116,7 @@ private:
 	* THRotator parameters
 	****************************************/
 
-	DWORD m_playRegionLeft, m_playRegionTop, m_playRegionWidth, m_playRegionHeight;
+	DWORD m_mainScreenLeft, m_mainScreenTop, m_mainScreenWidth, m_mainScreenHeight;
 	int m_yOffset;
 	int m_judgeThreshold;
 	int m_judgeCount, m_judgeCountPrev;
@@ -124,7 +124,7 @@ private:
 	boost::filesystem::path m_iniPath;
 	std::string m_appName; // マルチバイト文字列で.iniの入出力するため、std::string
 	BOOL m_bVerticallyLongWindow;
-	RotationAngle m_RotationAngle;
+	RotationAngle m_rotationAngle;
 	std::vector<RectTransferData> m_editedRectTransfers, m_currentRectTransfers;
 	D3DTEXTUREFILTERTYPE m_filterType;
 	bool m_bTouhouWithoutScreenCapture;
