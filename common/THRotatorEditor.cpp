@@ -1190,14 +1190,15 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 					{
 						auto nextRotationAngle = static_cast<RotationAngle>((context->m_rotationAngle + 1) % 4);
 
+						context->m_rotationAngle = nextRotationAngle;
+						context->SaveSettings();
+
 						if (context->m_bNeedModalEditor)
 						{
-							context->m_rotationAngle = nextRotationAngle;
-							context->SaveSettings();
 							break;
 						}
 
-						switch ((context->m_rotationAngle + 1) % 4)
+						switch (nextRotationAngle)
 						{
 						case Rotation_0:
 							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT0_2, BM_SETCHECK, BST_CHECKED, 0);
@@ -1207,7 +1208,7 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 							//if( pDev->m_d3dpp.Windowed ) pDev->SetVerticallyLongWindow( 0 );
 							break;
 
-						case 1:
+						case Rotation_90:
 							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT0_2, BM_SETCHECK, BST_UNCHECKED, 0);
 							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT90_2, BM_SETCHECK, BST_CHECKED, 0);
 							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT180_2, BM_SETCHECK, BST_UNCHECKED, 0);
@@ -1215,7 +1216,7 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 							//if( context->m_d3dpp.Windowed ) context->SetVerticallyLongWindow( 1 );
 							break;
 
-						case 2:
+						case Rotation_180:
 							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT0_2, BM_SETCHECK, BST_UNCHECKED, 0);
 							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT90_2, BM_SETCHECK, BST_UNCHECKED, 0);
 							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT180_2, BM_SETCHECK, BST_CHECKED, 0);
@@ -1223,7 +1224,7 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 							//if( context->m_d3dpp.Windowed ) context->SetVerticallyLongWindow( 0 );
 							break;
 
-						case 3:
+						case Rotation_270:
 							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT0_2, BM_SETCHECK, BST_UNCHECKED, 0);
 							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT90_2, BM_SETCHECK, BST_UNCHECKED, 0);
 							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT180_2, BM_SETCHECK, BST_UNCHECKED, 0);
@@ -1231,8 +1232,6 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 							//if( context->m_d3dpp.Windowed ) context->SetVerticallyLongWindow( 1 );
 							break;
 						}
-
-						context->ApplyChangeFromEditorWindow();
 					}
 					break;
 
@@ -1241,16 +1240,17 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 					{
 						auto nextRotationAngle = static_cast<RotationAngle>((context->m_rotationAngle + Rotation_Num - 1) % 4);
 
+						context->m_rotationAngle = nextRotationAngle;
+						context->SaveSettings();
+
 						if (context->m_bNeedModalEditor)
 						{
-							context->m_rotationAngle = nextRotationAngle;
-							context->SaveSettings();
 							break;
 						}
 
 						switch (nextRotationAngle)
 						{
-						case 0:
+						case Rotation_0:
 							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT0_2, BM_SETCHECK, BST_CHECKED, 0);
 							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT90_2, BM_SETCHECK, BST_UNCHECKED, 0);
 							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT180_2, BM_SETCHECK, BST_UNCHECKED, 0);
@@ -1258,7 +1258,7 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 							//if( context->m_d3dpp.Windowed ) context->SetVerticallyLongWindow( 0 );
 							break;
 
-						case 1:
+						case Rotation_90:
 							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT0_2, BM_SETCHECK, BST_UNCHECKED, 0);
 							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT90_2, BM_SETCHECK, BST_CHECKED, 0);
 							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT180_2, BM_SETCHECK, BST_UNCHECKED, 0);
@@ -1266,7 +1266,7 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 							//if( context->m_d3dpp.Windowed ) context->SetVerticallyLongWindow( 1 );
 							break;
 
-						case 2:
+						case Rotation_180:
 							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT0_2, BM_SETCHECK, BST_UNCHECKED, 0);
 							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT90_2, BM_SETCHECK, BST_UNCHECKED, 0);
 							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT180_2, BM_SETCHECK, BST_CHECKED, 0);
@@ -1274,7 +1274,7 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 							//if( context->m_d3dpp.Windowed ) context->SetVerticallyLongWindow( 0 );
 							break;
 
-						case 3:
+						case Rotation_270:
 							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT0_2, BM_SETCHECK, BST_UNCHECKED, 0);
 							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT90_2, BM_SETCHECK, BST_UNCHECKED, 0);
 							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT180_2, BM_SETCHECK, BST_UNCHECKED, 0);
@@ -1282,8 +1282,6 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 							//if( context->m_d3dpp.Windowed ) context->SetVerticallyLongWindow( 1 );
 							break;
 						}
-
-						context->ApplyChangeFromEditorWindow();
 					}
 					break;
 				}
