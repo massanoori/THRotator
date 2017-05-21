@@ -34,7 +34,12 @@ inline bool IsZeroSizedRectTransfer(const RectTransferData& rectTransfer)
 	return IsZeroSize(rectTransfer.sourceSize) || IsZeroSize(rectTransfer.destSize);
 }
 
-extern HANDLE g_hModule;
+/**
+ * String Table ƒŠƒ\[ƒX‚©‚ç•¶š—ñ‚ğ“Ç‚İ‚Ş
+ */
+std::basic_string<TCHAR> LoadTHRotatorString(HINSTANCE hModule, UINT nID);
+
+extern HINSTANCE g_hModule;
 
 class THRotatorEditorContext
 {

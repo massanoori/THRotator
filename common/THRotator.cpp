@@ -55,7 +55,7 @@ static float RotationAngleToRadian(RotationAngle rotation)
 const UINT BASE_SCREEN_WIDTH = 640u;
 const UINT BASE_SCREEN_HEIGHT = 480u;
 
-HANDLE g_hModule;
+HINSTANCE g_hModule;
 
 #ifdef TOUHOU_ON_D3D8
 
@@ -2702,7 +2702,7 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 	{
 	case DLL_PROCESS_ATTACH:
 
-		g_hModule = hModule;
+		g_hModule = reinterpret_cast<HINSTANCE>(hModule);
 		{
 			TCHAR sysDir[MAX_PATH];
 			GetSystemDirectory(sysDir, MAX_PATH);

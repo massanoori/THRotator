@@ -25,6 +25,20 @@ UINT ms_switchVisibilityID = 12345u;
 typedef std::basic_string<TCHAR> std_tstring;
 }
 
+std::basic_string<TCHAR> LoadTHRotatorString(HINSTANCE hModule, UINT nID)
+{
+	LPTSTR temp;
+	auto bufferLength = LoadString(hModule, nID, reinterpret_cast<LPTSTR>(&temp), 0);
+	if (bufferLength == 0)
+	{
+		return std::basic_string<TCHAR>();
+	}
+	else
+	{
+		return std::basic_string<TCHAR>(temp, bufferLength);
+	}
+}
+
 THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 	: m_hTouhouWin(hTouhouWin)
 	, m_deviceResetRevision(0)
@@ -114,7 +128,9 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 	//	メニューを改造
 	HMENU hMenu = GetSystemMenu(m_hTouhouWin, FALSE);
 	AppendMenu(hMenu, MF_SEPARATOR, 0, NULL);
-	AppendMenu(hMenu, MF_STRING, ms_switchVisibilityID, _T("THRotatorを開く"));
+
+	auto openEditorMenuString = LoadTHRotatorString(g_hModule, IDS_OPEN_EDITOR);
+	AppendMenu(hMenu, MF_STRING, ms_switchVisibilityID, openEditorMenuString.c_str());
 
 	m_hSysMenu = hMenu;
 
@@ -127,7 +143,8 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 		HWND hWnd = m_hEditorWin = CreateDialogParam(reinterpret_cast<HINSTANCE>(g_hModule), MAKEINTRESOURCE(IDD_MAINDLG), NULL, MainDialogProc, (LPARAM)this);
 		if (hWnd == NULL)
 		{
-			MessageBox(NULL, _T("ダイアログの作成に失敗"), NULL, MB_ICONSTOP);
+			auto dialogCreationFailedMessage = LoadTHRotatorString(g_hModule, IDS_DIALOG_CREATION_FAILED);
+			MessageBox(NULL, dialogCreationFailedMessage.c_str(), NULL, MB_ICONSTOP);
 		}
 	}
 
@@ -256,7 +273,10 @@ void THRotatorEditorContext::SetEditorWindowVisibility(BOOL bVisible)
 
 	mi.cbSize = sizeof(mi);
 	mi.fMask = MIIM_STRING;
-	mi.dwTypeData = bVisible ? _T("TH Rotatorのウィンドウを非表示") : _T("Th Rotatorのウィンドウを表示");
+
+	auto str = LoadTHRotatorString(g_hModule, bVisible ? IDS_HIDE_EDITOR : IDS_SHOW_EDITOR);
+	mi.dwTypeData = const_cast<LPTSTR>(str.c_str());
+
 	SetMenuItemInfo(m_hSysMenu, ms_switchVisibilityID, FALSE, &mi);
 
 	ShowWindow(m_hEditorWin, bVisible ? SW_SHOW : SW_HIDE);
@@ -354,18 +374,28 @@ BOOL CALLBACK THRotatorEditorContext::MainDialogProc(HWND hWnd, UINT msg, WPARAM
 		}
 
 		{
+			std::basic_string<TCHAR> columnText;
+
 			LVCOLUMN lvc;
 			lvc.mask = LVCF_TEXT | LVCF_WIDTH;
-			lvc.pszText = _T("矩形名");
+
+			columnText = LoadTHRotatorString(g_hModule, IDS_RECT_NAME);
+			lvc.pszText = const_cast<LPTSTR>(columnText.c_str());
 			lvc.cx = 64;
 			ListView_InsertColumn(GetDlgItem(hWnd, IDC_ORLIST), 0, &lvc);
-			lvc.pszText = _T("元の矩形");
+
+			columnText = LoadTHRotatorString(g_hModule, IDS_SOURCE_RECT);
+			lvc.pszText = const_cast<LPTSTR>(columnText.c_str());
 			lvc.cx = 96;
 			ListView_InsertColumn(GetDlgItem(hWnd, IDC_ORLIST), 1, &lvc);
-			lvc.pszText = _T("先の矩形");
+
+			columnText = LoadTHRotatorString(g_hModule, IDS_DESTINATION_RECT);
+			lvc.pszText = const_cast<LPTSTR>(columnText.c_str());
 			lvc.cx = 96;
 			ListView_InsertColumn(GetDlgItem(hWnd, IDC_ORLIST), 2, &lvc);
-			lvc.pszText = _T("回転角");
+
+			columnText = LoadTHRotatorString(g_hModule, IDS_ROTATION_ANGLE);
+			lvc.pszText = const_cast<LPTSTR>(columnText.c_str());
 			lvc.cx = 48;
 			ListView_InsertColumn(GetDlgItem(hWnd, IDC_ORLIST), 3, &lvc);
 		}
@@ -554,7 +584,8 @@ BOOL CALLBACK THRotatorEditorContext::MainDialogProc(HWND hWnd, UINT msg, WPARAM
 			int i = ListView_GetSelectionMark(GetDlgItem(hWnd, IDC_ORLIST));
 			if (i == -1)
 			{
-				MessageBox(hWnd, _T("矩形が選択されていません。"), NULL, MB_ICONEXCLAMATION);
+				auto columnNotSelectedMessage = LoadTHRotatorString(g_hModule, IDS_RECT_NOT_SELECTED);
+				MessageBox(hWnd, columnNotSelectedMessage.c_str(), NULL, MB_ICONEXCLAMATION);
 				return FALSE;
 			}
 
@@ -618,7 +649,8 @@ BOOL CALLBACK THRotatorEditorContext::MainDialogProc(HWND hWnd, UINT msg, WPARAM
 			int i = ListView_GetSelectionMark(GetDlgItem(hWnd, IDC_ORLIST));
 			if (i == -1)
 			{
-				MessageBox(hWnd, _T("矩形が選択されていません。"), NULL, MB_ICONEXCLAMATION);
+				auto columnNotSelectedMessage = LoadTHRotatorString(g_hModule, IDS_RECT_NOT_SELECTED);
+				MessageBox(hWnd, columnNotSelectedMessage.c_str(), NULL, MB_ICONEXCLAMATION);
 				return FALSE;
 			}
 			pContext->m_editedRectTransfers.erase(pContext->m_editedRectTransfers.cbegin() + i);
@@ -640,7 +672,8 @@ BOOL CALLBACK THRotatorEditorContext::MainDialogProc(HWND hWnd, UINT msg, WPARAM
 			int i = ListView_GetSelectionMark(GetDlgItem(hWnd, IDC_ORLIST));
 			if (i == -1)
 			{
-				MessageBox(hWnd, _T("矩形が選択されていません。"), NULL, MB_ICONEXCLAMATION);
+				auto columnNotSelectedMessage = LoadTHRotatorString(g_hModule, IDS_RECT_NOT_SELECTED);
+				MessageBox(hWnd, columnNotSelectedMessage.c_str(), NULL, MB_ICONEXCLAMATION);
 				return FALSE;
 			}
 			if (i == 0)
@@ -667,7 +700,8 @@ BOOL CALLBACK THRotatorEditorContext::MainDialogProc(HWND hWnd, UINT msg, WPARAM
 			int count = ListView_GetItemCount(GetDlgItem(hWnd, IDC_ORLIST));
 			if (i == -1)
 			{
-				MessageBox(hWnd, _T("矩形が選択されていません。"), NULL, MB_ICONEXCLAMATION);
+				auto columnNotSelectedMessage = LoadTHRotatorString(g_hModule, IDS_RECT_NOT_SELECTED);
+				MessageBox(hWnd, columnNotSelectedMessage.c_str(), NULL, MB_ICONEXCLAMATION);
 				return FALSE;
 			}
 			if (i == count - 1)
@@ -754,12 +788,13 @@ BOOL CALLBACK THRotatorEditorContext::EditRectDialogProc(HWND hWnd, UINT msg, WP
 		{
 		case IDOK:
 		{
-#define GETANDSET(id, var, errmsg) {\
+#define GETANDSET(id, var, stringResourceId) {\
 					BOOL bRet;UINT ret;\
 					ret = GetDlgItemInt( hWnd, id, &bRet, std::is_signed<decltype(var)>::value );\
 					if( !bRet )\
 					{\
-						MessageBox( hWnd, errmsg, NULL, MB_ICONSTOP );\
+						auto messageString = LoadTHRotatorString(g_hModule, stringResourceId);\
+						MessageBox( hWnd, messageString.c_str(), NULL, MB_ICONSTOP );\
 						return FALSE;\
 					}\
 					var = static_cast<decltype(var)>(ret);\
@@ -769,20 +804,21 @@ BOOL CALLBACK THRotatorEditorContext::EditRectDialogProc(HWND hWnd, UINT msg, WP
 			SIZE sourceSize;
 			POINT destPosition;
 			SIZE destSize;
-			GETANDSET(IDC_SRCLEFT, sourcePosition.x, _T("矩形転送元の左座標の入力が不正です。"));
-			GETANDSET(IDC_SRCTOP, sourcePosition.y, _T("矩形転送元の上座標の入力が不正です。"));
-			GETANDSET(IDC_SRCWIDTH, sourceSize.cx, _T("矩形転送元の幅の入力が不正です。"));
-			GETANDSET(IDC_SRCHEIGHT, sourceSize.cy, _T("矩形転送元の高さの入力が不正です。"));
-			GETANDSET(IDC_DESTLEFT, destPosition.x, _T("矩形転送先の左座標の入力が不正です。"));
-			GETANDSET(IDC_DESTTOP, destPosition.y, _T("矩形転送先の上座標の入力が不正です。"));
-			GETANDSET(IDC_DESTWIDTH, destSize.cx, _T("矩形転送先の幅の入力が不正です。"));
-			GETANDSET(IDC_DESTHEIGHT, destSize.cy, _T("矩形転送先の高さの入力が不正です。"));
+			GETANDSET(IDC_SRCLEFT, sourcePosition.x, IDS_INVALID_SOURCE_RECT_LEFT);
+			GETANDSET(IDC_SRCTOP, sourcePosition.y, IDS_INVALID_SOURCE_RECT_TOP);
+			GETANDSET(IDC_SRCWIDTH, sourceSize.cx, IDS_INVALID_SOURCE_RECT_WIDTH);
+			GETANDSET(IDC_SRCHEIGHT, sourceSize.cy, IDS_INVALID_SOURCE_RECT_HEIGHT);
+			GETANDSET(IDC_DESTLEFT, destPosition.x, IDS_INVALID_DESTINATION_RECT_LEFT);
+			GETANDSET(IDC_DESTTOP, destPosition.y, IDS_INVALID_DESTINATION_RECT_TOP);
+			GETANDSET(IDC_DESTWIDTH, destSize.cx, IDS_INVALID_DESTINATION_RECT_WIDTH);
+			GETANDSET(IDC_DESTHEIGHT, destSize.cy, IDS_INVALID_DESTINATION_RECT_HEIGHT);
 #undef GETANDSET
 
 			auto lengthOfName = GetWindowTextLength(GetDlgItem(hWnd, IDC_RECTNAME));
 			if (lengthOfName == 0)
 			{
-				MessageBox(hWnd, _T("矩形名が入力されていません。"), nullptr, MB_ICONSTOP);
+				auto messageString = LoadTHRotatorString(g_hModule, IDS_RECT_NAME_NOT_FILLED);
+				MessageBox(hWnd, messageString.c_str(), nullptr, MB_ICONSTOP);
 				return FALSE;
 			}
 
@@ -845,13 +881,15 @@ RetryEdit:
 	if (overlappingNameItr != m_editedRectTransfers.cend() &&
 		overlappingNameItr != editedRectTransfer)
 	{
-		MessageBox(m_hEditorWin, _T("この矩形名はすでに存在しています。別の矩形名前を入力してください。"), NULL, MB_ICONSTOP);
+		auto alreadyExistsString = LoadTHRotatorString(g_hModule, IDS_RECT_NAME_ALREADLY_EXISTS);
+		MessageBox(m_hEditorWin, alreadyExistsString.c_str(), NULL, MB_ICONSTOP);
 		goto RetryEdit;
 	}
 
 	if (IsZeroSizedRectTransfer(inoutRectTransfer))
 	{
-		MessageBox(m_hEditorWin, _T("入力された幅と高さに0が含まれています。この場合、矩形は描画されません。\r\n描画するにはあとで変更してください。"), NULL, MB_ICONEXCLAMATION);
+		auto zeroRectSizeString = LoadTHRotatorString(g_hModule, IDS_ZERO_SIZE_RECT_WARNING);
+		MessageBox(m_hEditorWin, zeroRectSizeString.c_str(), NULL, MB_ICONEXCLAMATION);
 	}
 
 	return true;
@@ -861,12 +899,13 @@ BOOL THRotatorEditorContext::ApplyChangeFromEditorWindow(HWND hEditorWin)
 {
 	assert(hEditorWin);
 
-#define GETANDSET(id, var, errmsg) {\
+#define GETANDSET(id, var, stringResourceId) {\
 			BOOL bRet;UINT ret;\
 			ret = GetDlgItemInt( hEditorWin, id, &bRet, std::is_signed<decltype(var)>::value );\
 			if( !bRet )\
 			{\
-				MessageBox( hEditorWin, errmsg, NULL, MB_ICONSTOP );\
+				auto messageString = LoadTHRotatorString(g_hModule, stringResourceId);\
+				MessageBox( hEditorWin, messageString.c_str(), NULL, MB_ICONSTOP );\
 				return FALSE;\
 			}\
 			var = static_cast<decltype(var)>(ret);\
@@ -875,22 +914,24 @@ BOOL THRotatorEditorContext::ApplyChangeFromEditorWindow(HWND hEditorWin)
 
 	DWORD pl, pt, pw, ph;
 	int jthres, yo;
-	GETANDSET(IDC_JUDGETHRESHOLD, jthres, _T("判定の回数閾値の入力が不正です。"));
-	GETANDSET(IDC_PRLEFT, pl, _T("プレイ画面領域の左座標の入力が不正です。"));
-	GETANDSET(IDC_PRTOP, pt, _T("プレイ画面領域の上座標の入力が不正です。"));
-	GETANDSET(IDC_PRWIDTH, pw, _T("プレイ画面領域の幅の入力が不正です。"));
+	GETANDSET(IDC_JUDGETHRESHOLD, jthres, IDS_INVALID_THRESHOLD);
+	GETANDSET(IDC_PRLEFT, pl, IDS_INVALID_MAIN_SCREEN_LEFT);
+	GETANDSET(IDC_PRTOP, pt, IDS_INVALID_MAIN_SCREEN_TOP);
+	GETANDSET(IDC_PRWIDTH, pw, IDS_INVALID_MAIN_SCREEN_WIDTH);
 	if (pw == 0)
 	{
-		MessageBox(hEditorWin, _T("プレイ画面領域の幅は0以外の値でなければいけません。"), NULL, MB_ICONSTOP);
+		auto zeroWidthMessage = LoadTHRotatorString(g_hModule, IDS_ZERO_MAIN_SCREEN_WIDTH_ERROR);
+		MessageBox(hEditorWin, zeroWidthMessage.c_str(), NULL, MB_ICONSTOP);
 		return FALSE;
 	}
-	GETANDSET(IDC_PRHEIGHT, ph, _T("プレイ画面領域の高さの入力が不正です。"));
+	GETANDSET(IDC_PRHEIGHT, ph, IDS_INVALID_MAIN_SCREEN_HEIGHT);
 	if (ph == 0)
 	{
-		MessageBox(hEditorWin, _T("プレイ画面領域の高さは0以外の値でなければいけません。"), NULL, MB_ICONSTOP);
+		auto zeroHeightMessage = LoadTHRotatorString(g_hModule, IDS_ZERO_MAIN_SCREEN_HEIGHT_ERROR);
+		MessageBox(hEditorWin, zeroHeightMessage.c_str(), NULL, MB_ICONSTOP);
 		return FALSE;
 	}
-	GETANDSET(IDC_YOFFSET, yo, _T("プレイ画面領域のオフセットの入力が不正です。"));
+	GETANDSET(IDC_YOFFSET, yo, IDS_INVALID_MAIN_SCREEN_OFFSET);
 
 	m_judgeThreshold = jthres;
 	m_playRegionLeft = pl;
