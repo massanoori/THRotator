@@ -95,7 +95,7 @@ private:
 		return ApplyChangeFromEditorWindow(m_hEditorWin);
 	}
 
-	void SaveSettings();
+	bool SaveSettings();
 
 	void LoadSettings();
 

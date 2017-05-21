@@ -968,12 +968,16 @@ BOOL THRotatorEditorContext::ApplyChangeFromEditorWindow(HWND hEditorWin)
 
 	m_currentRectTransfers = m_editedRectTransfers;
 
-	SaveSettings();
+	if (!SaveSettings())
+	{
+		// TODO: エラーメッセージの表示
+		return FALSE;
+	}
 
 	return TRUE;
 }
 
-void THRotatorEditorContext::SaveSettings()
+bool THRotatorEditorContext::SaveSettings()
 {
 	namespace proptree = boost::property_tree;
 	proptree::basic_ptree<std::string, std::string> tree;
@@ -1041,7 +1045,16 @@ void THRotatorEditorContext::SaveSettings()
 	WRITE_INI_PARAM(ss.str(), FALSE);
 #undef WRITE_INI_PARAM
 
-	proptree::write_ini(m_iniPath.generic_string(), tree);
+	try
+	{
+		proptree::write_ini(m_iniPath.generic_string(), tree);
+	}
+	catch (const proptree::ini_parser_error&)
+	{
+		return false;
+	}
+
+	return true;
 }
 
 void THRotatorEditorContext::LoadSettings()
@@ -1191,7 +1204,11 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 						auto nextRotationAngle = static_cast<RotationAngle>((context->m_rotationAngle + 1) % 4);
 
 						context->m_rotationAngle = nextRotationAngle;
-						context->SaveSettings();
+						if (!context->SaveSettings())
+						{
+							// TODO: エラーメッセージの表示
+							break;
+						}
 
 						if (context->m_bNeedModalEditor)
 						{
@@ -1241,7 +1258,11 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 						auto nextRotationAngle = static_cast<RotationAngle>((context->m_rotationAngle + Rotation_Num - 1) % 4);
 
 						context->m_rotationAngle = nextRotationAngle;
-						context->SaveSettings();
+						
+						if (!context->SaveSettings())
+						{
+							break;
+						}
 
 						if (context->m_bNeedModalEditor)
 						{
