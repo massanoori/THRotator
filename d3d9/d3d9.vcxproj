@@ -79,7 +79,7 @@
     <CustomBuildStep>
       <Command>$(SolutionDir)localization\make_localization_ready.bat $(OutDir)$(TargetName)$(TargetExt)</Command>
       <Outputs>$(OutDir)$(TargetName)$(TargetExt).mui</Outputs>
-      <Inputs>$(SolutionDir)common\THRotator.rc</Inputs>
+      <Inputs>$(SolutionDir)common\THRotator.rc;$(OutDir)$(TargetName)$(TargetExt)</Inputs>
     </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -113,7 +113,7 @@
     <CustomBuildStep>
       <Command>$(SolutionDir)localization\make_localization_ready.bat $(OutDir)$(TargetName)$(TargetExt)</Command>
       <Outputs>$(OutDir)$(TargetName)$(TargetExt).mui</Outputs>
-      <Inputs>$(SolutionDir)common\THRotator.rc</Inputs>
+      <Inputs>$(SolutionDir)common\THRotator.rc;$(OutDir)$(TargetName)$(TargetExt)</Inputs>
     </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemGroup>
