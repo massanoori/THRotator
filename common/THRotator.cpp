@@ -52,8 +52,14 @@ static float RotationAngleToRadian(RotationAngle rotation)
 	return static_cast<float>(rotation) * D3DX_PI * 0.5f;
 }
 
+namespace
+{
+
 const UINT BASE_SCREEN_WIDTH = 640u;
 const UINT BASE_SCREEN_HEIGHT = 480u;
+LPCTSTR DEBUG_FONT_FAMILY = _T("Arial");
+
+}
 
 HINSTANCE g_hModule;
 
@@ -336,8 +342,9 @@ private:
 	ComPtr<Direct3DTextureBase> m_pTex;
 	ComPtr<THRotatorDirect3D> m_pMyD3D;
 
-#ifdef _DEBUG
 	ComPtr<ID3DXFont> m_pFont;
+#ifdef TOUHOU_ON_D3D8
+	HFONT m_hFont;
 #endif
 
 
@@ -1861,6 +1868,9 @@ HRESULT THRotatorDirect3D::CreateDeviceEx(UINT Adapter,
 
 THRotatorDirect3DDevice::THRotatorDirect3DDevice()
 	: m_bInitialized(false)
+#if defined(_DEBUG) && defined(TOUHOU_ON_D3D8)
+	, m_hFont(nullptr)
+#endif
 	, m_referenceCount(1)
 	, m_requestedWidth(0)
 	, m_requestedHeight(0)
@@ -1874,10 +1884,17 @@ THRotatorDirect3DDevice::THRotatorDirect3DDevice()
 	QueryPerformanceFrequency(&m_freq);
 	ZeroMemory(&m_prev, sizeof(m_prev));
 #endif
+
+#ifdef TOUHOU_ON_D3D8
+	m_hFont = CreateFont(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, DEBUG_FONT_FAMILY);
+#endif
 }
 
 THRotatorDirect3DDevice::~THRotatorDirect3DDevice()
 {
+#ifdef TOUHOU_ON_D3D8
+	DeleteObject(m_hFont);
+#endif
 }
 
 HRESULT THRotatorDirect3DDevice::Init(UINT Adapter, THRotatorDirect3D* pMyD3D, D3DDEVTYPE DeviceType, HWND hFocusWindow,
@@ -1992,17 +2009,19 @@ HRESULT THRotatorDirect3DDevice::InitResources()
 		return hr;
 	}
 
-#if defined(_DEBUG) && !defined(TOUHOU_ON_D3D8)
 	if (m_pFont && FAILED(hr = m_pFont->OnResetDevice()))
 	{
 		return hr;
 	}
+#ifdef TOUHOU_ON_D3D8
+	else if (FAILED(hr = D3DXCreateFont(m_pd3dDev.Get(), m_hFont, &m_pFont)))
+#else
 	else if (FAILED(hr = D3DXCreateFont(m_pd3dDev.Get(),
-		0, 0, 0, 0, 0, 0, 0, 0, 0, _T("Arial"), &m_pFont)))
+		0, 0, 0, 0, 0, 0, 0, 0, 0, DEBUG_FONT_FAMILY, &m_pFont)))
+#endif
 	{
 		return hr;
 	}
-#endif
 
 	hr = m_pd3dDev->CreateRenderTarget(m_requestedWidth, m_requestedHeight,
 		m_d3dpp.BackBufferFormat, m_d3dpp.MultiSampleType,
@@ -2071,13 +2090,12 @@ void THRotatorDirect3DDevice::ReleaseResources()
 	{
 		m_pSprite->OnLostDevice();
 	}
-#ifdef _DEBUG
+#endif
+
 	if (m_pFont)
 	{
 		m_pFont->OnLostDevice();
 	}
-#endif
-#endif
 
 	m_pRenderTarget.Reset();
 	m_pTexSurface.Reset();
@@ -2450,7 +2468,7 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 			m_pSprite->End();
 		}
 
-#if defined(_DEBUG) && !defined(TOUHOU_ON_D3D8)
+#ifdef _DEBUG
 		RECT rcText;
 		rcText.right = m_d3dpp.BackBufferWidth;
 		rcText.left = rcText.right - 128;
@@ -2458,9 +2476,16 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 		rcText.top = rcText.bottom - 24;
 		TCHAR text[64];
 		_stprintf_s(text, _T("%5.2f fps"), m_FPS);
-		m_pFont->DrawText(NULL, text, -1, &rcText, 0, D3DCOLOR_XRGB(0xff, (unsigned)(0xff * max(0, m_FPS - 30.f) / 30.f), (unsigned)(0xff * max(0, m_FPS - 30.f) / 30.f)));
+#ifdef TOUHOU_ON_D3D8
+		m_pFont->DrawText(
+#else
+		//(THIS_ LPD3DXSPRITE pSprite, LPCWSTR pString, INT Count, LPRECT pRect, DWORD Format, D3DCOLOR Color)
+		m_pFont->DrawText(NULL,
 #endif
+			text, -1, &rcText, 0, D3DCOLOR_XRGB(0xff, (unsigned)(0xff * max(0, m_FPS - 30.f) / 30.f), (unsigned)(0xff * max(0, m_FPS - 30.f) / 30.f)));
+#endif // _DEBUG
 	}
+
 #ifdef TOUHOU_ON_D3D8
 	m_pd3dDev->SetRenderTarget(m_pRenderTarget.Get(), m_pDepthStencil.Get());
 #else
