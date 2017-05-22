@@ -52,6 +52,8 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 	, m_bInitialized(false)
 	, m_bScreenCaptureQueued(false)
 {
+	m_errorMessageExpirationClock.QuadPart = 0;
+
 	struct MessageHook
 	{
 		HHOOK m_hHook;
@@ -258,6 +260,19 @@ const boost::filesystem::path & THRotatorEditorContext::GetWorkingDirectory() co
 	return m_workingDir;
 }
 
+LPCTSTR THRotatorEditorContext::GetErrorMessage() const
+{
+	LARGE_INTEGER currentClock;
+	::QueryPerformanceCounter(&currentClock);
+
+	if (currentClock.QuadPart >= m_errorMessageExpirationClock.QuadPart)
+	{
+		return nullptr;
+	}
+
+	return m_errorMessage.c_str();
+}
+
 THRotatorEditorContext::~THRotatorEditorContext()
 {
 	ms_touhouWinToContext.erase(m_hTouhouWin);
@@ -411,7 +426,7 @@ BOOL CALLBACK THRotatorEditorContext::MainDialogProc(HWND hWnd, UINT msg, WPARAM
 
 			if (!pContext->SaveSettings())
 			{
-				// TODO: エラーメッセージの表示
+				MessageBox(hWnd, _T("THRotatorの設定をファイルに保存できませんでした。"), nullptr, MB_ICONSTOP);
 				return FALSE;
 			}
 
@@ -856,6 +871,18 @@ RetryEdit:
 	return true;
 }
 
+void THRotatorEditorContext::SetNewErrorMessage(std::basic_string<TCHAR>&& message)
+{
+	LARGE_INTEGER frequency;
+	::QueryPerformanceFrequency(&frequency);
+	::QueryPerformanceCounter(&m_errorMessageExpirationClock);
+
+	const int TTL = 8;
+
+	m_errorMessageExpirationClock.QuadPart += frequency.QuadPart * TTL;
+	m_errorMessage = std::move(message);
+}
+
 BOOL THRotatorEditorContext::ApplyChangeFromEditorWindow(HWND hEditorWin)
 {
 	assert(hEditorWin);
@@ -1188,7 +1215,7 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 
 						if (!context->SaveSettings())
 						{
-							// TODO: エラーメッセージの表示
+							context->SetNewErrorMessage(_T("THRotatorの設定をファイルに保存できませんでした。"));
 							break;
 						}
 					}
@@ -1207,7 +1234,7 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 
 						if (!context->SaveSettings())
 						{
-							// TODO: エラーメッセージの表示
+							context->SetNewErrorMessage(_T("THRotatorの設定をファイルに保存できませんでした。"));
 							break;
 						}
 					}

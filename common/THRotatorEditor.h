@@ -77,6 +77,8 @@ public:
 
 	const boost::filesystem::path& GetWorkingDirectory() const;
 
+	LPCTSTR GetErrorMessage() const;
+
 	~THRotatorEditorContext();
 
 private:
@@ -116,6 +118,8 @@ private:
 	 */
 	bool OpenEditRectDialog(RectTransferData& inoutRectTransfer, std::vector<RectTransferData>::const_iterator editedRectTransfer) const;
 
+	void SetNewErrorMessage(std::basic_string<TCHAR>&& message);
+
 	boost::filesystem::path m_workingDir;
 
 	/****************************************
@@ -153,4 +157,12 @@ private:
 	HWND m_hEditorWin, m_hTouhouWin;
 	bool m_bNeedModalEditor;
 	int m_modalEditorWindowPosX, m_modalEditorWindowPosY;
+
+
+	/****************************************
+	* Error notification
+	****************************************/
+
+	std::basic_string<TCHAR> m_errorMessage;
+	LARGE_INTEGER m_errorMessageExpirationClock;
 };

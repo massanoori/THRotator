@@ -58,6 +58,7 @@ namespace
 const UINT BASE_SCREEN_WIDTH = 640u;
 const UINT BASE_SCREEN_HEIGHT = 480u;
 LPCTSTR DEBUG_FONT_FAMILY = _T("Arial");
+const int DEBUG_FONT_HEIGHT = 28;
 
 }
 
@@ -1886,7 +1887,7 @@ THRotatorDirect3DDevice::THRotatorDirect3DDevice()
 #endif
 
 #ifdef TOUHOU_ON_D3D8
-	m_hFont = CreateFont(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, DEBUG_FONT_FAMILY);
+	m_hFont = CreateFont(DEBUG_FONT_HEIGHT, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, DEBUG_FONT_FAMILY);
 #endif
 }
 
@@ -2017,7 +2018,7 @@ HRESULT THRotatorDirect3DDevice::InitResources()
 	else if (FAILED(hr = D3DXCreateFont(m_pd3dDev.Get(), m_hFont, &m_pFont)))
 #else
 	else if (FAILED(hr = D3DXCreateFont(m_pd3dDev.Get(),
-		0, 0, 0, 0, 0, 0, 0, 0, 0, DEBUG_FONT_FAMILY, &m_pFont)))
+		DEBUG_FONT_HEIGHT, 0, 0, 0, 0, 0, 0, 0, 0, DEBUG_FONT_FAMILY, &m_pFont)))
 #endif
 	{
 		return hr;
@@ -2468,22 +2469,23 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 			m_pSprite->End();
 		}
 
-#ifdef _DEBUG
-		RECT rcText;
-		rcText.right = m_d3dpp.BackBufferWidth;
-		rcText.left = rcText.right - 128;
-		rcText.bottom = m_d3dpp.BackBufferHeight;
-		rcText.top = rcText.bottom - 24;
-		TCHAR text[64];
-		_stprintf_s(text, _T("%5.2f fps"), m_FPS);
+		auto errorMessage = m_pEditorContext->GetErrorMessage();
+		if (errorMessage)
+		{
+			RECT rcText;
+			rcText.right = m_d3dpp.BackBufferWidth;
+			rcText.left = rcText.right - 480;
+			rcText.bottom = m_d3dpp.BackBufferHeight;
+			rcText.top = rcText.bottom - DEBUG_FONT_HEIGHT;
 #ifdef TOUHOU_ON_D3D8
-		m_pFont->DrawText(
+			m_pFont->DrawText(
 #else
-		//(THIS_ LPD3DXSPRITE pSprite, LPCWSTR pString, INT Count, LPRECT pRect, DWORD Format, D3DCOLOR Color)
-		m_pFont->DrawText(NULL,
+			//(THIS_ LPD3DXSPRITE pSprite, LPCWSTR pString, INT Count, LPRECT pRect, DWORD Format, D3DCOLOR Color)
+			m_pFont->DrawText(NULL,
 #endif
-			text, -1, &rcText, 0, D3DCOLOR_XRGB(0xff, (unsigned)(0xff * max(0, m_FPS - 30.f) / 30.f), (unsigned)(0xff * max(0, m_FPS - 30.f) / 30.f)));
-#endif // _DEBUG
+				errorMessage, -1, &rcText, 0,
+				D3DCOLOR_XRGB(0xff, 0x7f, 0x7f));
+		}
 	}
 
 #ifdef TOUHOU_ON_D3D8
