@@ -95,6 +95,12 @@ private:
 		return ApplyChangeFromEditorWindow(m_hEditorWin);
 	}
 
+	void ApplyRotationToEditorWindow(HWND hWnd) const;
+	void ApplyRotationToEditorWindow() const
+	{
+		ApplyRotationToEditorWindow(m_hEditorWin);
+	}
+
 	bool SaveSettings();
 
 	void LoadSettings();

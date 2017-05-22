@@ -354,24 +354,7 @@ BOOL CALLBACK THRotatorEditorContext::MainDialogProc(HWND hWnd, UINT msg, WPARAM
 		if (pContext->m_bVerticallyLongWindow == 1)
 			SendDlgItemMessage(hWnd, IDC_VERTICALWINDOW, BM_SETCHECK, BST_CHECKED, 0);
 
-		switch (pContext->m_rotationAngle)
-		{
-		case Rotation_0:
-			SendDlgItemMessage(hWnd, IDC_ROT0_2, BM_SETCHECK, BST_CHECKED, 0);
-			break;
-
-		case Rotation_90:
-			SendDlgItemMessage(hWnd, IDC_ROT90_2, BM_SETCHECK, BST_CHECKED, 0);
-			break;
-
-		case Rotation_180:
-			SendDlgItemMessage(hWnd, IDC_ROT180_2, BM_SETCHECK, BST_CHECKED, 0);
-			break;
-
-		case Rotation_270:
-			SendDlgItemMessage(hWnd, IDC_ROT270_2, BM_SETCHECK, BST_CHECKED, 0);
-			break;
-		}
+		pContext->ApplyRotationToEditorWindow(hWnd);
 
 		{
 			std::basic_string<TCHAR> columnText;
@@ -426,6 +409,12 @@ BOOL CALLBACK THRotatorEditorContext::MainDialogProc(HWND hWnd, UINT msg, WPARAM
 				return FALSE;
 			}
 
+			if (!pContext->SaveSettings())
+			{
+				// TODO: エラーメッセージの表示
+				return FALSE;
+			}
+
 			if (pContext->m_bNeedModalEditor)
 			{
 				RECT rc;
@@ -455,36 +444,8 @@ BOOL CALLBACK THRotatorEditorContext::MainDialogProc(HWND hWnd, UINT msg, WPARAM
 			else
 				SendDlgItemMessage(hWnd, IDC_VERTICALWINDOW, BM_SETCHECK, BST_UNCHECKED, 0);
 
-			switch (pContext->m_rotationAngle)
-			{
-			case 0:
-				SendDlgItemMessage(hWnd, IDC_ROT0_2, BM_SETCHECK, BST_CHECKED, 0);
-				SendDlgItemMessage(hWnd, IDC_ROT90_2, BM_SETCHECK, BST_UNCHECKED, 0);
-				SendDlgItemMessage(hWnd, IDC_ROT180_2, BM_SETCHECK, BST_UNCHECKED, 0);
-				SendDlgItemMessage(hWnd, IDC_ROT270_2, BM_SETCHECK, BST_UNCHECKED, 0);
-				break;
+			pContext->ApplyRotationToEditorWindow(hWnd);
 
-			case 1:
-				SendDlgItemMessage(hWnd, IDC_ROT90_2, BM_SETCHECK, BST_CHECKED, 0);
-				SendDlgItemMessage(hWnd, IDC_ROT180_2, BM_SETCHECK, BST_UNCHECKED, 0);
-				SendDlgItemMessage(hWnd, IDC_ROT270_2, BM_SETCHECK, BST_UNCHECKED, 0);
-				SendDlgItemMessage(hWnd, IDC_ROT0_2, BM_SETCHECK, BST_UNCHECKED, 0);
-				break;
-
-			case 2:
-				SendDlgItemMessage(hWnd, IDC_ROT180_2, BM_SETCHECK, BST_CHECKED, 0);
-				SendDlgItemMessage(hWnd, IDC_ROT270_2, BM_SETCHECK, BST_UNCHECKED, 0);
-				SendDlgItemMessage(hWnd, IDC_ROT0_2, BM_SETCHECK, BST_UNCHECKED, 0);
-				SendDlgItemMessage(hWnd, IDC_ROT90_2, BM_SETCHECK, BST_UNCHECKED, 0);
-				break;
-
-			case 3:
-				SendDlgItemMessage(hWnd, IDC_ROT270_2, BM_SETCHECK, BST_CHECKED, 0);
-				SendDlgItemMessage(hWnd, IDC_ROT0_2, BM_SETCHECK, BST_UNCHECKED, 0);
-				SendDlgItemMessage(hWnd, IDC_ROT90_2, BM_SETCHECK, BST_UNCHECKED, 0);
-				SendDlgItemMessage(hWnd, IDC_ROT180_2, BM_SETCHECK, BST_UNCHECKED, 0);
-				break;
-			}
 			switch (pContext->m_filterType)
 			{
 			case D3DTEXF_NONE:
@@ -968,13 +929,29 @@ BOOL THRotatorEditorContext::ApplyChangeFromEditorWindow(HWND hEditorWin)
 
 	m_currentRectTransfers = m_editedRectTransfers;
 
-	if (!SaveSettings())
-	{
-		// TODO: エラーメッセージの表示
-		return FALSE;
-	}
-
 	return TRUE;
+}
+
+void THRotatorEditorContext::ApplyRotationToEditorWindow(HWND hWnd) const
+{
+	assert(hWnd != nullptr);
+
+	UINT checkStates[Rotation_Num] =
+	{
+		BST_UNCHECKED, BST_UNCHECKED, BST_UNCHECKED, BST_UNCHECKED,
+	};
+
+	UINT radioButtonIDs[Rotation_Num] =
+	{
+		IDC_ROT0_2, IDC_ROT90_2, IDC_ROT180_2, IDC_ROT270_2,
+	};
+
+	checkStates[m_rotationAngle] = BST_CHECKED;
+
+	for (std::uint32_t i = 0; i < Rotation_Num; i++)
+	{
+		SendDlgItemMessage(hWnd, radioButtonIDs[i], BM_SETCHECK, checkStates[i], 0);
+	}
 }
 
 bool THRotatorEditorContext::SaveSettings()
@@ -1202,51 +1179,16 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 					if ((HIWORD(pMsg->lParam) & KF_ALTDOWN) && !(HIWORD(pMsg->lParam) & KF_REPEAT))
 					{
 						auto nextRotationAngle = static_cast<RotationAngle>((context->m_rotationAngle + 1) % 4);
-
 						context->m_rotationAngle = nextRotationAngle;
+
+						if (!context->m_bNeedModalEditor)
+						{
+							context->ApplyRotationToEditorWindow();
+						}
+
 						if (!context->SaveSettings())
 						{
 							// TODO: エラーメッセージの表示
-							break;
-						}
-
-						if (context->m_bNeedModalEditor)
-						{
-							break;
-						}
-
-						switch (nextRotationAngle)
-						{
-						case Rotation_0:
-							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT0_2, BM_SETCHECK, BST_CHECKED, 0);
-							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT90_2, BM_SETCHECK, BST_UNCHECKED, 0);
-							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT180_2, BM_SETCHECK, BST_UNCHECKED, 0);
-							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT270_2, BM_SETCHECK, BST_UNCHECKED, 0);
-							//if( pDev->m_d3dpp.Windowed ) pDev->SetVerticallyLongWindow( 0 );
-							break;
-
-						case Rotation_90:
-							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT0_2, BM_SETCHECK, BST_UNCHECKED, 0);
-							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT90_2, BM_SETCHECK, BST_CHECKED, 0);
-							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT180_2, BM_SETCHECK, BST_UNCHECKED, 0);
-							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT270_2, BM_SETCHECK, BST_UNCHECKED, 0);
-							//if( context->m_d3dpp.Windowed ) context->SetVerticallyLongWindow( 1 );
-							break;
-
-						case Rotation_180:
-							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT0_2, BM_SETCHECK, BST_UNCHECKED, 0);
-							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT90_2, BM_SETCHECK, BST_UNCHECKED, 0);
-							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT180_2, BM_SETCHECK, BST_CHECKED, 0);
-							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT270_2, BM_SETCHECK, BST_UNCHECKED, 0);
-							//if( context->m_d3dpp.Windowed ) context->SetVerticallyLongWindow( 0 );
-							break;
-
-						case Rotation_270:
-							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT0_2, BM_SETCHECK, BST_UNCHECKED, 0);
-							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT90_2, BM_SETCHECK, BST_UNCHECKED, 0);
-							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT180_2, BM_SETCHECK, BST_UNCHECKED, 0);
-							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT270_2, BM_SETCHECK, BST_CHECKED, 0);
-							//if( context->m_d3dpp.Windowed ) context->SetVerticallyLongWindow( 1 );
 							break;
 						}
 					}
@@ -1256,51 +1198,16 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 					if (HIWORD(pMsg->lParam) & KF_ALTDOWN && !(HIWORD(pMsg->lParam) & KF_REPEAT))
 					{
 						auto nextRotationAngle = static_cast<RotationAngle>((context->m_rotationAngle + Rotation_Num - 1) % 4);
-
 						context->m_rotationAngle = nextRotationAngle;
-						
+
+						if (!context->m_bNeedModalEditor)
+						{
+							context->ApplyRotationToEditorWindow();
+						}
+
 						if (!context->SaveSettings())
 						{
-							break;
-						}
-
-						if (context->m_bNeedModalEditor)
-						{
-							break;
-						}
-
-						switch (nextRotationAngle)
-						{
-						case Rotation_0:
-							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT0_2, BM_SETCHECK, BST_CHECKED, 0);
-							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT90_2, BM_SETCHECK, BST_UNCHECKED, 0);
-							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT180_2, BM_SETCHECK, BST_UNCHECKED, 0);
-							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT270_2, BM_SETCHECK, BST_UNCHECKED, 0);
-							//if( context->m_d3dpp.Windowed ) context->SetVerticallyLongWindow( 0 );
-							break;
-
-						case Rotation_90:
-							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT0_2, BM_SETCHECK, BST_UNCHECKED, 0);
-							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT90_2, BM_SETCHECK, BST_CHECKED, 0);
-							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT180_2, BM_SETCHECK, BST_UNCHECKED, 0);
-							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT270_2, BM_SETCHECK, BST_UNCHECKED, 0);
-							//if( context->m_d3dpp.Windowed ) context->SetVerticallyLongWindow( 1 );
-							break;
-
-						case Rotation_180:
-							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT0_2, BM_SETCHECK, BST_UNCHECKED, 0);
-							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT90_2, BM_SETCHECK, BST_UNCHECKED, 0);
-							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT180_2, BM_SETCHECK, BST_CHECKED, 0);
-							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT270_2, BM_SETCHECK, BST_UNCHECKED, 0);
-							//if( context->m_d3dpp.Windowed ) context->SetVerticallyLongWindow( 0 );
-							break;
-
-						case Rotation_270:
-							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT0_2, BM_SETCHECK, BST_UNCHECKED, 0);
-							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT90_2, BM_SETCHECK, BST_UNCHECKED, 0);
-							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT180_2, BM_SETCHECK, BST_UNCHECKED, 0);
-							SendDlgItemMessage(context->m_hEditorWin, IDC_ROT270_2, BM_SETCHECK, BST_CHECKED, 0);
-							//if( context->m_d3dpp.Windowed ) context->SetVerticallyLongWindow( 1 );
+							// TODO: エラーメッセージの表示
 							break;
 						}
 					}
