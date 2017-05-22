@@ -426,7 +426,8 @@ BOOL CALLBACK THRotatorEditorContext::MainDialogProc(HWND hWnd, UINT msg, WPARAM
 
 			if (!pContext->SaveSettings())
 			{
-				MessageBox(hWnd, _T("THRotatorの設定をファイルに保存できませんでした。"), nullptr, MB_ICONSTOP);
+				auto saveFailureMessage = LoadTHRotatorString(g_hModule, IDS_SETTING_FILE_SAVE_FAILED);
+				MessageBox(hWnd, saveFailureMessage.c_str(), nullptr, MB_ICONSTOP);
 				return FALSE;
 			}
 
@@ -1215,7 +1216,8 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 
 						if (!context->SaveSettings())
 						{
-							context->SetNewErrorMessage(_T("THRotatorの設定をファイルに保存できませんでした。"));
+							auto saveFailureMessage = LoadTHRotatorString(g_hModule, IDS_SETTING_FILE_SAVE_FAILED);
+							context->SetNewErrorMessage(saveFailureMessage.c_str());
 							break;
 						}
 					}
@@ -1234,7 +1236,8 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 
 						if (!context->SaveSettings())
 						{
-							context->SetNewErrorMessage(_T("THRotatorの設定をファイルに保存できませんでした。"));
+							auto saveFailureMessage = LoadTHRotatorString(g_hModule, IDS_SETTING_FILE_SAVE_FAILED);
+							context->SetNewErrorMessage(saveFailureMessage.c_str());
 							break;
 						}
 					}

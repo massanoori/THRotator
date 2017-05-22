@@ -5,6 +5,7 @@
 #include <wrl.h>
 
 #include "THRotatorEditor.h"
+#include "resource.h"
 
 #ifdef TOUHOU_ON_D3D8
 
@@ -57,8 +58,7 @@ namespace
 
 const UINT BASE_SCREEN_WIDTH = 640u;
 const UINT BASE_SCREEN_HEIGHT = 480u;
-LPCTSTR DEBUG_FONT_FAMILY = _T("Arial");
-const int DEBUG_FONT_HEIGHT = 28;
+const int ERROR_MESSAGE_FONT_HEIGHT = 26;
 
 }
 
@@ -1887,7 +1887,8 @@ THRotatorDirect3DDevice::THRotatorDirect3DDevice()
 #endif
 
 #ifdef TOUHOU_ON_D3D8
-	m_hFont = CreateFont(DEBUG_FONT_HEIGHT, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, DEBUG_FONT_FAMILY);
+	auto fontFamily = LoadTHRotatorString(g_hModule, IDS_ERROR_MESSAGE_FONT_FAMILY);
+	m_hFont = CreateFont(ERROR_MESSAGE_FONT_HEIGHT, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, fontFamily.c_str());
 #endif
 }
 
@@ -2010,6 +2011,8 @@ HRESULT THRotatorDirect3DDevice::InitResources()
 		return hr;
 	}
 
+	auto fontFamily = LoadTHRotatorString(g_hModule, IDS_ERROR_MESSAGE_FONT_FAMILY);
+
 	if (m_pFont && FAILED(hr = m_pFont->OnResetDevice()))
 	{
 		return hr;
@@ -2018,7 +2021,7 @@ HRESULT THRotatorDirect3DDevice::InitResources()
 	else if (FAILED(hr = D3DXCreateFont(m_pd3dDev.Get(), m_hFont, &m_pFont)))
 #else
 	else if (FAILED(hr = D3DXCreateFont(m_pd3dDev.Get(),
-		DEBUG_FONT_HEIGHT, 0, 0, 0, 0, 0, 0, 0, 0, DEBUG_FONT_FAMILY, &m_pFont)))
+		ERROR_MESSAGE_FONT_HEIGHT, 0, 0, 0, 0, 0, 0, 0, 0, fontFamily.c_str(), &m_pFont)))
 #endif
 	{
 		return hr;
@@ -2476,7 +2479,7 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 			rcText.right = m_d3dpp.BackBufferWidth;
 			rcText.left = rcText.right - 480;
 			rcText.bottom = m_d3dpp.BackBufferHeight;
-			rcText.top = rcText.bottom - DEBUG_FONT_HEIGHT;
+			rcText.top = rcText.bottom - ERROR_MESSAGE_FONT_HEIGHT;
 #ifdef TOUHOU_ON_D3D8
 			m_pFont->DrawText(
 #else
