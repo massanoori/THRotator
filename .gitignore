@@ -19,6 +19,8 @@
 !*.png
 !*.css
 !*.jpg
+!*.py
+!*.rst
 
 # Internationalization
 !*.rcconfig
@@ -29,5 +31,6 @@
 
 !*.txt
 !*.md
+!Makefile
 
 !.gitignore
