@@ -8,11 +8,12 @@
 !*.cpp
 !*.c
 !*.h
-!*.vcxproj
-!*.vcxproj.filters
 !*.def
 !*.lib
 !*.rc
+
+# Build
+!*.cmake
 
 # Documents
 !*.html
@@ -32,5 +33,12 @@
 !*.txt
 !*.md
 !Makefile
+
+# Intermediate files
+Debug/
+Release/
+MinSizeRel/
+RelWithDebInfo/
+_build/
 
 !.gitignore
