@@ -27,15 +27,24 @@ typedef std::basic_string<TCHAR> std_tstring;
 
 std::basic_string<TCHAR> LoadTHRotatorString(HINSTANCE hModule, UINT nID)
 {
-	LPTSTR temp;
-	auto bufferLength = LoadString(hModule, nID, reinterpret_cast<LPTSTR>(&temp), 0);
+	LPWSTR temp;
+	auto bufferLength = LoadStringW(hModule, nID, reinterpret_cast<LPWSTR>(&temp), 0);
+
 	if (bufferLength == 0)
 	{
 		return std::basic_string<TCHAR>();
 	}
 	else
 	{
+#ifdef _UNICODE
 		return std::basic_string<TCHAR>(temp, bufferLength);
+#else
+		auto returnedBufferSize = WideCharToMultiByte(CP_ACP, 0, temp, bufferLength, nullptr, 0, nullptr, nullptr);
+		std::unique_ptr<CHAR[]> bufferInMultiByte(new CHAR[returnedBufferSize]);
+		WideCharToMultiByte(CP_ACP, 0, temp, bufferLength, bufferInMultiByte.get(), returnedBufferSize, nullptr, nullptr);
+
+		return std::string(bufferInMultiByte.get(), returnedBufferSize);
+#endif
 	}
 }
 
