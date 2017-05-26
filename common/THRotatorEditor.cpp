@@ -37,7 +37,7 @@ std::basic_string<TCHAR> LoadTHRotatorString(HINSTANCE hModule, UINT nID)
 	else
 	{
 #ifdef _UNICODE
-		return std::basic_string<TCHAR>(temp, bufferLength);
+		return std::wstring(temp, bufferLength);
 #else
 		auto returnedBufferSize = WideCharToMultiByte(CP_ACP, 0, temp, bufferLength, nullptr, 0, nullptr, nullptr);
 		std::unique_ptr<CHAR[]> bufferInMultiByte(new CHAR[returnedBufferSize]);

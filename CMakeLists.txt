@@ -12,6 +12,12 @@ set (CMAKE_CXX_STANDARD 11)
 
 project(THRotator)
 
+option(USE_UNICODE "Set unicode as character set" ON)
+
+if (USE_UNICODE)
+	add_definitions(-D_UNICODE -DUNICODE)
+endif ()
+
 set(BOOST_INCLUDE_DIR "" CACHE PATH "boost header file directory")
 set(BOOST_LIB_DIR "" CACHE PATH "boost library directory")
 
