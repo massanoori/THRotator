@@ -21,7 +21,7 @@ set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /MANIFEST:NO")
 
 add_library(${throtator_target} SHARED ${throtator_source_files} ${throtator_other_files} "${throtator_dll_def}")
 
-set(target_file \$\(OutDir\)$<TARGET_FILE_NAME:${throtator_target}>)
+set(target_file \"\$\(OutDir\)$<TARGET_FILE_NAME:${throtator_target}>\")
 
 add_custom_command(TARGET ${throtator_target}
 	POST_BUILD
