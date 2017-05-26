@@ -85,4 +85,12 @@ HUD elements and background is well blended with Vertical Play.
 License
 =====
 
-Under GPL v3.
+.ini files
+-----
+
+Public domain.
+
+Other files
+-----
+
+Under GPL v3
