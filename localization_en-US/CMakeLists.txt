@@ -26,8 +26,8 @@ add_custom_command(TARGET localization_en-US
 	POST_BUILD
 	COMMAND if not exist ${d3d8_mui_dir} mkdir \"${d3d8_mui_dir}\"
 	COMMAND if not exist ${d3d9_mui_dir} mkdir \"${d3d9_mui_dir}\"
-	COMMAND muirct -q ${CMAKE_CURRENT_LIST_DIR}/../localization/DoReverseMuiLoc.rcconfig -x 0x0409 -g 0x0409 ${loc_target_file} ${loc_target_file}.discarded ${d3d8_mui}
-	COMMAND muirct -q ${CMAKE_CURRENT_LIST_DIR}/../localization/DoReverseMuiLoc.rcconfig -x 0x0409 -g 0x0409 ${loc_target_file} ${loc_target_file}.discarded ${d3d9_mui}
+	COMMAND muirct -q ${CMAKE_CURRENT_LIST_DIR}/../internationalization/DoReverseMuiLoc.rcconfig -x 0x0409 -g 0x0409 ${loc_target_file} ${loc_target_file}.discarded ${d3d8_mui}
+	COMMAND muirct -q ${CMAKE_CURRENT_LIST_DIR}/../internationalization/DoReverseMuiLoc.rcconfig -x 0x0409 -g 0x0409 ${loc_target_file} ${loc_target_file}.discarded ${d3d9_mui}
 	COMMAND muirct -c ${d3d8_target_file} -e ${d3d8_mui}
 	COMMAND muirct -c ${d3d9_target_file} -e ${d3d9_mui})
 

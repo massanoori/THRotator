@@ -25,4 +25,4 @@ set(target_file \$\(OutDir\)$<TARGET_FILE_NAME:${throtator_target}>)
 
 add_custom_command(TARGET ${throtator_target}
 	POST_BUILD
-	COMMAND muirct -q ${CMAKE_CURRENT_LIST_DIR}/../localization/AllNeutral.rcconfig -x 0x0411 -g 0x0409 ${target_file} ${target_file})
+	COMMAND muirct -q ${CMAKE_CURRENT_LIST_DIR}/../internationalization/AllNeutral.rcconfig -x 0x0411 -g 0x0409 ${target_file} ${target_file})
