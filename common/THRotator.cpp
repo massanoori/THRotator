@@ -356,6 +356,7 @@ private:
 	D3DPRESENT_PARAMETERS m_d3dpp;
 	D3DTEXTUREFILTERTYPE m_filterType;
 	UINT m_requestedWidth, m_requestedHeight;
+	D3DDEVTYPE m_deviceType;
 #ifdef TOUHOU_ON_D3D8
 	D3DSURFACE_DESC m_surfDesc;
 #endif
@@ -1943,6 +1944,7 @@ HRESULT THRotatorDirect3DDevice::InternalInit(UINT Adapter,
 
 	m_resetRevision = m_pEditorContext->GetResetRevision();
 	m_pMyD3D = pMyD3D;
+	m_deviceType = DeviceType;
 
 	if (m_d3dpp.Windowed)
 	{
@@ -2112,7 +2114,7 @@ void THRotatorDirect3DDevice::ReleaseResources()
 	m_pBackBuffer.Reset();
 }
 
-void THRotatorDirect3DDevice::GetBackBufferResolution(D3DFORMAT Format, UINT Adapter, BOOL bWindowed, UINT requestedWidth, UINT requestedHeight, UINT & outBackBufferWidth, UINT & outBackBufferHeight) const
+void THRotatorDirect3DDevice::GetBackBufferResolution(D3DFORMAT Format, UINT Adapter, BOOL bWindowed, UINT requestedWidth, UINT requestedHeight, UINT& outBackBufferWidth, UINT& outBackBufferHeight) const
 {
 	if (bWindowed)
 	{
@@ -2141,13 +2143,37 @@ void THRotatorDirect3DDevice::GetBackBufferResolution(D3DFORMAT Format, UINT Ada
 		outBackBufferWidth = GetSystemMetrics(SM_CXSCREEN);
 		outBackBufferHeight = GetSystemMetrics(SM_CYSCREEN);
 
-		D3DDISPLAYMODE d3ddm;
-		UINT count = m_pMyD3D->m_pd3d->GetAdapterModeCount(
+		D3DFORMAT adapterFormat = Format;
+		
 #ifdef TOUHOU_ON_D3D8
-			Adapter);
+		UINT count = m_pMyD3D->m_pd3d->GetAdapterModeCount(Adapter);
 #else
-			Adapter, Format);
+		D3DFORMAT adapterFormatCandidates[] =
+		{
+			D3DFMT_A8R8G8B8,
+			D3DFMT_X8R8G8B8,
+			D3DFMT_R5G6B5,
+			D3DFMT_X1R5G5B5,
+			D3DFMT_A1R5G5B5,
+			D3DFMT_A2R10G10B10,
+		};
+
+		// ディスプレイモード列挙のためのアダプタフォーマットを検索
+		for (int candidateIndex = 0; candidateIndex < _countof(adapterFormatCandidates); candidateIndex++)
+		{
+			HRESULT hr = m_pMyD3D->m_pd3d->CheckDeviceType(Adapter, m_deviceType, adapterFormatCandidates[candidateIndex], Format, FALSE);
+			if (SUCCEEDED(hr))
+			{
+				adapterFormat = adapterFormatCandidates[candidateIndex];
+				break;
+			}
+		}
+
+		UINT count = m_pMyD3D->m_pd3d->GetAdapterModeCount(Adapter, adapterFormat);
 #endif
+
+		D3DDISPLAYMODE d3ddm;
+
 		std::vector<D3DDISPLAYMODE> availableModes;
 
 		//	ディスプレイの最大解像度を探す＆60Hzの解像度を列挙
@@ -2155,7 +2181,7 @@ void THRotatorDirect3DDevice::GetBackBufferResolution(D3DFORMAT Format, UINT Ada
 		{
 			m_pMyD3D->m_pd3d->EnumAdapterModes(Adapter,
 #ifndef TOUHOU_ON_D3D8
-				Format,
+				adapterFormat,
 #endif
 				i, &d3ddm);
 
@@ -2165,7 +2191,7 @@ void THRotatorDirect3DDevice::GetBackBufferResolution(D3DFORMAT Format, UINT Ada
 			}
 
 #ifdef TOUHOU_ON_D3D8
-			if (d3ddm.Format != Format)
+			if (d3ddm.Format != adapterFormat)
 			{
 				continue;
 			}
