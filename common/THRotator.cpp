@@ -312,9 +312,7 @@ private:
 	// ただ画面回転するだけであればm_pTexSurfaceをバックバッファ代わりにすればよいが、
 	// Homeキーによるスクリーンキャプチャでクラッシュするので、別で用意
 	ComPtr<Direct3DSurfaceBase> m_pRenderTarget;
-#ifdef TOUHOU_ON_D3D8
 	ComPtr<Direct3DSurfaceBase> m_pDepthStencil;
-#endif
 	ComPtr<Direct3DTextureBase> m_pTex;
 	ComPtr<THRotatorDirect3D> m_pMyD3D;
 
@@ -330,9 +328,7 @@ private:
 	D3DPRESENT_PARAMETERS m_d3dpp;
 	D3DTEXTUREFILTERTYPE m_filterType;
 	UINT m_requestedWidth, m_requestedHeight;
-#ifdef TOUHOU_ON_D3D8
 	D3DSURFACE_DESC m_surfDesc;
-#endif
 	bool m_bResetQueued;
 
 
@@ -2922,7 +2918,6 @@ HRESULT THRotatorDirect3DDevice::InitResources()
 		return hr;
 	}
 
-#ifdef TOUHOU_ON_D3D8
 	ComPtr<Direct3DSurfaceBase> pSurf;
 
 	//	深さバッファの作成
@@ -2936,12 +2931,19 @@ HRESULT THRotatorDirect3DDevice::InitResources()
 		return hr;
 	}
 
-	if (FAILED(hr = m_pd3dDev->CreateDepthStencilSurface(m_requestedWidth, m_requestedHeight,
-		m_surfDesc.Format, m_surfDesc.MultiSampleType, &m_pDepthStencil)))
+	hr = m_pd3dDev->CreateDepthStencilSurface(m_requestedWidth, m_requestedHeight,
+		m_d3dpp.AutoDepthStencilFormat, m_d3dpp.MultiSampleType,
+#ifdef TOUHOU_ON_D3D8
+		&m_pDepthStencil);
+#else
+		m_d3dpp.MultiSampleQuality, m_d3dpp.Flags & D3DPRESENTFLAG_DISCARD_DEPTHSTENCIL ? TRUE : FALSE, &m_pDepthStencil, nullptr);
+#endif
+	if (FAILED(hr))
 	{
 		return hr;
 	}
 
+#ifdef TOUHOU_ON_D3D8
 	if (FAILED(hr = m_pd3dDev->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &m_pBackBuffer)))
 	{
 		return hr;
@@ -2953,6 +2955,11 @@ HRESULT THRotatorDirect3DDevice::InitResources()
 	}
 #else
 	if (FAILED(hr = m_pd3dDev->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &m_pBackBuffer)))
+	{
+		return hr;
+	}
+
+	if (FAILED(hr = m_pd3dDev->SetDepthStencilSurface(m_pDepthStencil.Get())))
 	{
 		return hr;
 	}
@@ -2970,7 +2977,6 @@ void THRotatorDirect3DDevice::ReleaseResources()
 {
 #if TOUHOU_ON_D3D8
 	m_pSprite.Reset();
-	m_pDepthStencil.Reset();
 #else
 	if (m_pSprite)
 	{
@@ -2984,6 +2990,7 @@ void THRotatorDirect3DDevice::ReleaseResources()
 #endif
 #endif
 
+	m_pDepthStencil.Reset();
 	m_pRenderTarget.Reset();
 	m_pTexSurface.Reset();
 	m_pTex.Reset();
@@ -3064,6 +3071,7 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 	m_pd3dDev->SetRenderTarget(m_pBackBuffer.Get(), nullptr);
 #else
 	m_pd3dDev->SetRenderTarget(0, m_pBackBuffer.Get());
+	m_pd3dDev->SetDepthStencilSurface(nullptr);
 #endif
 	D3DXLoadSurfaceFromSurface(m_pTexSurface.Get(), nullptr, nullptr,
 		m_pRenderTarget.Get(), nullptr, nullptr, D3DX_FILTER_NONE, 0);
@@ -3291,6 +3299,7 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 	m_pd3dDev->SetRenderTarget(m_pRenderTarget.Get(), m_pDepthStencil.Get());
 #else
 	m_pd3dDev->SetRenderTarget(0, m_pRenderTarget.Get());
+	m_pd3dDev->SetDepthStencilSurface(m_pDepthStencil.Get());
 #endif
 	return m_pd3dDev->EndScene();
 }
