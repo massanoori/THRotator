@@ -2741,9 +2741,12 @@ void THRotatorDirect3DDevice::SetVerticallyLongWindow(BOOL bVerticallyLongWindow
 		GetClientRect(m_hTouhouWin, &rcClient);
 		GetWindowRect(m_hTouhouWin, &rcWindow);
 
+		int newWidth = bVerticallyLongWindow ? m_requestedHeight : m_requestedWidth;
+		int newHeight = bVerticallyLongWindow ? m_requestedWidth : m_requestedHeight;
+
 		MoveWindow(m_hTouhouWin, rcWindow.left, rcWindow.top,
-			(rcWindow.right - rcWindow.left) - (rcClient.right - rcClient.left) + (rcClient.bottom - rcClient.top),
-			(rcWindow.bottom - rcWindow.top) - (rcClient.bottom - rcClient.top) + (rcClient.right - rcClient.left), TRUE);
+			(rcWindow.right - rcWindow.left) - (rcClient.right - rcClient.left) + newWidth,
+			(rcWindow.bottom - rcWindow.top) - (rcClient.bottom - rcClient.top) + newHeight, TRUE);
 
 		m_bResetQueued = static_cast<bool>(m_pd3dDev);
 	}
@@ -2801,6 +2804,9 @@ HRESULT THRotatorDirect3DDevice::init(UINT Adapter, THRotatorDirect3D* pMyD3D, D
 
 	m_hTouhouWin = GetActiveWindow();
 
+	m_requestedWidth = requestedWidth;
+	m_requestedHeight = requestedHeight;
+
 	int bVerticallyLongWindow = m_bVerticallyLongWindow;
 	m_bVerticallyLongWindow = 0;
 	SetVerticallyLongWindow(bVerticallyLongWindow);
@@ -2836,9 +2842,6 @@ HRESULT THRotatorDirect3DDevice::init(UINT Adapter, THRotatorDirect3D* pMyD3D, D
 	}
 
 	hwnd2devMap[m_hEditorWin] = this;
-
-	m_requestedWidth = requestedWidth;
-	m_requestedHeight = requestedHeight;
 
 	if (!m_bNeedModalEditor)
 	{
@@ -2991,10 +2994,8 @@ void THRotatorDirect3DDevice::UpdateBackBufferResolution()
 {
 	if (m_d3dpp.Windowed)
 	{
-		RECT rc;
-		GetClientRect(m_hTouhouWin, &rc);
-		m_d3dpp.BackBufferWidth = rc.right - rc.left;
-		m_d3dpp.BackBufferHeight = rc.bottom - rc.top;
+		m_d3dpp.BackBufferWidth = m_bVerticallyLongWindow ? m_requestedHeight : m_requestedWidth;
+		m_d3dpp.BackBufferHeight = m_bVerticallyLongWindow ? m_requestedWidth : m_requestedHeight;
 
 		// バックバッファの幅がリクエストの幅より小さい場合、バッファに何も描画されなくなるため、
 		// バックバッファの幅がリクエストの幅以上になるように補正
