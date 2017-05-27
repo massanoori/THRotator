@@ -1944,6 +1944,11 @@ HRESULT THRotatorDirect3DDevice::InternalInit(UINT Adapter,
 	m_resetRevision = m_pEditorContext->GetResetRevision();
 	m_pMyD3D = pMyD3D;
 
+	if (m_d3dpp.Windowed)
+	{
+		m_pEditorContext->UpdateWindowResolution(m_requestedWidth, m_requestedHeight);
+	}
+
 	GetBackBufferResolution(d3dpp.BackBufferFormat, Adapter, d3dpp.Windowed,
 		m_requestedWidth, m_requestedHeight, m_d3dpp.BackBufferWidth, m_d3dpp.BackBufferHeight);
 
@@ -2111,10 +2116,9 @@ void THRotatorDirect3DDevice::GetBackBufferResolution(D3DFORMAT Format, UINT Ada
 {
 	if (bWindowed)
 	{
-		RECT rc;
-		GetClientRect(m_pEditorContext->GetTouhouWindow(), &rc);
-		outBackBufferWidth = rc.right - rc.left;
-		outBackBufferHeight = rc.bottom - rc.top;
+		bool bVerticallyLongWindow = m_pEditorContext->IsVerticallyLongWindow();
+		outBackBufferWidth = bVerticallyLongWindow ? requestedHeight : requestedWidth;
+		outBackBufferHeight = bVerticallyLongWindow ? requestedWidth : requestedHeight;
 
 		// バックバッファの幅がリクエストの幅より小さい場合、バッファに何も描画されなくなるため、
 		// バックバッファの幅がリクエストの幅以上になるように補正
@@ -2637,6 +2641,11 @@ HRESULT THRotatorDirect3DDevice::InternalReset(
 	if (m_d3dpp.BackBufferHeight != 0)
 	{
 		m_requestedHeight = m_d3dpp.BackBufferHeight;
+	}
+
+	if (m_d3dpp.Windowed)
+	{
+		m_pEditorContext->UpdateWindowResolution(m_requestedWidth, m_requestedHeight);
 	}
 
 	D3DDEVICE_CREATION_PARAMETERS creationParameters;

@@ -79,6 +79,13 @@ public:
 
 	LPCTSTR GetErrorMessage() const;
 
+	bool IsVerticallyLongWindow() const
+	{
+		return m_bVerticallyLongWindow;
+	}
+
+	void UpdateWindowResolution(int requestedWidth, int requestedHeight);
+
 	~THRotatorEditorContext();
 
 private:

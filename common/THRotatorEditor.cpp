@@ -1263,16 +1263,22 @@ void THRotatorEditorContext::SetVerticallyLongWindow(BOOL bVerticallyLongWindow)
 {
 	if (m_bVerticallyLongWindow % 2 != bVerticallyLongWindow % 2/* && m_d3dpp.Windowed*/)
 	{
-		RECT rcClient, rcWindow;
-		GetClientRect(m_hTouhouWin, &rcClient);
-		GetWindowRect(m_hTouhouWin, &rcWindow);
-
-		MoveWindow(m_hTouhouWin, rcWindow.left, rcWindow.top,
-			(rcWindow.right - rcWindow.left) - (rcClient.right - rcClient.left) + (rcClient.bottom - rcClient.top),
-			(rcWindow.bottom - rcWindow.top) - (rcClient.bottom - rcClient.top) + (rcClient.right - rcClient.left), TRUE);
-
 		m_deviceResetRevision++;
 	}
 	SendDlgItemMessage(m_hEditorWin, IDC_VERTICALWINDOW, BM_SETCHECK, bVerticallyLongWindow ? BST_CHECKED : BST_UNCHECKED, 0);
 	m_bVerticallyLongWindow = bVerticallyLongWindow;
+}
+
+void THRotatorEditorContext::UpdateWindowResolution(int requestedWidth, int requestedHeight)
+{
+	RECT rcClient, rcWindow;
+	GetClientRect(m_hTouhouWin, &rcClient);
+	GetWindowRect(m_hTouhouWin, &rcWindow);
+
+	int newWidth = m_bVerticallyLongWindow ? requestedHeight : requestedWidth;
+	int newHeight = m_bVerticallyLongWindow ? requestedWidth : requestedHeight;
+
+	MoveWindow(m_hTouhouWin, rcWindow.left, rcWindow.top,
+		(rcWindow.right - rcWindow.left) - (rcClient.right - rcClient.left) + newWidth,
+		(rcWindow.bottom - rcWindow.top) - (rcClient.bottom - rcClient.top) + newHeight, TRUE);
 }
