@@ -130,8 +130,8 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 	// スクリーンキャプチャ機能がないのは紅魔郷
 	m_bTouhouWithoutScreenCapture = touhouIndex == 6.0;
 
-	int bVerticallyLongWindow = m_bVerticallyLongWindow;
-	m_bVerticallyLongWindow = 0;
+	bool bVerticallyLongWindow = m_bVerticallyLongWindow;
+	m_bVerticallyLongWindow = false;
 	SetVerticallyLongWindow(bVerticallyLongWindow);
 
 	m_currentRectTransfers = m_editedRectTransfers;
@@ -287,7 +287,7 @@ THRotatorEditorContext::~THRotatorEditorContext()
 	ms_touhouWinToContext.erase(m_hTouhouWin);
 }
 
-void THRotatorEditorContext::SetEditorWindowVisibility(BOOL bVisible)
+void THRotatorEditorContext::SetEditorWindowVisibility(bool bVisible)
 {
 	assert(!m_bNeedModalEditor);
 
@@ -893,7 +893,7 @@ void THRotatorEditorContext::SetNewErrorMessage(std::basic_string<TCHAR>&& messa
 	m_errorMessage = std::move(message);
 }
 
-BOOL THRotatorEditorContext::ApplyChangeFromEditorWindow(HWND hEditorWin)
+bool THRotatorEditorContext::ApplyChangeFromEditorWindow(HWND hEditorWin)
 {
 	assert(hEditorWin);
 
@@ -939,10 +939,10 @@ BOOL THRotatorEditorContext::ApplyChangeFromEditorWindow(HWND hEditorWin)
 	m_yOffset = yo;
 #undef GETANDSET
 
-	BOOL bVerticallyLong = BST_CHECKED == SendDlgItemMessage(hEditorWin, IDC_VERTICALWINDOW, BM_GETCHECK, 0, 0);
+	bool bVerticallyLong = BST_CHECKED == SendDlgItemMessage(hEditorWin, IDC_VERTICALWINDOW, BM_GETCHECK, 0, 0);
 	SetVerticallyLongWindow(bVerticallyLong);
 
-	BOOL bFilterTypeNone = BST_CHECKED == SendDlgItemMessage(hEditorWin, IDC_FILTERNONE, BM_GETCHECK, 0, 0);
+	bool bFilterTypeNone = BST_CHECKED == SendDlgItemMessage(hEditorWin, IDC_FILTERNONE, BM_GETCHECK, 0, 0);
 	m_filterType = bFilterTypeNone ? D3DTEXF_NONE : D3DTEXF_LINEAR;
 
 	if (BST_CHECKED == SendDlgItemMessage(hEditorWin, IDC_ROT0_2, BM_GETCHECK, 0, 0))
@@ -966,7 +966,7 @@ BOOL THRotatorEditorContext::ApplyChangeFromEditorWindow(HWND hEditorWin)
 
 	m_currentRectTransfers = m_editedRectTransfers;
 
-	return TRUE;
+	return true;
 }
 
 void THRotatorEditorContext::ApplyRotationToEditorWindow(HWND hWnd) const
@@ -1003,8 +1003,8 @@ bool THRotatorEditorContext::SaveSettings()
 	WRITE_INI_PARAM("PW", m_mainScreenWidth);
 	WRITE_INI_PARAM("PH", m_mainScreenHeight);
 	WRITE_INI_PARAM("YOffset", m_yOffset);
-	WRITE_INI_PARAM("Visible", m_bVisible);
-	WRITE_INI_PARAM("PivRot", m_bVerticallyLongWindow);
+	WRITE_INI_PARAM("Visible", static_cast<BOOL>(m_bVisible));
+	WRITE_INI_PARAM("PivRot", static_cast<BOOL>(m_bVerticallyLongWindow));
 	WRITE_INI_PARAM("Filter", m_filterType);
 	WRITE_INI_PARAM("Rot", m_rotationAngle);
 
@@ -1092,8 +1092,8 @@ void THRotatorEditorContext::LoadSettings()
 	m_mainScreenWidth = READ_INI_PARAM(int, "PW", 384);
 	m_mainScreenHeight = READ_INI_PARAM(int, "PH", 448);
 	m_yOffset = READ_INI_PARAM(int, "YOffset", 0);
-	m_bVisible = READ_INI_PARAM(BOOL, "Visible", FALSE);
-	m_bVerticallyLongWindow = READ_INI_PARAM(BOOL, "PivRot", FALSE);
+	m_bVisible = READ_INI_PARAM(BOOL, "Visible", FALSE) != FALSE;
+	m_bVerticallyLongWindow = READ_INI_PARAM(BOOL, "PivRot", FALSE) != FALSE;
 	m_rotationAngle = static_cast<RotationAngle>(READ_INI_PARAM(std::uint32_t, "Rot", Rotation_0));
 	m_filterType = static_cast<D3DTEXTUREFILTERTYPE>(READ_INI_PARAM(int, "Filter", D3DTEXF_LINEAR));
 
@@ -1259,9 +1259,9 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 	return CallNextHookEx(ms_hHook, nCode, wParam, lParam);
 }
 
-void THRotatorEditorContext::SetVerticallyLongWindow(BOOL bVerticallyLongWindow)
+void THRotatorEditorContext::SetVerticallyLongWindow(bool bVerticallyLongWindow)
 {
-	if (m_bVerticallyLongWindow % 2 != bVerticallyLongWindow % 2/* && m_d3dpp.Windowed*/)
+	if (m_bVerticallyLongWindow != bVerticallyLongWindow)
 	{
 		m_deviceResetRevision++;
 	}

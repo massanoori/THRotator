@@ -94,12 +94,12 @@ private:
 	// エディタウィンドウの可視性を設定
 	// エディタウィンドウをモーダルで開かなければならない場合は、
 	// 既存のウィンドウの表示非表示を切り替えることはできないので、呼んではいけない
-	void SetEditorWindowVisibility(BOOL bVisible);
+	void SetEditorWindowVisibility(bool bVisible);
 
 	void InitListView(HWND hLV);
 
-	BOOL ApplyChangeFromEditorWindow(HWND hWnd);
-	BOOL ApplyChangeFromEditorWindow()
+	bool ApplyChangeFromEditorWindow(HWND hWnd);
+	bool ApplyChangeFromEditorWindow()
 	{
 		return ApplyChangeFromEditorWindow(m_hEditorWin);
 	}
@@ -114,7 +114,7 @@ private:
 
 	void LoadSettings();
 
-	void SetVerticallyLongWindow(BOOL bVerticallyLongWindow);
+	void SetVerticallyLongWindow(bool bVerticallyLongWindow);
 
 	static LRESULT CALLBACK MessageHookProc(int nCode, WPARAM wParam, LPARAM lParam);
 	static BOOL CALLBACK MainDialogProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
@@ -137,10 +137,10 @@ private:
 	int m_yOffset;
 	int m_judgeThreshold;
 	int m_judgeCount, m_judgeCountPrev;
-	BOOL m_bVisible;
+	bool m_bVisible;
 	boost::filesystem::path m_iniPath;
 	std::string m_appName; // マルチバイト文字列で.iniの入出力するため、std::string
-	BOOL m_bVerticallyLongWindow;
+	bool m_bVerticallyLongWindow;
 	RotationAngle m_rotationAngle;
 	std::vector<RectTransferData> m_editedRectTransfers, m_currentRectTransfers;
 	D3DTEXTUREFILTERTYPE m_filterType;
