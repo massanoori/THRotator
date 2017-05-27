@@ -2508,7 +2508,31 @@ void THRotatorDirect3DDevice::SaveSettings()
 	wsprintf(name, _T("ORHas%d"), i); WRITE_INI_PARAM(name, FALSE);
 #undef WRITE_INI_PARAM
 
-	proptree::write_ini(m_iniPath, tree);
+	try
+	{
+		proptree::write_ini(m_iniPath, tree);
+	}
+	catch (const proptree::ini_parser_error&)
+	{
+		if (m_d3dpp.Windowed)
+		{
+			MessageBox(nullptr, _T("THRotator設定ファイルの保存に失敗しました。"), nullptr, MB_ICONSTOP);
+		}
+
+		// 1.2.xでは、保存に失敗した場合はthrot_log.txtにログとして出力する
+
+		tm currentTimeStruct;
+		time_t currentTime;
+
+		currentTime = time(nullptr);
+		localtime_s(&currentTimeStruct, &currentTime);
+
+		char dateBuffer[40];
+		strftime(dateBuffer, sizeof(dateBuffer), "[%Y-%m-%d %I:%M:%S]", &currentTimeStruct);
+
+		std::ofstream ofs((m_workingDir / "throt_log.txt").generic_string(), std::ios::app);
+		ofs << dateBuffer << " " << "Failed at saving throt.ini" << std::endl;
+	}
 }
 
 void THRotatorDirect3DDevice::LoadSettings()
