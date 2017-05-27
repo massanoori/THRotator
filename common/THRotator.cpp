@@ -50,7 +50,7 @@ typedef IDirect3DSwapChain9 Direct3DSwapChainBase;
 
 #pragma comment(lib,"comctl32.lib")
 
-static LPCTSTR THROTATOR_VERSION_STRING = "1.2.0";
+static LPCTSTR THROTATOR_VERSION_STRING = "1.2.2";
 
 using Microsoft::WRL::ComPtr;
 
