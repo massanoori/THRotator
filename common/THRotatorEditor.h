@@ -164,6 +164,7 @@ private:
 	HWND m_hEditorWin, m_hTouhouWin;
 	bool m_bNeedModalEditor;
 	int m_modalEditorWindowPosX, m_modalEditorWindowPosY;
+	UINT m_insertedMenuSeparatorID;
 
 
 	/****************************************

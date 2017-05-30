@@ -136,6 +136,7 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 	//	ÉÅÉjÉÖÅ[Çâ¸ë¢
 	HMENU hMenu = GetSystemMenu(m_hTouhouWin, FALSE);
 	AppendMenu(hMenu, MF_SEPARATOR, 0, NULL);
+	m_insertedMenuSeparatorID = GetMenuItemID(hMenu, GetMenuItemCount(hMenu) - 1);
 
 	auto openEditorMenuString = LoadTHRotatorString(g_hModule, IDS_OPEN_EDITOR);
 	AppendMenu(hMenu, MF_STRING, ms_switchVisibilityID, openEditorMenuString.c_str());
@@ -282,6 +283,16 @@ LPCTSTR THRotatorEditorContext::GetErrorMessage() const
 THRotatorEditorContext::~THRotatorEditorContext()
 {
 	ms_touhouWinToContext.erase(m_hTouhouWin);
+
+	DeleteMenu(m_hSysMenu, ms_switchVisibilityID, MF_BYCOMMAND);
+
+	if (m_insertedMenuSeparatorID != static_cast<UINT>(-1))
+	{
+		DeleteMenu(m_hSysMenu, m_insertedMenuSeparatorID, MF_BYCOMMAND);
+	}
+
+	DestroyWindow(m_hEditorWin);
+
 }
 
 void THRotatorEditorContext::SetEditorWindowVisibility(bool bVisible)
