@@ -1208,7 +1208,18 @@ public:
 
 	HRESULT WINAPI TestCooperativeLevel(VOID) override
 	{
-		return m_pd3dDev->TestCooperativeLevel();
+		HRESULT originalResult = m_pd3dDev->TestCooperativeLevel();
+		if (FAILED(originalResult))
+		{
+			return originalResult;
+		}
+
+		if (m_resetRevision != m_pEditorContext->GetResetRevision())
+		{
+			return D3DERR_DEVICENOTRESET;
+		}
+
+		return originalResult;
 	}
 
 	HRESULT WINAPI UpdateTexture(Direct3DBaseTextureBase* pSourceTexture,
@@ -2599,7 +2610,7 @@ HRESULT THRotatorDirect3DDevice::InternalPresent(CONST RECT *pSourceRect,
 
 	if (m_resetRevision != m_pEditorContext->GetResetRevision())
 	{
-		return D3DERR_DEVICENOTRESET;
+		return D3DERR_DEVICELOST;
 	}
 
 #ifdef _DEBUG
@@ -2646,9 +2657,6 @@ HRESULT THRotatorDirect3DDevice::InternalReset(
 {
 	assert(m_bInitialized);
 
-#ifdef _DEBUG
-	::OutputDebugStringA("Resetting D3D device\n");
-#endif
 	ReleaseResources();
 
 	m_d3dpp = *pPresentationParameters;
