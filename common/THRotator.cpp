@@ -2058,26 +2058,28 @@ HRESULT THRotatorDirect3DDevice::InitResources()
 	//	深さバッファの作成
 	if (FAILED(hr = m_pd3dDev->GetDepthStencilSurface(&pSurf)))
 	{
-		return hr;
+		m_pDepthStencil.Reset();
 	}
-
-	D3DSURFACE_DESC surfDesc;
-	if (FAILED(hr = pSurf->GetDesc(&surfDesc)))
+	else
 	{
-		return hr;
-	}
+		D3DSURFACE_DESC surfDesc;
+		if (FAILED(hr = pSurf->GetDesc(&surfDesc)))
+		{
+			return hr;
+		}
 
-	hr = m_pd3dDev->CreateDepthStencilSurface(m_requestedWidth, m_requestedHeight,
-		surfDesc.Format, surfDesc.MultiSampleType,
+		hr = m_pd3dDev->CreateDepthStencilSurface(m_requestedWidth, m_requestedHeight,
+			surfDesc.Format, surfDesc.MultiSampleType,
 #ifdef TOUHOU_ON_D3D8
-		&m_pDepthStencil);
+			&m_pDepthStencil);
 #else
-		surfDesc.MultiSampleQuality, m_d3dpp.Flags & D3DPRESENTFLAG_DISCARD_DEPTHSTENCIL ? TRUE : FALSE, &m_pDepthStencil, nullptr);
+			surfDesc.MultiSampleQuality, m_d3dpp.Flags & D3DPRESENTFLAG_DISCARD_DEPTHSTENCIL ? TRUE : FALSE, &m_pDepthStencil, nullptr);
 #endif
 
-	if (FAILED(hr))
-	{
-		return hr;
+		if (FAILED(hr))
+		{
+			return hr;
+		}
 	}
 
 #ifdef TOUHOU_ON_D3D8
