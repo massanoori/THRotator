@@ -1157,15 +1157,21 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 	LPMSG pMsg = reinterpret_cast<LPMSG>(lParam);
 	if (nCode >= 0 && PM_REMOVE == wParam)
 	{
-		for (auto itr = ms_touhouWinToContext.begin();
-			itr != ms_touhouWinToContext.end(); ++itr)
+		// タブストップを有効にするテクニック
+		// 参考: https://support.microsoft.com/en-us/help/233263/prb-modeless-dialog-box-in-a-dll-does-not-process-tab-key
+
+		// Don't translate non-input events.
+		if (pMsg->message >= WM_KEYFIRST && pMsg->message <= WM_KEYLAST)
 		{
-			// Don't translate non-input events.
-			if (pMsg->message >= WM_KEYFIRST && pMsg->message <= WM_KEYLAST
-				&& !itr->second.expired())
+			for (const auto& hWinAndContext : ms_touhouWinToContext)
 			{
-				auto pContext = itr->second.lock();
-				if (pContext->m_hEditorWin && IsDialogMessage(pContext->m_hEditorWin, pMsg))
+				auto pContext = hWinAndContext.second.lock();
+				if (!pContext || pContext->m_hEditorWin == nullptr)
+				{
+					continue;
+				}
+
+				if (IsDialogMessage(pContext->m_hEditorWin, pMsg))
 				{
 					// The value returned from this hookproc is ignored, 
 					// and it cannot be used to tell Windows the message has been handled.
