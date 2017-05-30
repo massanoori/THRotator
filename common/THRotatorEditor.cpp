@@ -60,6 +60,7 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 	, m_modalEditorWindowPosY(0)
 	, m_bInitialized(false)
 	, m_bScreenCaptureQueued(false)
+	, m_hEditorWin(nullptr)
 {
 	m_errorMessageExpirationClock.QuadPart = 0;
 
@@ -129,10 +130,6 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 
 	// スクリーンキャプチャ機能がないのは紅魔郷
 	m_bTouhouWithoutScreenCapture = touhouIndex == 6.0;
-
-	bool bVerticallyLongWindow = m_bVerticallyLongWindow;
-	m_bVerticallyLongWindow = false;
-	SetVerticallyLongWindow(bVerticallyLongWindow);
 
 	m_currentRectTransfers = m_editedRectTransfers;
 
@@ -289,7 +286,7 @@ THRotatorEditorContext::~THRotatorEditorContext()
 
 void THRotatorEditorContext::SetEditorWindowVisibility(bool bVisible)
 {
-	assert(!m_bNeedModalEditor);
+	assert(!m_bNeedModalEditor && m_hEditorWin);
 
 	m_bVisible = bVisible;
 	MENUITEMINFO mi;
@@ -375,8 +372,10 @@ BOOL CALLBACK THRotatorEditorContext::MainDialogProc(HWND hWnd, UINT msg, WPARAM
 			break;
 		}
 
-		if (pContext->m_bVerticallyLongWindow == 1)
+		if (pContext->m_bVerticallyLongWindow)
+		{
 			SendDlgItemMessage(hWnd, IDC_VERTICALWINDOW, BM_SETCHECK, BST_CHECKED, 0);
+		}
 
 		pContext->ApplyRotationToEditorWindow(hWnd);
 
@@ -852,6 +851,8 @@ BOOL CALLBACK THRotatorEditorContext::EditRectDialogProc(HWND hWnd, UINT msg, WP
 
 bool THRotatorEditorContext::OpenEditRectDialog(RectTransferData& inoutRectTransfer, std::vector<RectTransferData>::const_iterator editedRectTransfer) const
 {
+	assert(m_hEditorWin);
+
 RetryEdit:
 	if (IDOK != DialogBoxParam(g_hModule, MAKEINTRESOURCE(IDD_EDITRECTDLG), m_hEditorWin, EditRectDialogProc, reinterpret_cast<LPARAM>(&inoutRectTransfer)))
 	{
@@ -1160,9 +1161,11 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 			itr != ms_touhouWinToContext.end(); ++itr)
 		{
 			// Don't translate non-input events.
-			if ((pMsg->message >= WM_KEYFIRST && pMsg->message <= WM_KEYLAST))
+			if (pMsg->message >= WM_KEYFIRST && pMsg->message <= WM_KEYLAST
+				&& !itr->second.expired())
 			{
-				if (!itr->second.expired() && IsDialogMessage(itr->second.lock()->m_hEditorWin, pMsg))
+				auto pContext = itr->second.lock();
+				if (pContext->m_hEditorWin && IsDialogMessage(pContext->m_hEditorWin, pMsg))
 				{
 					// The value returned from this hookproc is ignored, 
 					// and it cannot be used to tell Windows the message has been handled.
