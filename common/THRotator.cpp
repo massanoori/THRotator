@@ -352,7 +352,6 @@ private:
 	 ****************************************/
 
 	D3DPRESENT_PARAMETERS m_d3dpp;
-	D3DTEXTUREFILTERTYPE m_filterType;
 	UINT m_requestedWidth, m_requestedHeight;
 	D3DDEVTYPE m_deviceType;
 
@@ -2306,12 +2305,12 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 			D3DTEXTUREFILTERTYPE prevFilter, prevFilter2;
 			m_pd3dDev->GetTextureStageState(0, D3DTSS_MAGFILTER, (DWORD*)&prevFilter);
 			m_pd3dDev->GetTextureStageState(0, D3DTSS_MINFILTER, (DWORD*)&prevFilter2);
-			m_pd3dDev->SetTextureStageState(0, D3DTSS_MAGFILTER, m_filterType);
-			m_pd3dDev->SetTextureStageState(0, D3DTSS_MINFILTER, m_filterType);
+			m_pd3dDev->SetTextureStageState(0, D3DTSS_MAGFILTER, m_pEditorContext->GetFilterType());
+			m_pd3dDev->SetTextureStageState(0, D3DTSS_MINFILTER, m_pEditorContext->GetFilterType());
 
 #else
-			m_pd3dDev->SetSamplerState(0, D3DSAMP_MAGFILTER, m_filterType);
-			m_pd3dDev->SetSamplerState(0, D3DSAMP_MINFILTER, m_filterType);
+			m_pd3dDev->SetSamplerState(0, D3DSAMP_MAGFILTER, m_pEditorContext->GetFilterType());
+			m_pd3dDev->SetSamplerState(0, D3DSAMP_MINFILTER, m_pEditorContext->GetFilterType());
 #endif
 
 			m_pd3dDev->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_DISABLE);

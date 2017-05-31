@@ -84,6 +84,11 @@ public:
 		return m_bVerticallyLongWindow;
 	}
 
+	D3DTEXTUREFILTERTYPE GetFilterType() const
+	{
+		return m_filterType;
+	}
+
 	// 解像度リクエストからウィンドウのサイズを、縦長かどうかも考慮しながら、変更する。
 	// また、D3Dのバックバッファ解像度もoutBackBufferWidth, outBackBufferHeightに返す。
 	void UpdateWindowResolution(int requestedWidth, int requestedHeight, UINT& outBackBufferWidth, UINT& outBackBufferHeight);
