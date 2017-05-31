@@ -2464,15 +2464,15 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 
 				POINT prPosition = { mainScreenLeft, mainScreenTop };
 				SIZE prSize = { mainScreenWidth, mainScreenHeight };
-				if (mainScreenWidth * 4 < mainScreenHeight * 3)
+				if (mainScreenWidth * m_requestedWidth < mainScreenHeight * m_requestedHeight)
 				{
-					prPosition.x = mainScreenLeft + (mainScreenWidth - mainScreenHeight * 3 / 4) / 2;
-					prSize.cx = mainScreenHeight * 3 / 4;
+					prPosition.x = mainScreenLeft - (mainScreenHeight * m_requestedHeight / m_requestedWidth - mainScreenWidth) / 2;
+					prSize.cx = mainScreenHeight * m_requestedHeight / m_requestedWidth;
 				}
-				else if (mainScreenWidth * 4 > mainScreenHeight * 3)
+				else if (mainScreenWidth * m_requestedWidth > mainScreenHeight * m_requestedHeight)
 				{
-					prPosition.y = mainScreenTop + (mainScreenHeight - mainScreenWidth * 4 / 3) / 2;
-					prSize.cy = mainScreenWidth * 4 / 3;
+					prPosition.y = mainScreenTop - (mainScreenWidth * m_requestedWidth / m_requestedHeight - mainScreenHeight) / 2;
+					prSize.cy = mainScreenWidth * m_requestedWidth / m_requestedHeight;
 				}
 
 				prPosition.y -= m_pEditorContext->GetYOffset();
