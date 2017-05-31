@@ -1303,14 +1303,33 @@ void THRotatorEditorContext::SetVerticallyLongWindow(bool bVerticallyLongWindow)
 	m_bVerticallyLongWindow = bVerticallyLongWindow;
 }
 
-void THRotatorEditorContext::UpdateWindowResolution(int requestedWidth, int requestedHeight)
+void THRotatorEditorContext::UpdateWindowResolution(int requestedWidth, int requestedHeight, UINT& outBackBufferWidth, UINT& outBackBufferHeight)
 {
+	// 元のウィンドウの大きさを保ちつつ、アスペクト比も保持する
+
+	int newWidth = m_originalTouhouClientSize.cx;
+	int newHeight = m_originalTouhouClientSize.cy;
+
+	if (newWidth < newHeight * requestedWidth / requestedHeight)
+	{
+		newWidth = newHeight * requestedWidth / requestedHeight;
+	}
+	else if (newHeight < newWidth * requestedHeight / requestedWidth)
+	{
+		newHeight = newWidth * requestedHeight / requestedWidth;
+	}
+
+	if (m_bVerticallyLongWindow)
+	{
+		std::swap(newWidth, newHeight);
+	}
+
+	outBackBufferWidth = newWidth;
+	outBackBufferHeight = newHeight;
+
 	RECT rcClient, rcWindow;
 	GetClientRect(m_hTouhouWin, &rcClient);
 	GetWindowRect(m_hTouhouWin, &rcWindow);
-
-	int newWidth = m_bVerticallyLongWindow ? requestedHeight : requestedWidth;
-	int newHeight = m_bVerticallyLongWindow ? requestedWidth : requestedHeight;
 
 	MoveWindow(m_hTouhouWin, rcWindow.left, rcWindow.top,
 		(rcWindow.right - rcWindow.left) - (rcClient.right - rcClient.left) + newWidth,

@@ -404,7 +404,7 @@ public:
 
 	HRESULT InitResources();
 	void ReleaseResources();
-	void GetBackBufferResolution(D3DFORMAT Format, UINT Adapter, BOOL bWindowed, UINT requestedWidth, UINT requestedHeight, UINT& outBackBufferWidth, UINT& outBackBufferHeight) const;
+	void UpdateWindowResolution(D3DFORMAT Format, UINT Adapter, BOOL bWindowed, UINT requestedWidth, UINT requestedHeight, UINT& outBackBufferWidth, UINT& outBackBufferHeight);
 
 	ULONG WINAPI AddRef(VOID) override;
 	HRESULT WINAPI QueryInterface(REFIID riid, LPVOID* ppvObj) override;
@@ -1952,13 +1952,8 @@ HRESULT THRotatorDirect3DDevice::InternalInit(UINT Adapter,
 	m_pMyD3D = pMyD3D;
 	m_deviceType = DeviceType;
 
-	if (m_d3dpp.Windowed)
-	{
-		m_pEditorContext->UpdateWindowResolution(m_requestedWidth, m_requestedHeight);
-	}
-
-	GetBackBufferResolution(d3dpp.BackBufferFormat, Adapter, d3dpp.Windowed,
-		m_requestedWidth, m_requestedHeight, m_d3dpp.BackBufferWidth, m_d3dpp.BackBufferHeight);
+	UpdateWindowResolution(d3dpp.BackBufferFormat, Adapter, d3dpp.Windowed, m_requestedWidth, m_requestedHeight,
+		m_d3dpp.BackBufferWidth, m_d3dpp.BackBufferHeight);
 
 	HRESULT ret;
 
@@ -2135,13 +2130,11 @@ void THRotatorDirect3DDevice::ReleaseResources()
 	m_pBackBuffer.Reset();
 }
 
-void THRotatorDirect3DDevice::GetBackBufferResolution(D3DFORMAT Format, UINT Adapter, BOOL bWindowed, UINT requestedWidth, UINT requestedHeight, UINT& outBackBufferWidth, UINT& outBackBufferHeight) const
+void THRotatorDirect3DDevice::UpdateWindowResolution(D3DFORMAT Format, UINT Adapter, BOOL bWindowed, UINT requestedWidth, UINT requestedHeight, UINT& outBackBufferWidth, UINT& outBackBufferHeight)
 {
 	if (bWindowed)
 	{
-		bool bVerticallyLongWindow = m_pEditorContext->IsVerticallyLongWindow();
-		outBackBufferWidth = bVerticallyLongWindow ? requestedHeight : requestedWidth;
-		outBackBufferHeight = bVerticallyLongWindow ? requestedWidth : requestedHeight;
+		m_pEditorContext->UpdateWindowResolution(requestedWidth, requestedHeight, outBackBufferWidth, outBackBufferHeight);
 	}
 	else
 	{
@@ -2673,14 +2666,10 @@ HRESULT THRotatorDirect3DDevice::InternalReset(
 		m_requestedHeight = m_d3dpp.BackBufferHeight;
 	}
 
-	if (m_d3dpp.Windowed)
-	{
-		m_pEditorContext->UpdateWindowResolution(m_requestedWidth, m_requestedHeight);
-	}
-
 	D3DDEVICE_CREATION_PARAMETERS creationParameters;
 	m_pd3dDev->GetCreationParameters(&creationParameters);
-	GetBackBufferResolution(m_d3dpp.BackBufferFormat, creationParameters.AdapterOrdinal,
+
+	UpdateWindowResolution(m_d3dpp.BackBufferFormat, creationParameters.AdapterOrdinal,
 		m_d3dpp.Windowed, m_requestedWidth, m_requestedHeight, m_d3dpp.BackBufferWidth, m_d3dpp.BackBufferHeight);
 
 	HRESULT ret;
