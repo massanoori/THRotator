@@ -165,6 +165,7 @@ private:
 	bool m_bNeedModalEditor;
 	int m_modalEditorWindowPosX, m_modalEditorWindowPosY;
 	UINT m_insertedMenuSeparatorID;
+	SIZE m_originalTouhouClientSize;
 
 
 	/****************************************

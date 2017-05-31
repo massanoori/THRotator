@@ -64,6 +64,11 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 {
 	m_errorMessageExpirationClock.QuadPart = 0;
 
+	RECT originalClientRect;
+	GetClientRect(hTouhouWin, &originalClientRect);
+	m_originalTouhouClientSize.cx = originalClientRect.right - originalClientRect.left;
+	m_originalTouhouClientSize.cy = originalClientRect.bottom - originalClientRect.top;
+
 	struct MessageHook
 	{
 		HHOOK m_hHook;
@@ -293,6 +298,15 @@ THRotatorEditorContext::~THRotatorEditorContext()
 
 	DestroyWindow(m_hEditorWin);
 
+	RECT clientRect, windowRect;
+	GetClientRect(m_hTouhouWin, &clientRect);
+	GetWindowRect(m_hTouhouWin, &windowRect);
+
+	MoveWindow(m_hTouhouWin,
+		windowRect.left, windowRect.top,
+		m_originalTouhouClientSize.cx + (windowRect.right - windowRect.left) - (clientRect.right - clientRect.left),
+		m_originalTouhouClientSize.cy + (windowRect.bottom - windowRect.top) - (clientRect.bottom - clientRect.top),
+		TRUE);
 }
 
 void THRotatorEditorContext::SetEditorWindowVisibility(bool bVisible)
