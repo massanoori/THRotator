@@ -1177,6 +1177,18 @@ void THRotatorEditorContext::LoadSettings()
 #undef READ_INI_PARAM
 }
 
+// メッセージキューの中で同一のメッセージがポストされていないかチェックし、なければ(ユニークなら)true、そうでなければfalse
+bool IsUniquePostedMessage(const MSG* pMessage)
+{
+	MSG peekedMessage;
+	if (!PeekMessage(&peekedMessage, pMessage->hwnd, pMessage->message, pMessage->message, PM_NOREMOVE))
+	{
+		return true;
+	}
+
+	return peekedMessage.wParam != pMessage->wParam || peekedMessage.lParam != pMessage->lParam;
+}
+
 LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
 	LPMSG pMsg = reinterpret_cast<LPMSG>(lParam);
@@ -1218,7 +1230,8 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 			switch (pMsg->message)
 			{
 			case WM_SYSCOMMAND:
-				if (pMsg->wParam == ms_switchVisibilityID)
+				if (pMsg->wParam == ms_switchVisibilityID
+					&& IsUniquePostedMessage(pMsg))
 				{
 					if (context->m_bNeedModalEditor)
 					{
@@ -1247,29 +1260,13 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 				switch (pMsg->wParam)
 				{
 				case VK_LEFT:
-					if ((HIWORD(pMsg->lParam) & KF_ALTDOWN) && !(HIWORD(pMsg->lParam) & KF_REPEAT))
-					{
-						auto nextRotationAngle = static_cast<RotationAngle>((context->m_rotationAngle + 1) % 4);
-						context->m_rotationAngle = nextRotationAngle;
-
-						if (!context->m_bNeedModalEditor)
-						{
-							context->ApplyRotationToEditorWindow();
-						}
-
-						if (!context->SaveSettings())
-						{
-							auto saveFailureMessage = LoadTHRotatorString(g_hModule, IDS_SETTING_FILE_SAVE_FAILED);
-							context->SetNewErrorMessage(saveFailureMessage.c_str());
-							break;
-						}
-					}
-					break;
-
 				case VK_RIGHT:
-					if (HIWORD(pMsg->lParam) & KF_ALTDOWN && !(HIWORD(pMsg->lParam) & KF_REPEAT))
+					if ((HIWORD(pMsg->lParam) & KF_ALTDOWN) && !(HIWORD(pMsg->lParam) & KF_REPEAT)
+						&& IsUniquePostedMessage(pMsg))
 					{
-						auto nextRotationAngle = static_cast<RotationAngle>((context->m_rotationAngle + Rotation_Num - 1) % 4);
+						int rotatingDirection = pMsg->wParam == VK_LEFT ? 1 : -1;
+
+						auto nextRotationAngle = static_cast<RotationAngle>((context->m_rotationAngle + Rotation_Num + rotatingDirection) % Rotation_Num);
 						context->m_rotationAngle = nextRotationAngle;
 
 						if (!context->m_bNeedModalEditor)
