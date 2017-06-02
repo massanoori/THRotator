@@ -5,6 +5,9 @@ set(localization_target localization_${language})
 # Don't generate manifest since muirct emits errors
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /MANIFEST:NO")
 
+set(localization_resource_header ${CMAKE_CURRENT_SOURCE_DIR}/resource.h)
+set(localization_resource ${CMAKE_CURRENT_SOURCE_DIR}/THRotator_${language}.rc)
+
 add_library(${localization_target} SHARED ${source_files} ${localization_resource} ${localization_resource_header})
 
 set(main_targets d3d8 d3d9)
