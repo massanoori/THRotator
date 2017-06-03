@@ -2,5 +2,5 @@
 Uninstall
 =========================
 
-本ツールの機能を一時的に無効にする場合は、 ``d3d9.dll.bak`` のように、 ``d3d9.dll`` または ``d3d8.dll`` を別の名前に変えることで実現できます。
-完全に削除する場合は、 ``d3d9.dll`` または ``d3d8.dll`` と ``throt.ini`` を削除してください。 
+If you would like to disable THRotator temporarily, rename ``d3d8.dll`` or ``d3d9.dll`` into another name, such as ``d3d9.dll.bak``.
+If you would like to completely uninstall THRotator, delete ``d3d8.dll`` or ``d3d9.dll`` and ``throt.ini``.

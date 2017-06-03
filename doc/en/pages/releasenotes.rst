@@ -2,53 +2,68 @@
 Release notes
 ======================
 
-1.2.2 May 28, 2017
+1.2.2
 =======================
+
+Released on May 28, 2017.
 
 Bug fixes
 ---------
 
-機能面での修正はありません
+No fix regarding functionality.
 
-- バージョン番号が更新されていないのを修正しました。
+- Fix obsolete version number string.
 
 
 
-1.2.1 May 28, 2017
+
+1.2.1
 =======================
+
+Released on May 28, 2017.
 
 Bug fixes
 ---------
 
-- ウィンドウモードにおいて、選択した解像度が、ディスプレイの解像度よりも大きい辺がある場合に画面が黒くなるのを修正しました。
-- フルスクリーンモードにおいて、選択した解像度が、ディスプレイの解像度よりも大きい辺がある場合、画面の一部または全体が黒くなるのを修正しました。
-- throt.iniが書き込み可能でない場合にクラッシュするのを修正しました。
+- Fix black screen when chosen resolution is wider or taller than screen in windowed mode.
+- Fix black stripe when monitor resolution is smaller than game resolution in fullscreen mode.
+- Fix crash when throt.ini is not writable.
 
 
-1.2.0 May 14, 2017
+
+1.2.0
 =======================
+
+Released on May 14, 2017.
 
 Bug fixes
 ---------
 
-- 東方紺珠伝で画面が黒くなる現象を修正しました。
-- 960x720、1280x960の解像度に対応しました。
+- Fix black screen on Touhou 15
+- Add support on higher resolutions (960x720, 1280x960)
+
 
 Others
 ---------
 
-- throt.iniのファイル入出力を高速化しました。
-- バージョンの増え方を変更しました。 今後は `Semantic Versioning 2.0 <http://semver.org/>`_ に従い増やしていきますが、 THRotatorはAPIを提供しないため、APIを設定ファイルなどのデータと置き換えて解釈してください。
+- Faster throt.ini I/O
+- Versioning by Semantic Versioning 2.0
+- ots of refactoring
 
-1.01 Aug 18, 2011
+
+1.01
 ======================
 
-アスペクト比固定拡大機能追加
+Released on Aug 18, 2011.
+
+Magnification of screen with aspect ratio fixed.
 
 
-1.00 Aug 14, 2011
+1.00
 ======================
+
+Released on Aug 14, 2011.
 
 The first release.
 
-On Aug 16, 2011, the default HUD arrangements for Th13 is fixed.
+On Aug 16, 2011, the default HUD arrangements for Th13 was fixed.
