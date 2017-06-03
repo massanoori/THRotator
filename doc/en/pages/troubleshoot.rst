@@ -2,15 +2,19 @@
 Troubleshoot
 =========================
 
-- Alt+左右キーを押しても画面が回転しない
-- ウィンドウモードでタイトルバーを右クリックしても「THRotatorを表示」がない
-- ウィンドウモードの解像度に960×720または1280×960を指定したときに表示がなめらかにならない
+- Screen doesn't rotate by ``Alt+Left`` and ``Alt+Right`` keys.
+- ``Show THRotator window`` or ``Open THRotator`` doesn't appears by right-clicking title bar.
+- Pixels are not smooth in windowed mode when the resolution is 960×720 or 1280×960.
 
-  - d3d8.dllまたはd3d9.dllがコピーされているかどうかをご確認ください。
-    コピーしても動かない場合はDirect3D 8版の作品にd3d9.dllをコピーしたり、その逆をしていないかご確認ください。 もう一度インストール方法を確認して、画面を回転したい作品が、Direct3D 8版とDirect3D 9版のどちらを必要とするのかを確かめてください。
+  - Make sure that ``d3d8.dll`` or ``d3d9.dll`` has been copied to the appropriate location.
+    If it doesn't work correctly even after copy, make sure that the appropriate file has been copied.
+    For example, ``d3d9.dll`` doesn't work on games run on Direct3D 8. Follow instruction described in :doc:`install` carefully.
 
-- 縦画面用のレイアウトになるべきところで縦画面用のレイアウトにならない
-- スコアや残機などの情報が表示されない
-- 東方文花帖、妖精大戦争、ダブルスポイラーで縦画面用のレイアウトがずれている
+- HUD elements are not rearranged for vertically-long screen even when they should be.
+- Scores, bombs and other HUD elements are not shown.
+- Misalignment in Shoot the Bullets (Th095), Double Spoiler (Th125), Fairy Wars (Th128), and Impossible Spell Card (Th143).
 
-  - 作品に対応した設定ファイルをコピーしてあるかどうかをご確認ください。 また、コピー先に間違いがないかをご確認ください。 ダブルスポイラー以降の作品はコピー先を間違えやすいと思いますが、インストール方法をもう一度確認してみてください。
+  - Make sure that config file correctly corresponds to the product.
+    Also, make sure that the destination is correct.
+    Since Double Spoiler (Th125), destination directory is confusing.
+    Follow instruction described in :doc:`install` carefully.
