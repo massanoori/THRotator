@@ -73,6 +73,8 @@ Windows win64-x64 をインストールしてください。
 使っているOSが64 bitの場合は、プラットフォームはwin64-x64、win32-x86の両方を使えますが、
 32 bitのOSの場合はwin32-x86しか実行できません。
 
+.. _proj_gen:
+
 
 プロジェクトファイル生成
 ---------------------------
@@ -128,6 +130,82 @@ THRotatorでは、テーマとして `sphinx_rtd_theme <https://github.com/rtfd/
 ローカライズ
 =============
 
-THRotatorはWindowsのMultilingual User Interface (MUI)による多言語対応が可能です。
+THRotatorはWindowsのMultilingual User Interface (MUI)による、
+GUIやエラーメッセージの多言語化が可能です。
+
+新しい言語を追加する際は、英語版のリソースをテンプレートとして容易に作成可能です。
+フランス語を追加することを例に、作成の流れを見ていきましょう。
+
+.. note:: ここでは、具体的な翻訳については扱いません。
+
+1. テンプレートをコピー
+-----------------------------
+
+1. まず、ひな型となる ``localization_en-US`` があるフォルダに、
+   新しく ``localization_<言語名>`` を作成します。
+   言語名は、 `Available Language Packs for Windows <https://technet.microsoft.com/en-us/library/hh825678.aspx>`_ の **Language/culture name** です。
+   また、このページには **Language hexadecimal identifier** に言語IDも記載されていますので、このIDもメモしておきます。
+   今回はフランス語を例としていますので、 ``localization_fr-FR`` を作成します。
+   また、言語IDの **0x040c** をメモしておきます。
+2. ``localization_en-US`` の中にある、 ``CMakeLists.txt`` 、 ``resource.h`` 、 ``THRotator_en-US.rc`` を、
+   新たに作成した ``localization_<言語名>`` (今回は ``localization_fr-FR``) にコピーします。
+3. ``localization_<言語名>\THRotator_en-US.rc`` を、 ``localization_<言語名>\THRotator_<言語名>.rc`` (今回は ``THRotator_fr-FR.rc``)にリネームします。
 
 
+2. CMakeの準備
+--------------------------
+
+1. ``localization_<言語名>\CMakeLists.txt`` を開き、 ``en-US`` となっている部分を、 ``<言語名>`` に置換します。
+   また、 ``set(language_id 0x0409)`` の **0x0409** を、メモしておいた言語IDに置き換えます。
+   今回は言語IDが **0x040c** なので、 ``set(language_id 0x040c)`` に変更します。
+   ``localization_<言語名>\CMakeLists.txt`` の編集は以上です。
+2. ソースコードのルートフォルダにある ``CMakeLists.txt`` を開き、
+
+フランス語の例では、``localization_fr-FR\CMakeLists.txt`` の中身は次のようになります。 ::
+
+    # resource language and its ID
+    # for a list of languages and IDs, visit https://msdn.microsoft.com/en-us/library/hh825678.aspx
+    set(language fr-FR)
+    set(language_id 0x040c)
+
+    include(../internationalization/THRotator_i18n.cmake)
+	
+また、ルートフォルダにある ``CMakeLists.txt`` の中身は次のようになります。 ::
+
+    # 省略
+	
+    add_subdirectory(d3d9)
+    add_subdirectory(d3d8)
+    add_subdirectory(localization_en-US)
+    add_subdirectory(localization_fr-FR) # 今回追加
+	
+3. プロジェクトファイルの生成
+----------------------------------
+
+本ページの :ref:`proj_gen` で説明している方法で、プロジェクトファイルを生成します。
+
+4. 翻訳
+-----------------
+
+``THRotator.sln`` を開きなおすか、再読み込みすると、
+プロジェクト ``localization_<言語名>`` が追加されているはずです。
+
+Visual Studioのリソースビューを開き、
+``localization_<言語名>`` の中にあるString Tableやダイアログリソースを翻訳していきます。
+String Tableやダイアログリソースのプロパティの ``Language`` が、 ``英語 (米国)`` になっていますので、
+翻訳先の言語に変更してください。フランス語の例では、 ``フランス語 (フランス)`` に変更します。
+
+5. ビルドと実行
+----------------
+
+プロジェクト ``localization_<言語名>`` をビルドすると、
+``d3d8.dll`` 、 ``d3d9.dll`` の出力ディレクトリに言語名のフォルダができ、その中に ``.mui`` ファイルが出来上がります。
+
+``d3d8.dll`` または ``d3d9.dll`` と一緒に、言語名のフォルダもゲームの実行ファイルのフォルダにコピーします。
+そのままゲームを実行すると、お使いのPCにその言語が存在すれば、THRotatorのGUIやメッセージがその言語で表示されるようになります。
+
+
+.. note::
+
+   d3d8.dll.muiまたはd3d9.dll.muiには、それぞれd3d8.dll、d3d9.dllのチェックサムが埋め込まれます。
+   .dllのチェックサムと.muiに埋め込まれたチェックサムが異なる場合は、言語の読み込みが失敗してしまいます。
