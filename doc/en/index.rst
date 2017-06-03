@@ -2,69 +2,72 @@
 THRotator User's manual
 =======================================
 
-THRotatorは、主に上海アリス幻樂団の弾幕系シューティングである東方Projectを縦長のスクリーンで楽しむため、
-画面の回転、HUDの各要素を再配置できるようにしたツールです。
-東方Projectと同じエンジンを使っている呑んべぇ会の黄昏酒場にも対応しています。
+THRotator allows users to enjoy vertically-scrolling shoot 'em up games on a vertically-long monitor.
+THRotator provides a way to rotate a screen and to rearrange HUD elements.
 
-ほかのDirect3D 8、Direct3D 9を使った縦スクロールシューティングゲームにも使える可能性があります。
+THRotator mainly focuses on Touhou Project and Uwabami Breakers, which shares the foundation of Touhou Project.
+Possibly, you can use THRotator for other vertically-scrolling shoot 'em up games.
 
-その他のゲーム(萃夢想、緋想天、非想天則を含む)は動作確認を行っておりません。
-動作確認はWindows 10のみで行っています。 
+THRotator is not tested on Th7.5, Th10.5, and Th12.3.
+THRotator is tested only on Windows 10.
 
 Supported products
 =======================================
 
-- 東方紅魔郷
-- 東方妖々夢
-- 東方永夜抄
-- 東方花映塚 (画面回転のみ)
-- 東方文花帖
-- 東方風神録
-- 東方地霊殿
-- 東方星蓮船
-- ダブルスポイラー
-- 妖精大戦争
-- 東方神霊廟
-- 東方輝針城 (体験版のみ確認)
-- 弾幕アマノジャク
-- 東方紺珠伝 (体験版のみ確認)
-- 黄昏酒場
+- the Embodiment of Scarlet Devil (Th06)
+- Perfect Cherry Blossom (Th07)
+- Imperishable Night (Th08)
+- Phantasmagoria of Flower View (Th09, screen rotation only)
+- Shoot the Bullet (Th095)
+- Mountain of Faith (Th10)
+- Subterranean Animism (Th11)
+- Undefined Fantastic Object (Th12)
+- Double Spoiler (Th125)
+- Fairy Wars (Th128)
+- Ten Desires (Th13)
+- Double Dealing Character (Th14, tested on demo version)
+- Impossible Spell Card (Th143)
+- Legacy of Lunatic Kingdom (Th15, testd on demo version)
+- (Hidden Star in Four Seasons)
+- Uwabami Breakers (alcostg)
 
 Main features
 =======================================
 
-- ゲーム起動中にAlt+左右キーで、画面をそれぞれ左回転、右回転することができます。
-- さらに、ゲームプレイ状態と判定されると、プレイ領域を画面に合わせて目一杯に拡大します。
-- ウィンドウモードでもウィンドウを縦長にすることができます。
-- 拡大時のスコアや残機、ボムなどの表示レイアウトは、デフォルトのものが気に入らなければ各自でカスタマイズ可能です。
-- 紅魔郷でもHomeキーで画面をbmpファイルに保存することができます。
-- 地霊殿から神霊廟までのウィンドウモード(960x720か1280x960)時のジャギー(ピクセルのカクカク)を修正します。
+- Rotate screen in left or right direction by pressing Alt+Left or Alt+Right key.
+- Magnify screen to as large size as possible while THRotator detects that you are playing.
+- Vertically-long window in windowed mode.
+- If you are not satisfied by the default HUD elements (such as health, bombs, and score), you can customize them.
+- Save screen capture in BMP format on Th06 by Home key.
+- Fix jaggy pixels in Th11, 12, 12.5, 12.8, and 13 when screen resolution of 960x720 or 1280x960 is chosen.
 
 
 Notes
 =====================
 
-- 本ツールの使用は自己責任でお願いします。
-- 本ツールについて、ゲームの配布元に問い合わせないでください。
+- Use THRotator at your own risk.
+- Don't ask any question about THRotator to the game publishers.
 
-  - ゲームの不具合を報告する際は、THRotatorをアンインストールしても再現するかどうかを確認してから、報告を行ってください。
+  - Before reporting an issue to the publisher, you must first check that the same issue happens even if THRotator is uninstalled.
 
-- 本ツールはソフトウェアに仕様外の動作を行わせるツールです。 したがって、本ツールを利用して達成したスコアやリプレイは正式なものとして認められない可能性があります。 もし気になるなら、スコアアタック大会の主催者に確認したり、リプレイをアップロードする際には本ツール使用の旨をコメントを加えたりすると良いと思います。
-- 本ツールに含まれている ``d3d8.dll`` と ``d3d9.dll`` は、絶対にシステムディレクトリにコピーしないでください。
-- 本ツールを対応作品以外に使った時の動作は未定義です。
+- THRotator forces a game to behave differently from the original design.
+  So your replay data and scores acquired with THRotator might be rejected as genuine ones.
+  It is highly recommended that you add a comment to let others know the replay or score is aquired with THRotator when you post them.
+- Don't copy ``d3d8.dll`` and ``d3d9.dll`` to your system directory.
+- THRotator's behavior is undefined on games not listed in supported products.
 
 
 License
 ======================
 
-本ツールはGPL v3にて公開しています。
+THRotator is under GPL v3.
 
-`ソースコード (GitHub) <https://github.com/massanoori/THRotator>`_
+`Source code (GitHub) <https://github.com/massanoori/THRotator>`_
 
-ただし、同時に公開している設定ファイル(\*.ini)については、パブリックドメインです。
+But .ini files are in the public domain.
 
-ソースコードからビルドを行い、独自の改造を行いたい場合の方法については、
-:doc:`pages/development` をご覧ください。
+If you would like to build THRotator from source code or to add your own mods,
+see :doc:`pages/development`.
 
 Table of contents
 ======================
