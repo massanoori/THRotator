@@ -48,7 +48,7 @@ Others
 
 - Faster throt.ini I/O
 - Versioning by Semantic Versioning 2.0
-- ots of refactoring
+- Lots of refactoring
 
 
 1.01

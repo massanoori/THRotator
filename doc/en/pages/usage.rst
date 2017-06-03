@@ -48,7 +48,7 @@ If THRotator fails to read ``throt.ini``, the threshold is set to 999 by default
 2. Main screen
 -----------------------
 
-Specyfing main screen position and size (blue rectangle in the figure below).
+Specifying main screen position and size (blue rectangle in the figure below).
 This rectangle is moved to the center of window or of entire screen,
 and magnified to fit to the client size of window or of entire screen,
 keeping its aspect ratio fixed.
@@ -58,7 +58,7 @@ keeping its aspect ratio fixed.
 In most of Touhou Project games, its position and size are (left, top, width, height)=(32, 16, 384, 448).
 Exceptionally,
 the position and size are (left, top, width, height)=(128, 16, 384, 448)
-in Shoot the Bullet (Th095), Fairy Wars (Th128), and other spinoff games.
+in Shoot the Bullet (Th095), Fairy Wars (Th128), and other spin-off games.
 
 This rectangle specified here doesn't have to correctly match the actual main screen rectangle.
 In fact, some margin is introduced in .ini files for Fairy Wars (Th128) and Uwabami Breakers (alcostg)
@@ -105,13 +105,13 @@ This checkbox is unchecked by default.
 7. Other rectangles
 -------------------
 
-Specyfing source and destination rectangles other than main screen.
+Specifying source and destination rectangles other than main screen.
 To create a new rectangle transfer, click ``Add`` button,
 then rectangle editing window appears.
 To edit an existing rectangle transfer, select the name of rectangle transfer and click ``Edit``,
 then rectangle editing window appears.
 
-Rectangles are transfered from top to bottom.
+Rectangles are transferred from top to bottom.
 So the bottommost transfer is rendered in front of all the other transfers.
 
 Coordinate system is as follows, where Wp and Hp are width and height of main screen size fit to the aspect ratio of 3:4.
@@ -147,7 +147,7 @@ it is much easier to understand the behavior by actually editing parameters.
 
 Procedure to support a new product looks like as follows:
 
-1. Measure times of setting viewport in playing state and non-playing state resptctively,
+1. Measure times of setting viewport in playing state and non-playing state respectively,
    determine a value larger than that in non-playing state and smaller than or equal to that in playing state,
    and fill the threshold by that value.
 2. Fill main screen position and size.

@@ -34,7 +34,7 @@ Install Microsoft Visual C++
 .. note:: If you have installed Visual C++, skip this step.
 
 Download Visual Studio from `Home page of Visual Studio <https://www.visualstudio.com/>`_.
-Community Editon is just enough.
+Community Edition is just enough.
 
 Visual Studio 2015 and later versions skip installing Visual C++ by default.
 Edit the installation option so that Visual C++ is installed.
@@ -53,7 +53,7 @@ Next, build ``filesystem`` module by following the steps given below.
    If your system is x86-based, launch ``VS20XX x86 Native Tools Command Prompts``.
 2. On the opened command prompt, change directory to the location where extracted ``bootstrap.bat`` exists.
 3. Run ``bootstrap.bat``.
-4. ``b2.exe`` will be generatd, then run ``b2 --with-filesystem runtime-link=shared,static``.
+4. ``b2.exe`` will be generated, then run ``b2 --with-filesystem runtime-link=shared,static``.
 
 Install CMake
 ------------------------

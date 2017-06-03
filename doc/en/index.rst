@@ -52,7 +52,7 @@ Notes
 
 - THRotator forces a game to behave differently from the original design.
   So your replay data and scores acquired with THRotator might be rejected as genuine ones.
-  It is highly recommended that you add a comment to let others know the replay or score is aquired with THRotator when you post them.
+  It is highly recommended that you add a comment to let others know the replay or score is acquired with THRotator when you post them.
 - Don't copy ``d3d8.dll`` and ``d3d9.dll`` to your system directory.
 - THRotator's behavior is undefined on games not listed in supported products.
 
