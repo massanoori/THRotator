@@ -17,7 +17,7 @@
 
 namespace
 {
-LPCTSTR THROTATOR_VERSION_STRING = _T("1.2.0");
+LPCTSTR THROTATOR_VERSION_STRING = _T("1.3.0");
 HHOOK ms_hHook;
 std::map<HWND, std::weak_ptr<THRotatorEditorContext>> ms_touhouWinToContext;
 UINT ms_switchVisibilityID = 12345u;
