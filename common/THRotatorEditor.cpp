@@ -403,6 +403,8 @@ BOOL CALLBACK THRotatorEditorContext::MainDialogProc(HWND hWnd, UINT msg, WPARAM
 			SendDlgItemMessage(hWnd, IDC_VERTICALWINDOW, BM_SETCHECK, BST_CHECKED, 0);
 		}
 
+		SendDlgItemMessage(hWnd, IDC_FORCEVERTICAL, BM_SETCHECK, pContext->m_bHUDRearrangeForced ? BST_CHECKED : BST_UNCHECKED, 0);
+
 		pContext->ApplyRotationToEditorWindow(hWnd);
 
 		{
@@ -989,7 +991,8 @@ bool THRotatorEditorContext::ApplyChangeFromEditorWindow(HWND hEditorWin)
 		m_rotationAngle = Rotation_270;
 	}
 
-	m_bVisible = SendDlgItemMessage(hEditorWin, IDC_VISIBLE, BM_GETCHECK, 0, 0) == BST_CHECKED ? TRUE : FALSE;
+	m_bVisible = SendDlgItemMessage(hEditorWin, IDC_VISIBLE, BM_GETCHECK, 0, 0) == BST_CHECKED;
+	m_bHUDRearrangeForced = SendDlgItemMessage(hEditorWin, IDC_FORCEVERTICAL, BM_GETCHECK, 0, 0) == BST_CHECKED;
 
 	m_currentRectTransfers = m_editedRectTransfers;
 
@@ -1286,10 +1289,17 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 
 				case VK_UP:
 				case VK_DOWN:
+					// 強制縦用レイアウト
 					if ((HIWORD(pMsg->lParam) & KF_ALTDOWN) && !(HIWORD(pMsg->lParam) & KF_REPEAT)
 						&& IsUniquePostedMessage(pMsg))
 					{
 						context->m_bHUDRearrangeForced = !context->m_bHUDRearrangeForced;
+
+						if (!context->m_bNeedModalEditor)
+						{
+							SendDlgItemMessage(context->m_hEditorWin, IDC_FORCEVERTICAL, BM_SETCHECK,
+								context->m_bHUDRearrangeForced ? BST_CHECKED : BST_UNCHECKED, 0);
+						}
 					}
 					break;
 				}
