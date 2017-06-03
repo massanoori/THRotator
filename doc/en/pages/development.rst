@@ -6,72 +6,69 @@ Development
 Get the THRotator source code
 ==================================
 
-THRotatorのソースコードは、 `GitHub <https://github.com/massanoori/THRotator>`_ から入手ができます。
+Source code of THRotator can be downloaded from `GitHub <https://github.com/massanoori/THRotator>`_.
 
-とりあえずダウンロードして、ビルドしたり改造したりする場合は、
-GitHubから直接ソースコードをダウンロードすることができます。
-``Clone or download`` をクリックし、表示される ``Download ZIP`` をクリックするとダウンロードが始まります。
-ダウンロードしたzipファイルを解凍すると、ソースコードが含まれたフォルダが作成されます。
+If you just try to build or modify THRotator,
+you can directly download from GitHub.
+By clicking ``Clone or download`` and then clicking ``Download ZIP``, the download will start.
+By extracting the downloaded ZIP file, the folder containing source code is created.
 
-お使いのPCにgitがインストール済みの場合は、
-``Clone or download`` をクリックすると表示されるURLからクローンすることでも、
-ソースコードを取得できます。
+If you have installed git on your PC,
+you can clone the repository from the URL shown after clicking ``Clone or download``.
 
 
 Build THRotator
 ====================
 
-ここでは、THRotatorのビルドするまでの手順を説明します。
+In this section, a procedure to build THRotator from source code is given.
 
-ビルドに必要なソフトウェアは、次の通りです。
+The prerequisites are the following:
 
-* Microsoft Visual C++ (2012以降)
+* Microsoft Visual C++ (2012 or later)
 * Boost C++ Libraries
 * CMake
 
 Install Microsoft Visual C++
 -----------------------------------------
 
-.. note:: インストール済みの場合は不要です。
+.. note:: If you have installed it, skip this step.
 
-`Visual Studio のホームページ <https://www.visualstudio.com/>`_ から、Visual Studioをダウンロードしてください。
-エディションは無料で利用可能なCommunityで問題ありません。
+Download Visual Studio from `Home page of Visual Studio <https://www.visualstudio.com/>`_.
+Community Editon is just enough.
 
-Visual Studio 2015以降の場合、Visual C++がデフォルトでインストールされないので、
-インストールオプションでVisual C++をインストールするように設定を変更してください。
+Visual Studio 2015 and later skip installing Visual C++ by default,
+edit the installation option so that Visual C++ is installed.
 
 Install Boost C++ Libraries
 -----------------------------------------
 
-.. note:: ``filesystem`` モジュールがビルド済みの場合は不要です。
+.. note:: If you have a built ``filesystem`` module, skip this step.
 
-`Boost C++ Libraries <http://www.boost.org/>`_ の **Current Release** から最新版をダウンロードし、
-適当なディレクトリに解凍します(例えば、 ``C:\boost\`` など)。
+Access to `Boost C++ Libraries <http://www.boost.org/>`_ and download the latest release from **Current Release**.
+Then extract ZIP archive to some location (for example ``C:\boost\``).
 
-次に、boostの ``filesystem`` モジュールをビルドします。
+Next, build ``filesystem`` module of boost.
 
-1. 使っているOSが64 bitの場合は、「スタートメニュー」→「Visual Studio 20XX」→「VS20XX x64 Native Tools コマンドプロンプト」、
-   32 bitの場合は、「VS20XX x86 Native Tools コマンドプロンプト」を開きます。
-2. 開いたコマンドプロンプトで、解凍したboostの、 ``bootstrap.bat`` のあるフォルダへ移動します。
-3. ``bootstrap.bat`` を実行します。
-4. ``b2.exe`` が出来上がるので、そのあとに ``b2 --with-filesystem runtime-link=shared,static`` を実行します。
+1. If your system is x64-based, ``Start Menu`` → ``Visual Studio 20XX`` → ``VS20XX x64 Native Tools Command Prompts``.
+   If your system is x86-based, launch ``VS20XX x86 Native Tools Command Prompts``.
+2. On the opened command prompt, change directory to the location where extracted ``bootstrap.bat`` exists.
+3. Run ``bootstrap.bat``.
+4. ``b2.exe`` will be generatd, then run ``b2 --with-filesystem runtime-link=shared,static``.
 
 Install CMake
 ------------------------
 
-.. note:: CMake 3.5 以降をインストール済みの場合は不要です。
+.. note:: If you have installed CMake 3.5 or later, skip this step.
 
-`CMakeのホームページ <https://cmake.org/>`_ の **Download** にある、最新のリリース(Latest Release)から、以下のいずれかをダウンロードし、
-インストーラの場合はインストールを行ってください。
+Access to `Home page of CMake <https://cmake.org/>`_. Then download one of the following from **Download** page.
 
-* Windows win64-x64 Installer (64 bit OS向けインストーラ)
-* Windows win64-x64 ZIP (64 bit OS向け実行ファイル)
-* Windows win32-x86 Installer　(32 bit OS向けインストーラ)
-* Windows win32-x86 ZIP (32 bit OS 向け実行ファイル)
+* Windows win64-x64 Installer
+* Windows win64-x64 ZIP
+* Windows win32-x86 Installer
+* Windows win32-x86 ZIP
 
-Windows win64-x64 をインストールしてください。
-使っているOSが64 bitの場合は、プラットフォームはwin64-x64、win32-x86の両方を使えますが、
-32 bitのOSの場合はwin32-x86しか実行できません。
+If you are using x64-based system, you can use both win64-x64 and win32-x86.
+If you are using x86-based system, you can use only win32-x86.
 
 .. _devel_proj_gen:
 
@@ -79,52 +76,53 @@ Windows win64-x64 をインストールしてください。
 Generate project files
 ---------------------------
 
-1. CMakeをインストーラからインストールした場合は、「スタートメニュー」→「CMake」→「CMake (cmake-gui)」を実行します。
-   直接ダウンロードした場合は、 ``bin\cmake-gui.exe`` を実行します。
-2. ``Where is the source code:`` に、THRotatorのソースコードがあるルートディレクトリのパスを入力します。
-3. ``Where to build the binaries:`` に、プロジェクトファイルの生成先、およびビルドを行うディレクトリのパスを入力します。
-4. ``Configure`` ボタンを押します。Generatorの選択画面が出るので、ここで ``Visual Studio XX 20XX`` を選択し、 ``Finish`` ボタンを押します。
-   Win64、ARMが付いているものは選択しないでください。
-5. ``BOOST_INCLUDE_DIR`` に、boostのインクルードディレクトリ(bootstrap.batがあるディレクトリ)のパスを入力します。
-6. ``BOOST_LIB_DIR`` に、boostのライブラリディレクトリ (デフォルトでは、 ``<boostのインクルードディレクトリ>\stage\lib`` )を入力します。
-7. 再度 ``Configure`` ボタンを押し、エラーがなければ ``Generate`` ボタンを押します。
+1. If you installed CMake from installer, ``Start Menu`` → ``CMake`` → ``CMake (cmake-gui)``.
+   If you downloaded CMake directly from, run ``bin\cmake-gui.exe``.
+2. Set the location of THRotator source code to ``Where is the source code:``.
+3. Set the location of project files you want to generate to ``Where to build the binaries:``.
+4. Press ``Configure``. Then generator selection window appears. Choose ``Visual Studio XX 20XX`` and press ``Finish``.
+   Don't choose a generator name containing Win64 or ARM.
+5. Set the boost installation directory (where bootstrap.bat exists) to ``BOOST_INCLUDE_DIR``.
+6. Set the boost library directory (``<boost install directory>\stage\lib`` by default) to ``BOOST_LIB_DIR``.
+7. Press ``Configure`` again. If you don't see any errors, press ``Generate``.
 
 
 Build
 ---------------------------------
 
-1. プロジェクト生成先にある ``THRotator.sln`` を開いてください。
-2. 5つのプロジェクトが読み込まれます。
+1. Open generated ``THRotator.sln``.
+2. Five projects are loaded.
  
-  * ALL_BUILD (すべてのプロジェクトをビルドするプロジェクト)
-  * d3d8 (Direct3D 8版THRotator)
-  * d3d9 (Direct3D 9版THRotator)
-  * localization_en-US (THRotatorの英語UIリソースDLL)
-  * ZERO_CHECK (CMakeが自動で生成)
+  * ALL_BUILD (project to build all the other projects)
+  * d3d8 (THRotator based on Direct3D 8)
+  * d3d9 (THRotator based on Direct3D 9)
+  * localization_en-US (English resource DLL of THRotator)
+  * ZERO_CHECK (automatically generated by CMake)
 
-3. Direct3D 8版をビルドしたい場合は ``d3d8`` 、Direct3D 9版をビルドしたい場合は ``d3d9`` をビルドしてください。
+3. Build ``d3d8`` for THRotator based on Direct3D 8, build ``d3d9`` for THRotator based on Direct3D 9.
 
 
-Build manual
+Build document
 ====================
 
-ドキュメントのビルドは、Sphinxを用いています。
+Sphinx is used to build the documentation of THRotator.
 
 Install Sphinx
 ------------------------
 
-http://sphinx-users.jp/gettingstarted/install_windows.html をご覧ください。
+See http://www.sphinx-doc.org/en/stable/install.html .
 
 Install a theme of Sphinx
 ------------------------------
 
-THRotatorでは、テーマとして `sphinx_rtd_theme <https://github.com/rtfd/sphinx_rtd_theme>`_ を使っています。
-このテーマのインストールは、 ``python -m pip install sphinx_rtd_theme`` を実行することでインストールできます。
+THRotator adopts a theme `sphinx_rtd_theme <https://github.com/rtfd/sphinx_rtd_theme>`_.
+To install it, run ``python -m pip install sphinx_rtd_theme``.
 
 Build
 ----------------------------
 
-``doc/<言語>/make.bat html`` を実行すると、 ``doc/<言語>/_build`` 以下にhtml形式のドキュメントが生成されます。
+Run ``doc/<language>/make.bat html``.
+Then the documentation in HTML format is generated in ``doc/<language>/_build``.
 
 
 Localization
@@ -136,7 +134,7 @@ GUIやエラーメッセージの多言語化が可能です。
 新しい言語を追加する際は、英語版のリソースをテンプレートとして容易に作成可能です。
 フランス語を追加することを例に、作成の流れを見ていきましょう。
 
-.. note:: ここでは、具体的な翻訳については扱いません。
+.. note:: This section doesn't refer to the actual translation.
 
 1. Copy template
 -----------------------------
@@ -177,7 +175,7 @@ GUIやエラーメッセージの多言語化が可能です。
     add_subdirectory(d3d9)
     add_subdirectory(d3d8)
     add_subdirectory(localization_en-US)
-    add_subdirectory(localization_fr-FR) # 今回追加
+    add_subdirectory(localization_fr-FR) # Added
 	
 3. Generate project files
 ----------------------------------
