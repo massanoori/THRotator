@@ -50,8 +50,8 @@ Boost C++ Libraries のインストール
 
 次に、boostの ``filesystem`` モジュールをビルドします。
 
-1. 使っているOSが64 bitの場合は、「スタートメニュー」→「Visual Studio 20XX」→「VS20XX x64 Native Tools コマンドプロンプト」、
-   32 bitの場合は、「VS20XX x86 Native Tools コマンドプロンプト」を開きます。
+1. 使っているOSが64 bitの場合は、 ``スタートメニュー`` → ``Visual Studio 20XX`` → ``VS20XX x64 Native Tools コマンドプロンプト`` 、
+   32 bitの場合は、 ``VS20XX x86 Native Tools コマンドプロンプト`` を開きます。
 2. 開いたコマンドプロンプトで、解凍したboostの、 ``bootstrap.bat`` のあるフォルダへ移動します。
 3. ``bootstrap.bat`` を実行します。
 4. ``b2.exe`` が出来上がるので、そのあとに ``b2 --with-filesystem runtime-link=shared,static`` を実行します。
@@ -69,7 +69,6 @@ CMake のインストール
 * Windows win32-x86 Installer　(32 bit OS向けインストーラ)
 * Windows win32-x86 ZIP (32 bit OS 向け実行ファイル)
 
-Windows win64-x64 をインストールしてください。
 使っているOSが64 bitの場合は、プラットフォームはwin64-x64、win32-x86の両方を使えますが、
 32 bitのOSの場合はwin32-x86しか実行できません。
 
@@ -79,7 +78,7 @@ Windows win64-x64 をインストールしてください。
 プロジェクトファイル生成
 ---------------------------
 
-1. CMakeをインストーラからインストールした場合は、「スタートメニュー」→「CMake」→「CMake (cmake-gui)」を実行します。
+1. CMakeをインストーラからインストールした場合は、 ``スタートメニュー`` → ``CMake`` → ``CMake (cmake-gui)`` を実行します。
    直接ダウンロードした場合は、 ``bin\cmake-gui.exe`` を実行します。
 2. ``Where is the source code:`` に、THRotatorのソースコードがあるルートディレクトリのパスを入力します。
 3. ``Where to build the binaries:`` に、プロジェクトファイルの生成先、およびビルドを行うディレクトリのパスを入力します。
@@ -165,8 +164,8 @@ GUIやエラーメッセージの多言語化が可能です。
 
     # resource language and its ID
     # for a list of languages and IDs, visit https://msdn.microsoft.com/en-us/library/hh825678.aspx
-    set(language fr-FR)
-    set(language_id 0x040c)
+    set(language fr-FR) # 編集
+    set(language_id 0x040c) # 編集
 
     include(../internationalization/THRotator_i18n.cmake)
 	
