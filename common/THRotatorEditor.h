@@ -89,6 +89,11 @@ public:
 		return m_filterType;
 	}
 
+	bool IsHUDRearrangeForced() const
+	{
+		return m_bHUDRearrangeForced;
+	}
+
 	// 解像度リクエストからウィンドウのサイズを、縦長かどうかも考慮しながら、変更する。
 	// また、D3Dのバックバッファ解像度もoutBackBufferWidth, outBackBufferHeightに返す。
 	void UpdateWindowResolution(int requestedWidth, int requestedHeight, UINT& outBackBufferWidth, UINT& outBackBufferHeight);
@@ -152,6 +157,7 @@ private:
 	std::vector<RectTransferData> m_editedRectTransfers, m_currentRectTransfers;
 	D3DTEXTUREFILTERTYPE m_filterType;
 	bool m_bTouhouWithoutScreenCapture;
+	bool m_bHUDRearrangeForced;
 
 
 	/****************************************

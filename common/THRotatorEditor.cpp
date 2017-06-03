@@ -50,6 +50,7 @@ std::basic_string<TCHAR> LoadTHRotatorString(HINSTANCE hModule, UINT nID)
 
 THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 	: m_hTouhouWin(hTouhouWin)
+	, m_bHUDRearrangeForced(false)
 	, m_deviceResetRevision(0)
 #ifdef TOUHOU_ON_D3D8
 	, m_bNeedModalEditor(true)
@@ -1280,6 +1281,15 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 							context->SetNewErrorMessage(saveFailureMessage.c_str());
 							break;
 						}
+					}
+					break;
+
+				case VK_UP:
+				case VK_DOWN:
+					if ((HIWORD(pMsg->lParam) & KF_ALTDOWN) && !(HIWORD(pMsg->lParam) & KF_REPEAT)
+						&& IsUniquePostedMessage(pMsg))
+					{
+						context->m_bHUDRearrangeForced = !context->m_bHUDRearrangeForced;
 					}
 					break;
 				}

@@ -2328,7 +2328,8 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 			LONG mainScreenWidth = static_cast<LONG>(m_pEditorContext->GetMainScreenWidth());
 			LONG mainScreenHeight = static_cast<LONG>(m_pEditorContext->GetMainScreenHeight());
 
-			bool bNeedsRearrangeHUD = aspectLessThan133 && m_pEditorContext->IsViewportSetCountOverThreshold();
+			bool bNeedsRearrangeHUD = m_pEditorContext->IsHUDRearrangeForced()
+				|| aspectLessThan133 && m_pEditorContext->IsViewportSetCountOverThreshold();
 			LONG baseDestRectWidth = bNeedsRearrangeHUD ? mainScreenWidth : static_cast<LONG>(BASE_SCREEN_WIDTH);
 			LONG baseDestRectHeight = bNeedsRearrangeHUD ? mainScreenHeight : static_cast<LONG>(BASE_SCREEN_HEIGHT);
 
