@@ -2,80 +2,82 @@
 Install
 ================
 
-このページでは、インストール方法を説明します。
+This page shows the steps to install THRotator.
 
-Determin which DLL is needed
-============================
+Determine which DLL is needed
+=============================
 
-まず、インストール先に対して、どのファイルをコピーするかを確認します。
 
-インストール先の作品が下記のいずれかの場合、コピーするのは ``d3d8.dll`` です。
+If you would like to install THRotator to one of the following, the file to copy is ``d3d8.dll``.
 
-- 東方紅魔郷
-- 東方妖々夢
-- 東方永夜抄
-- 東方花映塚
-- 東方文花帖
+- the Embodiment of Scarlet Devil (Th06)
+- Perfect Cherry Blossom (Th07)
+- Imperishable Night (Th08)
+- Phantasmagoria of Flower View (Th09)
+- Shoot the Bullet (Th095)
 
-インストール先の作品が下記のいずれか、もしくはそれ以降にリリースされた作品の場合、コピーするのは ``d3d9.dll`` です。
+If you would like to install THRotator to one of the following or later products, the file to copy is ``d3d9.dll``.
 
-- 東方風神録
-- 東方地霊殿
-- 東方星蓮船
-- ダブルスポイラー
-- 妖精大戦争
-- 東方神霊廟
-- 東方輝針城
-- 弾幕アマノジャク
-- 東方紺珠伝
-- 黄昏酒場
+- Mountain of Faith (Th10)
+- Subterranean Animism (Th11)
+- Undefined Fantastic Object (Th12)
+- Double Spoiler (Th125)
+- Fairy Wars (Th128)
+- Ten Desires (Th13)
+- Double Dealing Character (Th14, tested on demo version)
+- Impossible Spell Card (Th143)
+- Legacy of Lunatic Kingdom (Th15, tested on demo version)
+- (Hidden Star in Four Seasons)
+- Uwabami Breakers (alcostg)
 
 Copy DLL file
 =========================
 
-ゲームのインストールディレクトリ(exeがあるところ)に、DLLファイルをコピーします。
-管理者権限を要求された場合は、管理者権限でコピーを行ってください。
+Copy DLL file to the location where the game is installed (where the .exe file exists).
+Windows may ask you to input an administrator's name and password to copy the DLL file.
 
 
 Copy config file
 =========================
 
-作品名に対応した設定ファイル ``throt_<作品ナンバリング>.ini`` を、次のディレクトリにコピーし、コピー先でそれを ``throt.ini`` にリネームします。
-黄昏酒場の作品ナンバリングは、 ``alcostg`` としています。
+Copy config file corresponding to product number ``throt_<product number>.ini`` to the following directory,
+and rename it to ``throt.ini`` in the destination directory.
+Product number of Uwabami Breakers is ``alcostg``.
 
-紅魔郷、妖々夢、永夜抄、花映塚、文花帖、風神録、地霊殿、星蓮船、黄昏酒場の場合
-  ゲームのインストールディレクトリ
+For Th06, Th07, Th08, Th09, Th095, Th10, Th11, Th12, and alcostg
+  Where the game is installed.
 
-ダブルスポイラー、妖精大戦争、神霊廟、輝針城、弾幕アマノジャク、紺珠伝、それ以降の場合
-  セーブデータが保存されるディレクトリ
+For Th125, Th128, Th13, Th14, Th143, Th15, and later
+  Where the save data (score, replay, screen capture, and others) is saved.
 
-.. note:: セーブデータが保存されるディレクトリについて
+.. note:: Location of save data
    
-   - OSがWindows Vista/7/8/10の場合
+   - On Windows Vista, 7, 8, and 10
    
-     - ``C:\Users\<ログインユーザ名>\AppData\Roaming\ShanghaiAlice\th<作品ナンバリング>\``
+     - ``C:\Users\<user name>\AppData\Roaming\ShanghaiAlice\th<product number>\``
 
-   - バッチファイルで ``set APPDATA=`` を実行した後にゲームを起動している場合
+   - Executing command ``set APPDATA=`` before launching
    
-     - インストールディレクトリ
+     - Where the game is installed.
 
 Localize
 ========================
 
-THRotatorのGUIはデフォルトで日本語です。
+GUI and messages are in Japanese by default.
 
-``en-US`` フォルダをDLLファイルと同じ場所に置くと、GUIが英語になります。
+If you copy ``en-US`` folder to the same directory where DLL file exists, GUI and messages become in English.
 
 
 
-Aspect ratio distortion from default config filees
+Aspect ratio distortion by default config files
 ===============================================================
 
-下記の作品では、表示桁数等を確保するために、一部のHUD要素のアスペクト比が保存されていません。
+In order to show all digits in HUD elements,
+their aspect ratios are not preserved in the following products.
 
-- 東方永夜抄　～ Imperishable Night. (数値の桁をすべて表示するため)
-- 東方文花帖　～ Shoot the Bullet. (数値の桁をすべて表示するため)
-- ダブルスポイラー　～ 東方文花帖 (数値の桁をすべて表示するため)
-- 妖精大戦争　～ 東方三月精 (パーフェクトフリーズの文字はすべて表示するため)
-- 東方神霊廟以降 (かけらの分母を表示するため)
+- Th08 (To show all digits)
+- Th095 (To show all digits)
+- Th125 (To show all digits)
+- Th128 (To show `Perfect Freeze`)
+- Since Th13 (To show the denominators of fragments)
 

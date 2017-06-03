@@ -27,7 +27,7 @@ Supported products
 - Ten Desires (Th13)
 - Double Dealing Character (Th14, tested on demo version)
 - Impossible Spell Card (Th143)
-- Legacy of Lunatic Kingdom (Th15, testd on demo version)
+- Legacy of Lunatic Kingdom (Th15, tested on demo version)
 - (Hidden Star in Four Seasons)
 - Uwabami Breakers (alcostg)
 
