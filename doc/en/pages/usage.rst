@@ -5,132 +5,151 @@ How to use
 Rotate screen
 =====================
 
-``Alt+左右キー`` を押すことで、それぞれ左方向、右方向に90度ずつ回転します。また、プレイ時またはリプレイ再生時に、回転された画面から見てアスペクト比が4:3より小さくなると、 プレイ領域を画面目一杯に拡大します。 
-
+By pressing ``Alt+Left`` or ``Alt+Right``, the screen is rotated by 90 degrees in left or right direction.
+When entire screen aspect ratio is smaller than 4:3 seen from rotated screen viewpoint,
+THRotator try to magnify main screen region to as large size as possible while you are playing or watching replay data.
 
 
 Screen capture on Th06
 ========================================
 
-東方紅魔郷にはスクリーンキャプチャが存在しませんが、THRotatorを使うことでスクリーンキャプチャを保存できるようになります。
+THRotator allows to capture a screen into a .bmp file by pressing ``Home`` key on Th06,
+which is unsupported on the original Th06.
 
-``Homeキー`` でスクリーンキャプチャを行います。
-保存先は、星蓮船までの作品と同じく、インストールディレクトリ以下の ``snapshot`` フォルダです。
-ファイルフォーマットは ``.bmp`` です。 
+The destination is ``snapshot`` folder in the installed directory,
+which is the same as that since Th07 until Th12.
 
 
 Customization window
 =====================
 
-ウィンドウモードでタイトルバーを右クリックし、メニューの1番下の ``THRotatorを表示`` をクリックすると、次のような画面が表示されます。
+Right click on the title bar, and click ``Show THRotator window`` or ``Open THRotator`` to show the customization window.
+The customization window looks like as follows:
 
 .. image:: ../images/custom.png
 
-.. note:: Direct3D 9版はこのウィンドウを表示中でもゲームが進行しますが、Direct3D 8版はこの画面が出ている間はゲームが停止します。
+.. note::
+
+   On Direct3D 9 version, the game proceeds as usual while this window is shown.
+   On Direct3D 8 version, the game is suspended while this window is shown.
 
 1. Game state
 -----------------------
 
-本ツールでは、現在プレイ中またはリプレイ再生中かどうかを判定するためのパラメータとして、1フレームあたりのVP(=ビューポート)設定回数の閾値を用います。
-VP設定回数は、メニュー表示時などの本編をプレイしていない状態に比べ、プレイ時やリプレイ再生時のほうが多いため、このような判定方法を用いています。
+THRotator detects by counting setting viewport whether you are playing (we call it playing state) or not.
+In Touhou Project, viewport is updated more frequently while playing state than otherwise.
+THRotator exploits this fact to automatically switch to an HUD arrangement for vertically-long screen.
 
-VP設定回数が回数閾値を超えた場合、縦画面化のレイアウトを使ったほうが大きく表示できると判断された場合に限り、 縦画面用のレイアウトになります。
+By clicking ``Count SetViewport()`` button, you can measure the number of times of setting viewport.
+If number of times of setting viewport is more than the threshold, HUD elements are arranged for vertically-long screen.
 
-VP設定回数取得ボタンで、1フレーム間の実際のVP設定回数を取得できます。
-回数閾値の欄に、本編をプレイしているときのVP設定回数以下、そうでないときのVP設定回数よりも大きい値を入力することで、
-本編プレイ時に縦画面用のレイアウトになるように設定することができます。
-
-``throt.ini`` が読み込めない場合は、意図せず縦画面用のレイアウトになるのを防ぐため、デフォルト値は999です。
+If THRotator fails to read ``throt.ini``, the threshold is set to 999 by default to prevent unintentional switching.
 
 2. Main screen
 -----------------------
 
-プレイ画面の矩形の位置、大きさを指定します(下図青枠の部分)。ここで指定した矩形が画面いっぱいにアスペクト比を保存しながら拡大され、画面の中央に配置されます。
-東方プロジェクトの多くの作品では、(左,上,幅,高さ)=(32,16,384,448)、
-文花帖や妖精大戦争のように真ん中に配置されている場合は(128,16,384,448)です。
+Specyfing main screen position and size (blue rectangle in the figure below).
+This rectangle is moved to the center of window or of entire screen,
+and magnified to fit to the client size of window or of entire screen,
+keeping its aspect ratio fixed.
 
 .. image:: ../images/pr.png
 
-しかし、ここで指定した矩形は実際のプレイ領域と同じである必要はありません。
-妖精大戦争と黄昏酒場のデフォルトレイアウトのように、広めに取ることができます。
+In most of Touhou Project games, its position and size are (left, top, width, height)=(32, 16, 384, 448).
+Exceptionally,
+the position and size are (left, top, width, height)=(128, 16, 384, 448)
+in Shoot the Bullet (Th095), Fairy Wars (Th128), and other spinoff games.
 
-オフセットは画面が拡大された後にどれだけy方向に移動させるかを指定します。
+This rectangle specified here doesn't have to correctly match the actual main screen rectangle.
+In fact, some margin is introduced in .ini files for Fairy Wars (Th128) and Uwabami Breakers (alcostg)
+to accommodate all the HUD elements.
+
+Finally, ``Offset`` can be used to adjust vertical position.
 
 3. Rotation angle
 -----------------------
 
-画面の回転は ``Alt+左右キー`` ですることができますが、この画面でも回転角を指定することができます。
-回転方向は、左回り(反時計回り)です。
+Although you can rotate a screen by ``Alt+Left`` and ``Alt+Right``,
+this window can also be used to specify rotation angle.
+The direction of rotation is counter-clockwise.
 
-デフォルトは0°です。
+The default choice is 0 degrees.
 
 
 4. Pixel interpolation when magnified
 -------------------------------------
 
-画像の拡大が行われた時の補間方法を指定します。
+Specifying how pixel colors are interpolated when magnified.
 
-デフォルトはバイリニアです。
+The default choice is bilinear.
 
 
 5. Vertically-long window
 -------------------------
 
-ウィンドウモード時にチェックを入れておくと、ウィンドウの幅と高さを交換して縦長になります。
+If checked, the window size becomes vertically-long by swapping its width and height.
 
-デフォルトではチェックされていません。
+This checkbox is unchecked by default.
 
 
 6. Show this window when launched
 -----------------------------------------
 
-起動時にTHRotatorの画面を出すかどうかを指定します。
+If checked, this window appears immediately after the game is launched.
 
-デフォルトではチェックされていません。
+This checkbox is unchecked by default.
 
-.. note:: このオプションはDirect3D 8版では無効です。
+.. note:: This option is unavailable on Direct3D 8 version since main game window and customization window are not coexistent.
 
 
 7. Other rectangles
 -------------------
 
-プレイ領域以外の矩形の転送元矩形、転送先矩形の位置、大きさを指定します。
-追加、またはリストから矩形を選択して編集すると矩形編集画面が表示されます。
+Specyfing source and destination rectangles other than main screen.
+To create a new rectangle transfer, click ``Add`` button,
+then rectangle editing window appears.
+To edit an existing rectangle transfer, select the name of rectangle transfer and click ``Edit``,
+then rectangle editing window appears.
 
-矩形の転送は、上から順番に行われます。
-そのため、リストの一番下にある矩形が最も上に描画されます。
+Rectangles are transfered from top to bottom.
+So the bottommost transfer is rendered in front of all the other transfers.
 
-転送先の座標系は、プレイ領域のサイズをアスペクト比3:4に合わせた幅と高さをWp,Hpとして、次のようになります。
+Coordinate system is as follows, where Wp and Hp are width and height of main screen size fit to the aspect ratio of 3:4.
 
 .. image:: ../images/cs.png
 
-また、ver. 1.01から拡大して余った黒帯の領域にも矩形の転送ができるようになりました。
+Since 1.01, rectangle transfer destination can reach the remaining black stripe regions.
 
 8. Hide this window
 ---------------------------
 
-右上の閉じるボタンと同じくTHRotatorの画面を閉じます。
+Closing this window.
 
 
 9. Discard change
 ---------------------------
 
-最後に適用を押したときの状態に、フォームへの入力を戻します。
+Resetting to the parameters when ``Apply`` was pressed last time.
 
 
 10. Apply
 ---------------
 
-この画面で入力されたパラメータを実際に反映させます。このボタンを押したタイミングで設定ファイル ``throt.ini`` が保存されます。
+Applying input parameters to actual rendering.
+When successful, config file ``throt.ini`` is saved.
 
 
 Best practices
 -------------------
 
-以上長々と説明しましたが、パラメータを実際に変えてみて、どのようになるかを見たほうが、理解しやすいかもしれません。 
-新作への対応の要領ですが、おおむね次のようになります。
+Although this page describes the detailed behavior,
+it is much easier to understand the behavior by actually editing parameters.
 
-1. 非プレイ時とプレイ時のVP設定回数を取得して、非プレイ時よりも大きく、プレイ時以下の値を回数閾値に入力する。
-2. プレイ画面領域の位置とサイズを入力する。
-3. スコアなどの情報を表示するために、その他領域に矩形を追加する。
+Procedure to support a new product looks like as follows:
+
+1. Measure times of setting viewport in playing state and non-playing state resptctively,
+   determine a value larger than that in non-playing state and smaller than or equal to that in playing state,
+   and fill the threshold by that value.
+2. Fill main screen position and size.
+3. Add rectangle transfers for the scores, health, and other HUD elements.
 
