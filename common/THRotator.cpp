@@ -425,6 +425,8 @@ public:
 #endif
 
 	HRESULT WINAPI EndScene(VOID) override;
+	void EndSceneInternal();
+
 	HRESULT WINAPI Reset(D3DPRESENT_PARAMETERS* pPresentationParameters) override;
 
 	HRESULT InternalReset(
@@ -2301,203 +2303,7 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 		if (SUCCEEDED(m_pSprite->Begin(D3DXSPRITE_ALPHABLEND)))
 #endif
 		{
-#ifdef TOUHOU_ON_D3D8
-			D3DTEXTUREFILTERTYPE prevFilter, prevFilter2;
-			m_pd3dDev->GetTextureStageState(0, D3DTSS_MAGFILTER, (DWORD*)&prevFilter);
-			m_pd3dDev->GetTextureStageState(0, D3DTSS_MINFILTER, (DWORD*)&prevFilter2);
-			m_pd3dDev->SetTextureStageState(0, D3DTSS_MAGFILTER, m_pEditorContext->GetFilterType());
-			m_pd3dDev->SetTextureStageState(0, D3DTSS_MINFILTER, m_pEditorContext->GetFilterType());
-
-#else
-			m_pd3dDev->SetSamplerState(0, D3DSAMP_MAGFILTER, m_pEditorContext->GetFilterType());
-			m_pd3dDev->SetSamplerState(0, D3DSAMP_MINFILTER, m_pEditorContext->GetFilterType());
-#endif
-
-			m_pd3dDev->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
-
-			auto rotationAngle = m_pEditorContext->GetRotationAngle();
-
-			bool aspectLessThan133;
-			if (rotationAngle % 2 == 0)
-				aspectLessThan133 = m_d3dpp.BackBufferWidth * 3 < m_d3dpp.BackBufferHeight * 4;
-			else
-				aspectLessThan133 = m_d3dpp.BackBufferHeight * 3 < m_d3dpp.BackBufferWidth * 4;
-
-			LONG mainScreenLeft = static_cast<LONG>(m_pEditorContext->GetMainScreenLeft());
-			LONG mainScreenTop = static_cast<LONG>(m_pEditorContext->GetMainScreenTop());
-			LONG mainScreenWidth = static_cast<LONG>(m_pEditorContext->GetMainScreenWidth());
-			LONG mainScreenHeight = static_cast<LONG>(m_pEditorContext->GetMainScreenHeight());
-
-			// エネミーマーカーと周囲の枠が表示されるよう、ゲーム画面の矩形を拡張
-
-			POINT prPosition = { mainScreenLeft, mainScreenTop };
-			SIZE prSize = { mainScreenWidth, mainScreenHeight };
-			if (mainScreenWidth * m_requestedWidth < mainScreenHeight * m_requestedHeight)
-			{
-				prPosition.x = mainScreenLeft - (mainScreenHeight * m_requestedHeight / m_requestedWidth - mainScreenWidth) / 2;
-				prSize.cx = mainScreenHeight * m_requestedHeight / m_requestedWidth;
-			}
-			else if (mainScreenWidth * m_requestedWidth > mainScreenHeight * m_requestedHeight)
-			{
-				prPosition.y = mainScreenTop - (mainScreenWidth * m_requestedWidth / m_requestedHeight - mainScreenHeight) / 2;
-				prSize.cy = mainScreenWidth * m_requestedWidth / m_requestedHeight;
-			}
-
-			prPosition.y -= m_pEditorContext->GetYOffset();
-
-			bool bNeedsRearrangeHUD = m_pEditorContext->IsHUDRearrangeForced()
-				|| aspectLessThan133 && m_pEditorContext->IsViewportSetCountOverThreshold();
-			LONG baseDestRectWidth = bNeedsRearrangeHUD ? prSize.cx : static_cast<LONG>(BASE_SCREEN_WIDTH);
-			LONG baseDestRectHeight = bNeedsRearrangeHUD ? prSize.cy : static_cast<LONG>(BASE_SCREEN_HEIGHT);
-
-
-
-			/***** 変換行列の計算 *****
-
-			1. テクスチャを東方が要求したバックバッファ解像度から640x480にスケーリング
-			2. 矩形の中心を原点(0, 0)に移動
-			3. ユーザが指定した転送元矩形サイズの逆数でスケールをかける
-			4. ユーザが指定した矩形ごとの回転角度で矩形を回転
-			5. ユーザが指定した転送先矩形サイズでスケールをかける
-			6. ユーザが指定した転送先矩形の位置へ移動
-			7. プレイ領域のサイズがTHRotatorで内部的に確保したバックバッファ解像度へ拡大
-			8. 現在の画面回転角度で回転
-			9. 画面全体の中心を原点からバックバッファの中心へ移動
-
-			2から6は矩形ごとのパラメータが必要。
-			それより前の1と、後の7-9は事前計算できるので、それぞれpreRectTransform、postRectTransformとして保持
-
-			*****/
-
-			D3DXMATRIX preRectTransform;
-			{
-				D3DXMATRIX baseSrcScale;
-				D3DXMatrixScaling(&baseSrcScale, BASE_SCREEN_WIDTH / static_cast<float>(m_requestedWidth), BASE_SCREEN_HEIGHT / static_cast<float>(m_requestedHeight), 1.0f);
-
-				preRectTransform = baseSrcScale;
-			}
-
-			D3DXMATRIX postRectTransform;
-			{
-				float baseDestScaleScalar = rotationAngle % 2 == 0 ?
-					(std::min)(m_d3dpp.BackBufferWidth / static_cast<float>(baseDestRectWidth), m_d3dpp.BackBufferHeight / static_cast<float>(baseDestRectHeight)) :
-					(std::min)(m_d3dpp.BackBufferWidth / static_cast<float>(baseDestRectHeight), m_d3dpp.BackBufferHeight / static_cast<float>(baseDestRectWidth));
-				D3DXMATRIX baseDestScale;
-				D3DXMatrixScaling(&baseDestScale, baseDestScaleScalar, baseDestScaleScalar, 1.0f);
-
-				D3DXMATRIX rotation;
-				D3DXMatrixRotationZ(&rotation, RotationAngleToRadian(rotationAngle));
-
-				D3DXMATRIX baseDestTranslation;
-				D3DXMatrixTranslation(&baseDestTranslation, 0.5f * m_d3dpp.BackBufferWidth, 0.5f * m_d3dpp.BackBufferHeight, 0.0f);
-
-				D3DXMATRIX temp;
-				D3DXMatrixMultiply(&temp, &baseDestScale, &rotation);
-				D3DXMatrixMultiply(&postRectTransform, &temp, &baseDestTranslation);
-			}
-
-			auto rectDrawer = [this, &preRectTransform, &postRectTransform](
-				const POINT& srcPos,
-				const SIZE& srcSize,
-				const POINT& destPos,
-				const SIZE& destSize,
-				const SIZE& mainScreenSize,
-				RotationAngle rotation)
-			{
-				POINT correctedSrcPos = srcPos;
-				SIZE correctedSrcSize = srcSize;
-
-				SIZE srcRectTopLeftOffset = {};
-#ifdef TOUHOU_ON_D3D8
-				// 負の座標値がある場合、D3DX8では描画が行われないため、クランプ
-				if (correctedSrcPos.x < 0)
-				{
-					srcRectTopLeftOffset.cx = -correctedSrcPos.x;
-					correctedSrcPos.x = 0;
-					correctedSrcSize.cx -= srcRectTopLeftOffset.cx;
-				}
-
-				if (correctedSrcPos.y < 0)
-				{
-					srcRectTopLeftOffset.cy = -correctedSrcPos.y;
-					correctedSrcPos.y = 0;
-					correctedSrcSize.cy -= srcRectTopLeftOffset.cy;
-				}
-#endif
-
-				D3DXMATRIX translateSrcCenterToOrigin;
-				D3DXMatrixTranslation(&translateSrcCenterToOrigin,
-					-0.5f * srcSize.cx + srcRectTopLeftOffset.cx,
-					-0.5f * srcSize.cy + srcRectTopLeftOffset.cy, 0.0f);
-
-				D3DXMATRIX rectScaleSrcInv;
-				D3DXMatrixScaling(&rectScaleSrcInv, 1.0f / srcSize.cx, 1.0f / srcSize.cy, 1.0f);
-
-				D3DXMATRIX rectRotation;
-				D3DXMatrixRotationZ(&rectRotation, RotationAngleToRadian(rotation));
-
-				D3DXMATRIX rectScaleDest;
-				D3DXMatrixScaling(&rectScaleDest, static_cast<float>(destSize.cx), static_cast<float>(destSize.cy), 1.0f);
-
-				D3DXMATRIX rectTranslation;
-				D3DXMatrixTranslation(&rectTranslation,
-					static_cast<float>(destPos.x) + 0.5f * (destSize.cx - mainScreenSize.cx),
-					static_cast<float>(destPos.y) + 0.5f * (destSize.cy - mainScreenSize.cy), 0.0f);
-
-				D3DXMATRIX finalTransform, temp;
-				D3DXMatrixMultiply(&temp, &preRectTransform, &translateSrcCenterToOrigin);
-				D3DXMatrixMultiply(&finalTransform, &temp, &rectScaleSrcInv);
-				D3DXMatrixMultiply(&temp, &finalTransform, &rectRotation);
-				D3DXMatrixMultiply(&finalTransform, &temp, &rectScaleDest);
-				D3DXMatrixMultiply(&temp, &finalTransform, &rectTranslation);
-				D3DXMatrixMultiply(&finalTransform, &temp, &postRectTransform);
-
-				RECT scaledSourceRect;
-				float scaleFactorForSourceX = static_cast<float>(m_requestedWidth) / BASE_SCREEN_WIDTH;
-				float scaleFactorForSourceY = static_cast<float>(m_requestedHeight) / BASE_SCREEN_HEIGHT;
-				scaledSourceRect.left = static_cast<LONG>(correctedSrcPos.x * scaleFactorForSourceX);
-				scaledSourceRect.right = static_cast<LONG>((correctedSrcPos.x + correctedSrcSize.cx) * scaleFactorForSourceX);
-				scaledSourceRect.top = static_cast<LONG>(correctedSrcPos.y * scaleFactorForSourceY);
-				scaledSourceRect.bottom = static_cast<LONG>((correctedSrcPos.y + correctedSrcSize.cy) * scaleFactorForSourceY);
-
-#ifdef TOUHOU_ON_D3D8
-				m_pSprite->DrawTransform(m_pTex.Get(), &scaledSourceRect, &finalTransform, 0xffffffff);
-#else
-				m_pSprite->SetTransform(&finalTransform);
-
-				D3DXVECTOR3 zeroVector(0.0f, 0.0f, 0.0f);
-				m_pSprite->Draw(m_pTex.Get(), &scaledSourceRect, &zeroVector, NULL, 0xffffffff);
-#endif
-			};
-
-			if (!bNeedsRearrangeHUD)
-			{
-				POINT pointZero = {};
-				SIZE rectSize = { BASE_SCREEN_WIDTH, BASE_SCREEN_HEIGHT };
-				rectDrawer(pointZero, rectSize, pointZero, rectSize, rectSize, Rotation_0);
-			}
-			else
-			{
-				POINT pointZero = {};
-				rectDrawer(prPosition, prSize, pointZero, prSize, prSize, Rotation_0);
-
-				for (const auto& rectData : m_pEditorContext->GetRectTransfers())
-				{
-					if (IsZeroSizedRectTransfer(rectData))
-					{
-						continue;
-					}
-
-					rectDrawer(rectData.sourcePosition, rectData.sourceSize, rectData.destPosition, rectData.destSize,
-						prSize, rectData.rotation);
-				}
-			}
-
-#ifdef TOUHOU_ON_D3D8
-			m_pd3dDev->SetTextureStageState(0, D3DTSS_MAGFILTER, prevFilter);
-			m_pd3dDev->SetTextureStageState(0, D3DTSS_MINFILTER, prevFilter2);
-#endif
-
+			EndSceneInternal();
 			m_pSprite->End();
 		}
 
@@ -2527,6 +2333,206 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 	m_pd3dDev->SetDepthStencilSurface(m_pDepthStencil.Get());
 #endif
 	return m_pd3dDev->EndScene();
+}
+
+void THRotatorDirect3DDevice::EndSceneInternal()
+{
+#ifdef TOUHOU_ON_D3D8
+	D3DTEXTUREFILTERTYPE prevFilter, prevFilter2;
+	m_pd3dDev->GetTextureStageState(0, D3DTSS_MAGFILTER, (DWORD*)&prevFilter);
+	m_pd3dDev->GetTextureStageState(0, D3DTSS_MINFILTER, (DWORD*)&prevFilter2);
+	m_pd3dDev->SetTextureStageState(0, D3DTSS_MAGFILTER, m_pEditorContext->GetFilterType());
+	m_pd3dDev->SetTextureStageState(0, D3DTSS_MINFILTER, m_pEditorContext->GetFilterType());
+
+#else
+	m_pd3dDev->SetSamplerState(0, D3DSAMP_MAGFILTER, m_pEditorContext->GetFilterType());
+	m_pd3dDev->SetSamplerState(0, D3DSAMP_MINFILTER, m_pEditorContext->GetFilterType());
+#endif
+
+	m_pd3dDev->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
+
+	auto rotationAngle = m_pEditorContext->GetRotationAngle();
+
+	bool aspectLessThan133;
+	if (rotationAngle % 2 == 0)
+		aspectLessThan133 = m_d3dpp.BackBufferWidth * 3 < m_d3dpp.BackBufferHeight * 4;
+	else
+		aspectLessThan133 = m_d3dpp.BackBufferHeight * 3 < m_d3dpp.BackBufferWidth * 4;
+
+	LONG mainScreenLeft = static_cast<LONG>(m_pEditorContext->GetMainScreenLeft());
+	LONG mainScreenTop = static_cast<LONG>(m_pEditorContext->GetMainScreenTop());
+	LONG mainScreenWidth = static_cast<LONG>(m_pEditorContext->GetMainScreenWidth());
+	LONG mainScreenHeight = static_cast<LONG>(m_pEditorContext->GetMainScreenHeight());
+
+	// エネミーマーカーと周囲の枠が表示されるよう、ゲーム画面の矩形を拡張
+
+	POINT prPosition = { mainScreenLeft, mainScreenTop };
+	SIZE prSize = { mainScreenWidth, mainScreenHeight };
+	if (mainScreenWidth * m_requestedWidth < mainScreenHeight * m_requestedHeight)
+	{
+		prPosition.x = mainScreenLeft - (mainScreenHeight * m_requestedHeight / m_requestedWidth - mainScreenWidth) / 2;
+		prSize.cx = mainScreenHeight * m_requestedHeight / m_requestedWidth;
+	}
+	else if (mainScreenWidth * m_requestedWidth > mainScreenHeight * m_requestedHeight)
+	{
+		prPosition.y = mainScreenTop - (mainScreenWidth * m_requestedWidth / m_requestedHeight - mainScreenHeight) / 2;
+		prSize.cy = mainScreenWidth * m_requestedWidth / m_requestedHeight;
+	}
+
+	prPosition.y -= m_pEditorContext->GetYOffset();
+
+	bool bNeedsRearrangeHUD = m_pEditorContext->IsHUDRearrangeForced()
+		|| aspectLessThan133 && m_pEditorContext->IsViewportSetCountOverThreshold();
+	LONG baseDestRectWidth = bNeedsRearrangeHUD ? prSize.cx : static_cast<LONG>(BASE_SCREEN_WIDTH);
+	LONG baseDestRectHeight = bNeedsRearrangeHUD ? prSize.cy : static_cast<LONG>(BASE_SCREEN_HEIGHT);
+
+
+
+	/***** 変換行列の計算 *****
+
+	1. テクスチャを東方が要求したバックバッファ解像度から640x480にスケーリング
+	2. 矩形の中心を原点(0, 0)に移動
+	3. ユーザが指定した転送元矩形サイズの逆数でスケールをかける
+	4. ユーザが指定した矩形ごとの回転角度で矩形を回転
+	5. ユーザが指定した転送先矩形サイズでスケールをかける
+	6. ユーザが指定した転送先矩形の位置へ移動
+	7. プレイ領域のサイズがTHRotatorで内部的に確保したバックバッファ解像度へ拡大
+	8. 現在の画面回転角度で回転
+	9. 画面全体の中心を原点からバックバッファの中心へ移動
+
+	2から6は矩形ごとのパラメータが必要。
+	それより前の1と、後の7-9は事前計算できるので、それぞれpreRectTransform、postRectTransformとして保持
+
+	*****/
+
+	D3DXMATRIX preRectTransform;
+	{
+		D3DXMATRIX baseSrcScale;
+		D3DXMatrixScaling(&baseSrcScale, BASE_SCREEN_WIDTH / static_cast<float>(m_requestedWidth), BASE_SCREEN_HEIGHT / static_cast<float>(m_requestedHeight), 1.0f);
+
+		preRectTransform = baseSrcScale;
+	}
+
+	D3DXMATRIX postRectTransform;
+	{
+		float baseDestScaleScalar = rotationAngle % 2 == 0 ?
+			(std::min)(m_d3dpp.BackBufferWidth / static_cast<float>(baseDestRectWidth), m_d3dpp.BackBufferHeight / static_cast<float>(baseDestRectHeight)) :
+			(std::min)(m_d3dpp.BackBufferWidth / static_cast<float>(baseDestRectHeight), m_d3dpp.BackBufferHeight / static_cast<float>(baseDestRectWidth));
+		D3DXMATRIX baseDestScale;
+		D3DXMatrixScaling(&baseDestScale, baseDestScaleScalar, baseDestScaleScalar, 1.0f);
+
+		D3DXMATRIX rotation;
+		D3DXMatrixRotationZ(&rotation, RotationAngleToRadian(rotationAngle));
+
+		D3DXMATRIX baseDestTranslation;
+		D3DXMatrixTranslation(&baseDestTranslation, 0.5f * m_d3dpp.BackBufferWidth, 0.5f * m_d3dpp.BackBufferHeight, 0.0f);
+
+		D3DXMATRIX temp;
+		D3DXMatrixMultiply(&temp, &baseDestScale, &rotation);
+		D3DXMatrixMultiply(&postRectTransform, &temp, &baseDestTranslation);
+	}
+
+	auto rectDrawer = [this, &preRectTransform, &postRectTransform](
+		const POINT& srcPos,
+		const SIZE& srcSize,
+		const POINT& destPos,
+		const SIZE& destSize,
+		const SIZE& mainScreenSize,
+		RotationAngle rotation)
+	{
+		POINT correctedSrcPos = srcPos;
+		SIZE correctedSrcSize = srcSize;
+
+		SIZE srcRectTopLeftOffset = {};
+#ifdef TOUHOU_ON_D3D8
+		// 負の座標値がある場合、D3DX8では描画が行われないため、クランプ
+		if (correctedSrcPos.x < 0)
+		{
+			srcRectTopLeftOffset.cx = -correctedSrcPos.x;
+			correctedSrcPos.x = 0;
+			correctedSrcSize.cx -= srcRectTopLeftOffset.cx;
+		}
+
+		if (correctedSrcPos.y < 0)
+		{
+			srcRectTopLeftOffset.cy = -correctedSrcPos.y;
+			correctedSrcPos.y = 0;
+			correctedSrcSize.cy -= srcRectTopLeftOffset.cy;
+		}
+#endif
+
+		D3DXMATRIX translateSrcCenterToOrigin;
+		D3DXMatrixTranslation(&translateSrcCenterToOrigin,
+			-0.5f * srcSize.cx + srcRectTopLeftOffset.cx,
+			-0.5f * srcSize.cy + srcRectTopLeftOffset.cy, 0.0f);
+
+		D3DXMATRIX rectScaleSrcInv;
+		D3DXMatrixScaling(&rectScaleSrcInv, 1.0f / srcSize.cx, 1.0f / srcSize.cy, 1.0f);
+
+		D3DXMATRIX rectRotation;
+		D3DXMatrixRotationZ(&rectRotation, RotationAngleToRadian(rotation));
+
+		D3DXMATRIX rectScaleDest;
+		D3DXMatrixScaling(&rectScaleDest, static_cast<float>(destSize.cx), static_cast<float>(destSize.cy), 1.0f);
+
+		D3DXMATRIX rectTranslation;
+		D3DXMatrixTranslation(&rectTranslation,
+			static_cast<float>(destPos.x) + 0.5f * (destSize.cx - mainScreenSize.cx),
+			static_cast<float>(destPos.y) + 0.5f * (destSize.cy - mainScreenSize.cy), 0.0f);
+
+		D3DXMATRIX finalTransform, temp;
+		D3DXMatrixMultiply(&temp, &preRectTransform, &translateSrcCenterToOrigin);
+		D3DXMatrixMultiply(&finalTransform, &temp, &rectScaleSrcInv);
+		D3DXMatrixMultiply(&temp, &finalTransform, &rectRotation);
+		D3DXMatrixMultiply(&finalTransform, &temp, &rectScaleDest);
+		D3DXMatrixMultiply(&temp, &finalTransform, &rectTranslation);
+		D3DXMatrixMultiply(&finalTransform, &temp, &postRectTransform);
+
+		RECT scaledSourceRect;
+		float scaleFactorForSourceX = static_cast<float>(m_requestedWidth) / BASE_SCREEN_WIDTH;
+		float scaleFactorForSourceY = static_cast<float>(m_requestedHeight) / BASE_SCREEN_HEIGHT;
+		scaledSourceRect.left = static_cast<LONG>(correctedSrcPos.x * scaleFactorForSourceX);
+		scaledSourceRect.right = static_cast<LONG>((correctedSrcPos.x + correctedSrcSize.cx) * scaleFactorForSourceX);
+		scaledSourceRect.top = static_cast<LONG>(correctedSrcPos.y * scaleFactorForSourceY);
+		scaledSourceRect.bottom = static_cast<LONG>((correctedSrcPos.y + correctedSrcSize.cy) * scaleFactorForSourceY);
+
+#ifdef TOUHOU_ON_D3D8
+		m_pSprite->DrawTransform(m_pTex.Get(), &scaledSourceRect, &finalTransform, 0xffffffff);
+#else
+		m_pSprite->SetTransform(&finalTransform);
+
+		D3DXVECTOR3 zeroVector(0.0f, 0.0f, 0.0f);
+		m_pSprite->Draw(m_pTex.Get(), &scaledSourceRect, &zeroVector, NULL, 0xffffffff);
+#endif
+	};
+
+	if (!bNeedsRearrangeHUD)
+	{
+		POINT pointZero = {};
+		SIZE rectSize = { BASE_SCREEN_WIDTH, BASE_SCREEN_HEIGHT };
+		rectDrawer(pointZero, rectSize, pointZero, rectSize, rectSize, Rotation_0);
+	}
+	else
+	{
+		POINT pointZero = {};
+		rectDrawer(prPosition, prSize, pointZero, prSize, prSize, Rotation_0);
+
+		for (const auto& rectData : m_pEditorContext->GetRectTransfers())
+		{
+			if (IsZeroSizedRectTransfer(rectData))
+			{
+				continue;
+			}
+
+			rectDrawer(rectData.sourcePosition, rectData.sourceSize, rectData.destPosition, rectData.destSize,
+				prSize, rectData.rotation);
+		}
+	}
+
+#ifdef TOUHOU_ON_D3D8
+	m_pd3dDev->SetTextureStageState(0, D3DTSS_MAGFILTER, prevFilter);
+	m_pd3dDev->SetTextureStageState(0, D3DTSS_MINFILTER, prevFilter2);
+#endif
 }
 
 HRESULT WINAPI THRotatorDirect3DDevice::Present(CONST RECT *pSourceRect,
