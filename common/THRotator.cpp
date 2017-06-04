@@ -1938,6 +1938,19 @@ HRESULT THRotatorDirect3DDevice::InternalInit(UINT Adapter,
 	D3DDISPLAYMODEEX* pModeEx)
 #endif
 {
+#ifndef TOUHOU_ON_D3D8
+	if (BehaviorFlags & D3DCREATE_ADAPTERGROUP_DEVICE)
+	{
+		D3DCAPS9 deviceCapabilities;
+		pMyD3D->GetDeviceCaps(Adapter, DeviceType, &deviceCapabilities);
+		if (deviceCapabilities.NumberOfAdaptersInGroup > 1)
+		{
+			MessageBox(hFocusWindow, _T("THRotator does not support D3DCREATE_ADAPTERGROUP_DEVICE with multiple adapters in a group."), nullptr, MB_ICONSTOP);
+			return E_FAIL;
+		}
+	}
+#endif
+
 	m_d3dpp = d3dpp;
 
 	m_requestedWidth = d3dpp.BackBufferWidth;
@@ -1961,9 +1974,23 @@ HRESULT THRotatorDirect3DDevice::InternalInit(UINT Adapter,
 #ifndef TOUHOU_ON_D3D8
 	if (bIsEx)
 	{
-		ret = pMyD3D->m_pd3dEx->CreateDeviceEx(Adapter,
-			DeviceType, hFocusWindow, BehaviorFlags,
-			&m_d3dpp, pModeEx, &m_pd3dDevEx);
+		if (pModeEx == nullptr)
+		{
+			ret = pMyD3D->m_pd3dEx->CreateDeviceEx(Adapter,
+				DeviceType, hFocusWindow, BehaviorFlags,
+				&m_d3dpp, pModeEx, &m_pd3dDevEx);
+		}
+		else
+		{
+			D3DDISPLAYMODEEX modeExtra = *pModeEx;
+			modeExtra.Width = m_d3dpp.BackBufferWidth;
+			modeExtra.Height = m_d3dpp.BackBufferHeight;
+
+			ret = pMyD3D->m_pd3dEx->CreateDeviceEx(Adapter,
+				DeviceType, hFocusWindow, BehaviorFlags,
+				&m_d3dpp, &modeExtra, &m_pd3dDevEx);
+		}
+		
 		if (FAILED(ret))
 		{
 			return ret;
@@ -2686,7 +2713,18 @@ HRESULT THRotatorDirect3DDevice::InternalReset(
 #ifndef TOUHOU_ON_D3D8
 	if (bIsEx)
 	{
-		ret = m_pd3dDevEx->ResetEx(&m_d3dpp, pFullscreenDisplayMode);
+		if (pFullscreenDisplayMode == nullptr)
+		{
+			ret = m_pd3dDevEx->ResetEx(&m_d3dpp, pFullscreenDisplayMode);
+		}
+		else
+		{
+			D3DDISPLAYMODEEX modeExtra = *pFullscreenDisplayMode;
+			modeExtra.Width = m_d3dpp.BackBufferWidth;
+			modeExtra.Height = m_d3dpp.BackBufferHeight;
+
+			ret = m_pd3dDevEx->ResetEx(&m_d3dpp, &modeExtra);
+		}
 	}
 	else
 #endif
