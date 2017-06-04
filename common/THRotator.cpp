@@ -2353,11 +2353,15 @@ void THRotatorDirect3DDevice::EndSceneInternal()
 
 	auto rotationAngle = m_pEditorContext->GetRotationAngle();
 
-	bool aspectLessThan133;
+	bool aspectLessThanRequested;
 	if (rotationAngle % 2 == 0)
-		aspectLessThan133 = m_d3dpp.BackBufferWidth * 3 < m_d3dpp.BackBufferHeight * 4;
+	{
+		aspectLessThanRequested = m_d3dpp.BackBufferWidth * m_requestedHeight < m_d3dpp.BackBufferHeight * m_requestedWidth;
+	}
 	else
-		aspectLessThan133 = m_d3dpp.BackBufferHeight * 3 < m_d3dpp.BackBufferWidth * 4;
+	{
+		aspectLessThanRequested = m_d3dpp.BackBufferHeight * m_requestedHeight < m_d3dpp.BackBufferWidth * m_requestedWidth;
+	}
 
 	LONG mainScreenLeft = static_cast<LONG>(m_pEditorContext->GetMainScreenLeft());
 	LONG mainScreenTop = static_cast<LONG>(m_pEditorContext->GetMainScreenTop());
@@ -2382,7 +2386,7 @@ void THRotatorDirect3DDevice::EndSceneInternal()
 	prPosition.y -= m_pEditorContext->GetYOffset();
 
 	bool bNeedsRearrangeHUD = m_pEditorContext->IsHUDRearrangeForced()
-		|| aspectLessThan133 && m_pEditorContext->IsViewportSetCountOverThreshold();
+		|| aspectLessThanRequested && m_pEditorContext->IsViewportSetCountOverThreshold();
 	LONG baseDestRectWidth = bNeedsRearrangeHUD ? prSize.cx : static_cast<LONG>(BASE_SCREEN_WIDTH);
 	LONG baseDestRectHeight = bNeedsRearrangeHUD ? prSize.cy : static_cast<LONG>(BASE_SCREEN_HEIGHT);
 
