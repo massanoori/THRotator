@@ -2328,10 +2328,27 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 			LONG mainScreenWidth = static_cast<LONG>(m_pEditorContext->GetMainScreenWidth());
 			LONG mainScreenHeight = static_cast<LONG>(m_pEditorContext->GetMainScreenHeight());
 
+			// エネミーマーカーと周囲の枠が表示されるよう、ゲーム画面の矩形を拡張
+
+			POINT prPosition = { mainScreenLeft, mainScreenTop };
+			SIZE prSize = { mainScreenWidth, mainScreenHeight };
+			if (mainScreenWidth * m_requestedWidth < mainScreenHeight * m_requestedHeight)
+			{
+				prPosition.x = mainScreenLeft - (mainScreenHeight * m_requestedHeight / m_requestedWidth - mainScreenWidth) / 2;
+				prSize.cx = mainScreenHeight * m_requestedHeight / m_requestedWidth;
+			}
+			else if (mainScreenWidth * m_requestedWidth > mainScreenHeight * m_requestedHeight)
+			{
+				prPosition.y = mainScreenTop - (mainScreenWidth * m_requestedWidth / m_requestedHeight - mainScreenHeight) / 2;
+				prSize.cy = mainScreenWidth * m_requestedWidth / m_requestedHeight;
+			}
+
+			prPosition.y -= m_pEditorContext->GetYOffset();
+
 			bool bNeedsRearrangeHUD = m_pEditorContext->IsHUDRearrangeForced()
 				|| aspectLessThan133 && m_pEditorContext->IsViewportSetCountOverThreshold();
-			LONG baseDestRectWidth = bNeedsRearrangeHUD ? mainScreenWidth : static_cast<LONG>(BASE_SCREEN_WIDTH);
-			LONG baseDestRectHeight = bNeedsRearrangeHUD ? mainScreenHeight : static_cast<LONG>(BASE_SCREEN_HEIGHT);
+			LONG baseDestRectWidth = bNeedsRearrangeHUD ? prSize.cx : static_cast<LONG>(BASE_SCREEN_WIDTH);
+			LONG baseDestRectHeight = bNeedsRearrangeHUD ? prSize.cy : static_cast<LONG>(BASE_SCREEN_HEIGHT);
 
 
 
@@ -2461,23 +2478,6 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 			}
 			else
 			{
-				// エネミーマーカーと周囲の枠が表示されるよう、ゲーム画面の矩形を拡張
-
-				POINT prPosition = { mainScreenLeft, mainScreenTop };
-				SIZE prSize = { mainScreenWidth, mainScreenHeight };
-				if (mainScreenWidth * m_requestedWidth < mainScreenHeight * m_requestedHeight)
-				{
-					prPosition.x = mainScreenLeft - (mainScreenHeight * m_requestedHeight / m_requestedWidth - mainScreenWidth) / 2;
-					prSize.cx = mainScreenHeight * m_requestedHeight / m_requestedWidth;
-				}
-				else if (mainScreenWidth * m_requestedWidth > mainScreenHeight * m_requestedHeight)
-				{
-					prPosition.y = mainScreenTop - (mainScreenWidth * m_requestedWidth / m_requestedHeight - mainScreenHeight) / 2;
-					prSize.cy = mainScreenWidth * m_requestedWidth / m_requestedHeight;
-				}
-
-				prPosition.y -= m_pEditorContext->GetYOffset();
-
 				POINT pointZero = {};
 				rectDrawer(prPosition, prSize, pointZero, prSize, prSize, Rotation_0);
 
