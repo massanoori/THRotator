@@ -2543,7 +2543,7 @@ void THRotatorDirect3DDevice::EndSceneInternal()
 	if (!bNeedsRearrangeHUD)
 	{
 		POINT pointZero = {};
-		SIZE rectSize = { correctedBaseScreenWidth, correctedBaseScreenHeight };
+		SIZE rectSize = { static_cast<LONG>(correctedBaseScreenWidth), static_cast<LONG>(correctedBaseScreenHeight) };
 		rectDrawer(pointZero, rectSize, pointZero, rectSize, rectSize, Rotation_0);
 	}
 	else
