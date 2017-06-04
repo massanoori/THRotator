@@ -6,8 +6,8 @@ Rotate screen
 =====================
 
 By pressing ``Alt+Left`` or ``Alt+Right``, the screen is rotated by 90 degrees in left or right direction.
-When entire screen aspect ratio is smaller than 4:3 seen from rotated screen viewpoint,
-THRotator try to magnify main screen region to as large size as possible while you are playing or watching replay data.
+When entire screen aspect ratio, seen from rotated screen viewpoint, is smaller than the original,
+THRotator tries to magnify main screen region to as large size as possible while you are playing or watching replay data.
 
 
 Screen capture on Th06
@@ -75,6 +75,9 @@ to accommodate all the HUD elements.
 
 Finally, ``Offset`` can be used to adjust vertical position.
 
+Since Th14, you can choose a non-640x480 resolution.
+In that case, specify position, width, and height in the coordinate scaled to 640x480.
+
 3. Rotation angle
 -----------------------
 
@@ -134,11 +137,15 @@ then rectangle editing window appears.
 Rectangles are transferred from top to bottom.
 So the bottommost transfer is rendered in front of all the other transfers.
 
-Coordinate system is as follows, where Wp and Hp are width and height of main screen size fit to the aspect ratio of 3:4.
+Coordinate system is as follows,
+where Wp and Hp are width and height of main screen size that is fit to the aspect ratio inverted from the original.
 
 .. image:: ../images/cs.png
 
 Since 1.01, rectangle transfer destination can reach the remaining black stripe regions.
+
+Since Th14, you can choose a non-640x480 resolution.
+In that case, specify position, width, and height in the coordinate scaled to 640x480.
 
 9. Hide this window
 ---------------------------
