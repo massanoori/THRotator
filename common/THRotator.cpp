@@ -2412,10 +2412,13 @@ void THRotatorDirect3DDevice::EndSceneInternal()
 
 	prPosition.y -= m_pEditorContext->GetYOffset();
 
+	UINT correctedBaseScreenWidth = (std::max)(BASE_SCREEN_WIDTH, BASE_SCREEN_HEIGHT * m_requestedWidth / m_requestedHeight);
+	UINT correctedBaseScreenHeight = (std::max)(BASE_SCREEN_HEIGHT, BASE_SCREEN_WIDTH * m_requestedHeight / m_requestedWidth);
+
 	bool bNeedsRearrangeHUD = m_pEditorContext->IsHUDRearrangeForced()
 		|| aspectLessThanRequested && m_pEditorContext->IsViewportSetCountOverThreshold();
-	LONG baseDestRectWidth = bNeedsRearrangeHUD ? prSize.cx : static_cast<LONG>(BASE_SCREEN_WIDTH);
-	LONG baseDestRectHeight = bNeedsRearrangeHUD ? prSize.cy : static_cast<LONG>(BASE_SCREEN_HEIGHT);
+	LONG baseDestRectWidth = bNeedsRearrangeHUD ? prSize.cx : static_cast<LONG>(correctedBaseScreenWidth);
+	LONG baseDestRectHeight = bNeedsRearrangeHUD ? prSize.cy : static_cast<LONG>(correctedBaseScreenHeight);
 
 
 
@@ -2439,7 +2442,7 @@ void THRotatorDirect3DDevice::EndSceneInternal()
 	D3DXMATRIX preRectTransform;
 	{
 		D3DXMATRIX baseSrcScale;
-		D3DXMatrixScaling(&baseSrcScale, BASE_SCREEN_WIDTH / static_cast<float>(m_requestedWidth), BASE_SCREEN_HEIGHT / static_cast<float>(m_requestedHeight), 1.0f);
+		D3DXMatrixScaling(&baseSrcScale, correctedBaseScreenWidth / static_cast<float>(m_requestedWidth), correctedBaseScreenHeight / static_cast<float>(m_requestedHeight), 1.0f);
 
 		preRectTransform = baseSrcScale;
 	}
@@ -2463,7 +2466,7 @@ void THRotatorDirect3DDevice::EndSceneInternal()
 		D3DXMatrixMultiply(&postRectTransform, &temp, &baseDestTranslation);
 	}
 
-	auto rectDrawer = [this, &preRectTransform, &postRectTransform](
+	auto rectDrawer = [this, &preRectTransform, &postRectTransform, correctedBaseScreenWidth, correctedBaseScreenHeight](
 		const POINT& srcPos,
 		const SIZE& srcSize,
 		const POINT& destPos,
@@ -2520,8 +2523,8 @@ void THRotatorDirect3DDevice::EndSceneInternal()
 		D3DXMatrixMultiply(&finalTransform, &temp, &postRectTransform);
 
 		RECT scaledSourceRect;
-		float scaleFactorForSourceX = static_cast<float>(m_requestedWidth) / BASE_SCREEN_WIDTH;
-		float scaleFactorForSourceY = static_cast<float>(m_requestedHeight) / BASE_SCREEN_HEIGHT;
+		float scaleFactorForSourceX = static_cast<float>(m_requestedWidth) / correctedBaseScreenWidth;
+		float scaleFactorForSourceY = static_cast<float>(m_requestedHeight) / correctedBaseScreenHeight;
 		scaledSourceRect.left = static_cast<LONG>(correctedSrcPos.x * scaleFactorForSourceX);
 		scaledSourceRect.right = static_cast<LONG>((correctedSrcPos.x + correctedSrcSize.cx) * scaleFactorForSourceX);
 		scaledSourceRect.top = static_cast<LONG>(correctedSrcPos.y * scaleFactorForSourceY);
@@ -2540,7 +2543,7 @@ void THRotatorDirect3DDevice::EndSceneInternal()
 	if (!bNeedsRearrangeHUD)
 	{
 		POINT pointZero = {};
-		SIZE rectSize = { BASE_SCREEN_WIDTH, BASE_SCREEN_HEIGHT };
+		SIZE rectSize = { correctedBaseScreenWidth, correctedBaseScreenHeight };
 		rectDrawer(pointZero, rectSize, pointZero, rectSize, rectSize, Rotation_0);
 	}
 	else
