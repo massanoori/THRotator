@@ -20,13 +20,22 @@ The destination is ``snapshot`` folder in the installed directory,
 which is the same as that since Th07 until Th12.
 
 
+Force HUD rearrangements
+========================
+
+HUD rearrangements for vertical screen are forced with ``Alt+Up`` and ``Alt+Down`` keys.
+This option is useful when you want to manually switch to HUD arrangements for vertically-long screen.
+
+.. note:: This config is not saved to ``throt.ini`` due to its strong effect.
+
+
 Customization window
 =====================
 
 Right click on the title bar, and click ``Show THRotator window`` or ``Open THRotator`` to show the customization window.
 The customization window looks like as follows:
 
-.. image:: ../images/custom.png
+.. image:: ../images/custom_en.png
 
 .. note::
 
@@ -102,7 +111,18 @@ This checkbox is unchecked by default.
 .. note:: This option is unavailable on Direct3D 8 version since main game window and customization window are not coexistent.
 
 
-7. Other rectangles
+7. Force HUD rearrangements
+---------------------------
+
+If checked, HUD rearrangements are forced.
+This option can also be switched with ``Alt+Up`` and ``Alt+Down`` when the main window is focused on.
+
+This checkbox is unchecked by default.
+
+.. note:: This config is not saved to ``throt.ini`` due to its strong effect.
+
+
+8. Other rectangles
 -------------------
 
 Specifying source and destination rectangles other than main screen.
@@ -120,19 +140,19 @@ Coordinate system is as follows, where Wp and Hp are width and height of main sc
 
 Since 1.01, rectangle transfer destination can reach the remaining black stripe regions.
 
-8. Hide this window
+9. Hide this window
 ---------------------------
 
 Closing this window.
 
 
-9. Discard change
+10. Discard change
 ---------------------------
 
 Resetting to the parameters when ``Apply`` was pressed last time.
 
 
-10. Apply
+11. Apply
 ---------------
 
 Applying input parameters to actual rendering.
