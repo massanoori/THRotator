@@ -36,7 +36,7 @@ Install Microsoft Visual C++
 Download Visual Studio from `Home page of Visual Studio <https://www.visualstudio.com/>`_.
 Community Edition is just enough.
 
-Visual Studio 2015 and later versions skip installing Visual C++ by default.
+Since the installer of Visual Studio 2015, Visual C++ is not installed by default.
 Edit the installation option so that Visual C++ is installed.
 
 Install Boost C++ Libraries
@@ -81,7 +81,7 @@ Generate project files
 2. Fill ``Where is the source code:`` by the location of THRotator source code.
 3. Fill ``Where to build the binaries:`` by the location of project files you want to generate.
 4. Press ``Configure``. Then generator selection window appears. Choose ``Visual Studio XX 20XX`` and press ``Finish``.
-   Don't choose a generator name containing Win64 or ARM.
+   Don't choose a generator name with Win64 or ARM.
 5. Set the boost installation directory (where bootstrap.bat exists) to ``BOOST_INCLUDE_DIR``.
 6. Set the boost library directory (``<boost install directory>\stage\lib`` by default) to ``BOOST_LIB_DIR``.
 7. Press ``Configure`` again. If you don't see any errors, press ``Generate``.
@@ -198,7 +198,7 @@ In French example, change to ``French (France)``.
 By building ``localization_<language name>``, ``.mui`` files are generated to the ``<language name>`` folder located in the output directories of ``d3d8.dll`` and ``d3d9.dll``.
 
 Copy ``d3d8.dll`` or ``d3d9.dll`` and ``<language name>`` folder to the directory where the executable of the game is located.
-If you system supports the language you are trying to add, GUI and messages are now in that language.
+If your system supports the language you are trying to add, GUI and messages are now in that language.
 
 
 .. note::
