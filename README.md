@@ -40,7 +40,7 @@ Support on earlier works
 
 Vertical Play provides screen rotation functionality only to works working on Direct3D 9 (Touhou 10 and later).
 
-In addition to supporting works on Direct3D 9, THRotator also supports works built upon Direct3D 8 (from Touhou 7 to 9.5).
+In addition to supporting works on Direct3D 9, THRotator also supports works built upon Direct3D 8 (from Touhou 6 to 9.5).
 
 
 Future product support
