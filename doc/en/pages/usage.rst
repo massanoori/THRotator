@@ -19,12 +19,18 @@ which is unsupported on the original Th06.
 The destination is ``snapshot`` folder in the installed directory,
 which is the same as that since Th07 until Th12.
 
+.. _usage_force_vertical:
 
 Force HUD rearrangements
 ========================
 
 HUD rearrangements for vertical screen are forced with ``Alt+Up`` and ``Alt+Down`` keys.
 This option is useful when you want to manually switch to HUD arrangements for vertically-long screen.
+
+THRotator detects whether you are playing or not by the criterion described in :ref:`usage_state_detection`.
+If you would like to use THRotator on a newer Touhou Project game or a game other than Touhou Project
+on which this detection methodology doesn't work,
+use this feature or manipulate on the cutomization window, as described in :ref:`usage_ui_force_vertical`.
 
 .. note:: This config is not saved to ``throt.ini`` due to its strong effect.
 
@@ -42,6 +48,8 @@ The customization window looks like as follows:
    On Direct3D 9 version, the game proceeds as usual while this window is shown.
    On Direct3D 8 version, the game is suspended while this window is shown.
 
+.. _usage_state_detection:
+
 1. Game state
 -----------------------
 
@@ -53,6 +61,10 @@ By clicking ``Count SetViewport()`` button, you can measure the number of times 
 If number of times of setting viewport is more than the threshold, HUD elements are arranged for vertically-long screen.
 
 If THRotator fails to read ``throt.ini``, the threshold is set to 999 by default to prevent unintentional switching.
+
+If you would like to use THRotator on a newer Touhou Project game or a game other than Touhou Project
+on which this detection methodology doesn't work,
+follow :ref:`usage_force_vertical` or manipulate on the cutomization window, as described in :ref:`usage_ui_force_vertical`.
 
 2. Main screen
 -----------------------
@@ -113,6 +125,7 @@ This checkbox is unchecked by default.
 
 .. note:: This option is unavailable on Direct3D 8 version since main game window and customization window are not coexistent.
 
+.. _usage_ui_force_vertical:
 
 7. Force HUD rearrangements
 ---------------------------
@@ -121,6 +134,11 @@ If checked, HUD rearrangements are forced.
 This option can also be switched with ``Alt+Up`` and ``Alt+Down`` when the main window is focused on.
 
 This checkbox is unchecked by default.
+
+THRotator detects whether you are playing or not by the criterion described in :ref:`usage_state_detection`.
+If you would like to use THRotator on a newer Touhou Project game or a game other than Touhou Project
+on which this detection methodology doesn't work,
+manipulate on this checkbox or follow :ref:`usage_force_vertical`.
 
 .. note:: This config is not saved to ``throt.ini`` due to its strong effect.
 
