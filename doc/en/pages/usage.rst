@@ -195,6 +195,9 @@ Procedure to support a new product looks like as follows:
 1. Measure times of setting viewport in playing state and non-playing state respectively,
    determine a value larger than that in non-playing state and smaller than or equal to that in playing state,
    and fill the threshold by that value.
+   
+   * Please measure this value while challenging a spell card since it generally becomes fewer.
+   
 2. Fill main screen position and size.
 3. Add rectangle transfers for the scores, health, and other HUD elements.
 
