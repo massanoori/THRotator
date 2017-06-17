@@ -37,7 +37,7 @@ Main features
 - Rotate screen in left or right direction by pressing Alt+Left or Alt+Right key.
 - Magnify screen to as large size as possible while THRotator detects that you are playing.
 - Vertically-long window in windowed mode.
-- If you are not satisfied by the default HUD elements (such as health, bombs, and score), you can customize them.
+- If you are not satisfied by the default HUD elements (such as lives, bombs, and score), you can customize them.
 - Save screen capture in BMP format on Th06 by Home key.
 - Fix jaggy pixels in Th11, 12, 12.5, 12.8, and 13 when screen resolution of 960x720 or 1280x960 is chosen.
 
@@ -48,7 +48,7 @@ Notes
 - Use THRotator at your own risk.
 - Don't ask any question about THRotator to the game publishers.
 
-  - Before reporting an issue to the publisher, you must first check that the same issue happens even if THRotator is uninstalled.
+  - Before reporting an issue to the publisher, you must first verify that the issue is independent of THRotator.
 
 - THRotator forces a game to behave differently from the original design.
   So your replay data and scores acquired with THRotator might be rejected as genuine ones.

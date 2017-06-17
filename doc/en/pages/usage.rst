@@ -2,7 +2,7 @@
 How to use
 =====================
 
-Rotate screen
+Rotate a screen
 =====================
 
 By pressing ``Alt+Left`` or ``Alt+Right``, the screen is rotated by 90 degrees in left or right direction.
@@ -87,7 +87,7 @@ to accommodate all the HUD elements.
 
 Finally, ``Offset`` can be used to adjust vertical position.
 
-Since Th14, you can choose a non-640x480 resolution.
+Since Th14, you can additionally choose 960x720 and 1280x720 resolutions.
 In that case, specify position, width, and height in the coordinate scaled to 640x480.
 
 3. Rotation angle
@@ -152,7 +152,7 @@ then rectangle editing window appears.
 To edit an existing rectangle transfer, select the name of rectangle transfer and click ``Edit``,
 then rectangle editing window appears.
 
-Rectangles are transferred from top to bottom.
+Rectangles are transferred from top to bottom in the list view.
 So the bottommost transfer is rendered in front of all the other transfers.
 
 Coordinate system is as follows,
@@ -162,8 +162,8 @@ where Wp and Hp are width and height of main screen size that is fit to the aspe
 
 Since 1.01, rectangle transfer destination can reach the remaining black stripe regions.
 
-Since Th14, you can choose a non-640x480 resolution.
-In that case, specify position, width, and height in the coordinate scaled to 640x480.
+Since Th14, you can additionally choose 960x720 and 1280x720 resolutions.
+In these resolutions, specify position, width, and height in the coordinate scaled to 640x480.
 
 9. Hide this window
 ---------------------------
@@ -199,5 +199,5 @@ Procedure to support a new product looks like as follows:
    * Please measure this value while challenging a spell card since it generally becomes fewer.
    
 2. Fill main screen position and size.
-3. Add rectangle transfers for the scores, health, and other HUD elements.
+3. Add rectangle transfers for the scores, lives, and other HUD elements.
 
