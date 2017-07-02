@@ -104,10 +104,10 @@ CMake のインストール
 3. Direct3D 8版をビルドしたい場合は ``d3d8`` 、Direct3D 9版をビルドしたい場合は ``d3d9`` をビルドしてください。
 
 
-ドキュメントのビルド
+マニュアルのビルド
 ====================
 
-ドキュメントのビルドは、Sphinxを用いています。
+マニュアルのビルドは、Sphinxを用いています。
 
 Sphinxのインストール
 ------------------------
@@ -120,10 +120,10 @@ Sphinxテーマのインストール
 THRotatorでは、テーマとして `sphinx_rtd_theme <https://github.com/rtfd/sphinx_rtd_theme>`_ を使っています。
 このテーマのインストールは、 ``python -m pip install sphinx_rtd_theme`` を実行することでインストールできます。
 
-ドキュメントのビルド
+マニュアルのビルド
 ----------------------------
 
-``docs-source/compile.bat`` を実行すると、すべての言語に対して、 ``docs/<言語>/_build`` 以下にhtml形式のドキュメントが生成されます。
+``docs-source/compile.bat`` を実行すると、すべての言語に対して、 ``docs/<言語>/_build`` 以下にhtml形式のマニュアルが生成されます。
 
 言語ごとに生成したい場合は、
 ``docs-source/<言語>/make.bat html`` を実行してください。

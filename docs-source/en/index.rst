@@ -1,5 +1,5 @@
 ﻿=======================================
-THRotator User's manual
+THRotator User's Manual
 =======================================
 
 THRotator allows users to enjoy vertically-scrolling shoot 'em up games on a vertically-long monitor.

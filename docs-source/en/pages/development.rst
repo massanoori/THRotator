@@ -102,10 +102,10 @@ Build
 3. Build ``d3d8`` for THRotator based on Direct3D 8, build ``d3d9`` for THRotator based on Direct3D 9.
 
 
-Build documentation
+Build manual
 ====================
 
-Sphinx is used to build the documentation of THRotator.
+Sphinx is used to build the manual of THRotator.
 
 Install Sphinx
 ------------------------
@@ -123,7 +123,7 @@ Build
 
 By running ``docs-source/compile.bat``, html files are built for every languages to ``docs-source/<language>/_build``.
 
-If you would like to build the documentation in a specific language,
+If you would like to build the manual in a specific language,
 run ``docs-source/<language>/make.bat html``.
 
 To copy built html files to the root of GitHub pages ``docs/``,
