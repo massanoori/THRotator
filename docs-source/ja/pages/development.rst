@@ -123,7 +123,12 @@ THRotatorでは、テーマとして `sphinx_rtd_theme <https://github.com/rtfd/
 ドキュメントのビルド
 ----------------------------
 
-``doc/<言語>/make.bat html`` を実行すると、 ``doc/<言語>/_build`` 以下にhtml形式のドキュメントが生成されます。
+``docs-source/compile.bat`` を実行すると、すべての言語に対して、 ``docs/<言語>/_build`` 以下にhtml形式のドキュメントが生成されます。
+
+言語ごとに生成したい場合は、
+``docs-source/<言語>/make.bat html`` を実行してください。
+
+GitHub Pagesとして公開されるディレクトリ ``docs/`` へコピーするには、 ``docs-source/update.bat`` を実行してください。
 
 
 ローカライズ
