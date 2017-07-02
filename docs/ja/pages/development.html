@@ -1,0 +1,461 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>開発 &mdash; THRotator 1.3.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="THRotator 1.3.0 documentation" href="../index.html"/>
+        <link rel="next" title="アンインストール方法" href="uninstall.html"/>
+        <link rel="prev" title="トラブルシューティング" href="troubleshoot.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> THRotator
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.3.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install.html">インストール方法</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">使い方</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshoot.html">トラブルシューティング</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">開発</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#throtator">THRotatorのソースコードの入手</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id2">THRotatorのビルド</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#microsoft-visual-c">Microsoft Visual C++ のインストール</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#boost-c-libraries">Boost C++ Libraries のインストール</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#cmake">CMake のインストール</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#devel-proj-gen">プロジェクトファイル生成</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id6">ビルド</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id7">マニュアルのビルド</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#sphinx">Sphinxのインストール</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id8">Sphinxテーマのインストール</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id9">マニュアルのビルド</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id10">ローカライズ</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id11">1. テンプレートをコピー</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id12">2. CMakeの準備</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id13">3. プロジェクトファイルの生成</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id14">4. 翻訳</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id15">5. ビルドと実行</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="uninstall.html">アンインストール方法</a></li>
+<li class="toctree-l1"><a class="reference internal" href="releasenotes.html">リリースノート</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">THRotator</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>開発</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/pages/development.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="id1">
+<h1>開発<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="throtator">
+<h2>THRotatorのソースコードの入手<a class="headerlink" href="#throtator" title="Permalink to this headline">¶</a></h2>
+<p>THRotatorのソースコードは、 <a class="reference external" href="https://github.com/massanoori/THRotator">GitHub</a> から入手ができます。</p>
+<p>とりあえずダウンロードして、ビルドしたり改造したりする場合は、
+GitHubから直接ソースコードをダウンロードすることができます。
+<code class="docutils literal"><span class="pre">Clone</span> <span class="pre">or</span> <span class="pre">download</span></code> をクリックし、表示される <code class="docutils literal"><span class="pre">Download</span> <span class="pre">ZIP</span></code> をクリックするとダウンロードが始まります。
+ダウンロードしたzipファイルを解凍すると、ソースコードが含まれたフォルダが作成されます。</p>
+<p>お使いのPCにgitがインストール済みの場合は、
+<code class="docutils literal"><span class="pre">Clone</span> <span class="pre">or</span> <span class="pre">download</span></code> をクリックすると表示されるURLからクローンすることでも、
+ソースコードを取得できます。</p>
+</div>
+<div class="section" id="id2">
+<h2>THRotatorのビルド<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
+<p>ここでは、THRotatorのビルドするまでの手順を説明します。</p>
+<p>ビルドに必要なソフトウェアは、次の通りです。</p>
+<ul class="simple">
+<li>Microsoft Visual C++ (2012以降)</li>
+<li>Boost C++ Libraries</li>
+<li>CMake</li>
+</ul>
+<div class="section" id="microsoft-visual-c">
+<h3>Microsoft Visual C++ のインストール<a class="headerlink" href="#microsoft-visual-c" title="Permalink to this headline">¶</a></h3>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">インストール済みの場合は不要です。</p>
+</div>
+<p><a class="reference external" href="https://www.visualstudio.com/">Visual Studio のホームページ</a> から、Visual Studioをダウンロードしてください。
+エディションは無料で利用可能なCommunityで問題ありません。</p>
+<p>Visual Studio 2015以降の場合、Visual C++がデフォルトでインストールされないので、
+インストールオプションでVisual C++をインストールするように設定を変更してください。</p>
+</div>
+<div class="section" id="boost-c-libraries">
+<h3>Boost C++ Libraries のインストール<a class="headerlink" href="#boost-c-libraries" title="Permalink to this headline">¶</a></h3>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last"><code class="docutils literal"><span class="pre">filesystem</span></code> モジュールがビルド済みの場合は不要です。</p>
+</div>
+<p><a class="reference external" href="http://www.boost.org/">Boost C++ Libraries</a> の <strong>Current Release</strong> から最新版をダウンロードし、
+適当なディレクトリに解凍します(例えば、 <code class="docutils literal"><span class="pre">C:\boost\</span></code> など)。</p>
+<p>次に、boostの <code class="docutils literal"><span class="pre">filesystem</span></code> モジュールをビルドします。</p>
+<ol class="arabic simple">
+<li>使っているOSが64 bitの場合は、 <code class="docutils literal"><span class="pre">スタートメニュー</span></code> → <code class="docutils literal"><span class="pre">Visual</span> <span class="pre">Studio</span> <span class="pre">20XX</span></code> → <code class="docutils literal"><span class="pre">VS20XX</span> <span class="pre">x64</span> <span class="pre">Native</span> <span class="pre">Tools</span> <span class="pre">コマンドプロンプト</span></code> 、
+32 bitの場合は、 <code class="docutils literal"><span class="pre">VS20XX</span> <span class="pre">x86</span> <span class="pre">Native</span> <span class="pre">Tools</span> <span class="pre">コマンドプロンプト</span></code> を開きます。</li>
+<li>開いたコマンドプロンプトで、解凍したboostの、 <code class="docutils literal"><span class="pre">bootstrap.bat</span></code> のあるフォルダへ移動します。</li>
+<li><code class="docutils literal"><span class="pre">bootstrap.bat</span></code> を実行します。</li>
+<li><code class="docutils literal"><span class="pre">b2.exe</span></code> が出来上がるので、そのあとに <code class="docutils literal"><span class="pre">b2</span> <span class="pre">--with-filesystem</span> <span class="pre">runtime-link=shared,static</span></code> を実行します。</li>
+</ol>
+</div>
+<div class="section" id="cmake">
+<h3>CMake のインストール<a class="headerlink" href="#cmake" title="Permalink to this headline">¶</a></h3>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">CMake 3.5 以降をインストール済みの場合は不要です。</p>
+</div>
+<p><a class="reference external" href="https://cmake.org/">CMakeのホームページ</a> の <strong>Download</strong> にある、最新のリリース(Latest Release)から、以下のいずれかをダウンロードし、
+インストーラの場合はインストールを行ってください。</p>
+<ul class="simple">
+<li>Windows win64-x64 Installer (64 bit OS向けインストーラ)</li>
+<li>Windows win64-x64 ZIP (64 bit OS向け実行ファイル)</li>
+<li>Windows win32-x86 Installer　(32 bit OS向けインストーラ)</li>
+<li>Windows win32-x86 ZIP (32 bit OS 向け実行ファイル)</li>
+</ul>
+<p>使っているOSが64 bitの場合は、プラットフォームはwin64-x64、win32-x86の両方を使えますが、
+32 bitのOSの場合はwin32-x86しか実行できません。</p>
+</div>
+<div class="section" id="devel-proj-gen">
+<span id="id5"></span><h3>プロジェクトファイル生成<a class="headerlink" href="#devel-proj-gen" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic simple">
+<li>CMakeをインストーラからインストールした場合は、 <code class="docutils literal"><span class="pre">スタートメニュー</span></code> → <code class="docutils literal"><span class="pre">CMake</span></code> → <code class="docutils literal"><span class="pre">CMake</span> <span class="pre">(cmake-gui)</span></code> を実行します。
+直接ダウンロードした場合は、 <code class="docutils literal"><span class="pre">bin\cmake-gui.exe</span></code> を実行します。</li>
+<li><code class="docutils literal"><span class="pre">Where</span> <span class="pre">is</span> <span class="pre">the</span> <span class="pre">source</span> <span class="pre">code:</span></code> に、THRotatorのソースコードがあるルートディレクトリのパスを入力します。</li>
+<li><code class="docutils literal"><span class="pre">Where</span> <span class="pre">to</span> <span class="pre">build</span> <span class="pre">the</span> <span class="pre">binaries:</span></code> に、プロジェクトファイルの生成先、およびビルドを行うディレクトリのパスを入力します。</li>
+<li><code class="docutils literal"><span class="pre">Configure</span></code> ボタンを押します。Generatorの選択画面が出るので、ここで <code class="docutils literal"><span class="pre">Visual</span> <span class="pre">Studio</span> <span class="pre">XX</span> <span class="pre">20XX</span></code> を選択し、 <code class="docutils literal"><span class="pre">Finish</span></code> ボタンを押します。
+Win64、ARMが付いているものは選択しないでください。</li>
+<li><code class="docutils literal"><span class="pre">BOOST_INCLUDE_DIR</span></code> に、boostのインクルードディレクトリ(bootstrap.batがあるディレクトリ)のパスを入力します。</li>
+<li><code class="docutils literal"><span class="pre">BOOST_LIB_DIR</span></code> に、boostのライブラリディレクトリ (デフォルトでは、 <code class="docutils literal"><span class="pre">&lt;boostのインクルードディレクトリ&gt;\stage\lib</span></code> )を入力します。</li>
+<li>再度 <code class="docutils literal"><span class="pre">Configure</span></code> ボタンを押し、エラーがなければ <code class="docutils literal"><span class="pre">Generate</span></code> ボタンを押します。</li>
+</ol>
+</div>
+<div class="section" id="id6">
+<h3>ビルド<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic simple">
+<li>プロジェクト生成先にある <code class="docutils literal"><span class="pre">THRotator.sln</span></code> を開いてください。</li>
+<li>5つのプロジェクトが読み込まれます。</li>
+</ol>
+<blockquote>
+<div><ul class="simple">
+<li>ALL_BUILD (すべてのプロジェクトをビルドするプロジェクト)</li>
+<li>d3d8 (Direct3D 8版THRotator)</li>
+<li>d3d9 (Direct3D 9版THRotator)</li>
+<li>localization_en-US (THRotatorの英語UIリソースDLL)</li>
+<li>ZERO_CHECK (CMakeが自動で生成)</li>
+</ul>
+</div></blockquote>
+<ol class="arabic simple" start="3">
+<li>Direct3D 8版をビルドしたい場合は <code class="docutils literal"><span class="pre">d3d8</span></code> 、Direct3D 9版をビルドしたい場合は <code class="docutils literal"><span class="pre">d3d9</span></code> をビルドしてください。</li>
+</ol>
+</div>
+</div>
+<div class="section" id="id7">
+<h2>マニュアルのビルド<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h2>
+<p>マニュアルのビルドは、Sphinxを用いています。</p>
+<div class="section" id="sphinx">
+<h3>Sphinxのインストール<a class="headerlink" href="#sphinx" title="Permalink to this headline">¶</a></h3>
+<p><a class="reference external" href="http://sphinx-users.jp/gettingstarted/install_windows.html">http://sphinx-users.jp/gettingstarted/install_windows.html</a> をご覧ください。</p>
+</div>
+<div class="section" id="id8">
+<h3>Sphinxテーマのインストール<a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h3>
+<p>THRotatorでは、テーマとして <a class="reference external" href="https://github.com/rtfd/sphinx_rtd_theme">sphinx_rtd_theme</a> を使っています。
+このテーマのインストールは、 <code class="docutils literal"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pip</span> <span class="pre">install</span> <span class="pre">sphinx_rtd_theme</span></code> を実行することでインストールできます。</p>
+</div>
+<div class="section" id="id9">
+<h3>マニュアルのビルド<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal"><span class="pre">docs-source/compile.bat</span></code> を実行すると、すべての言語に対して、 <code class="docutils literal"><span class="pre">docs/&lt;言語&gt;/_build</span></code> 以下にhtml形式のマニュアルが生成されます。</p>
+<p>言語ごとに生成したい場合は、
+<code class="docutils literal"><span class="pre">docs-source/&lt;言語&gt;/make.bat</span> <span class="pre">html</span></code> を実行してください。</p>
+<p>GitHub Pagesとして公開されるディレクトリ <code class="docutils literal"><span class="pre">docs/</span></code> へコピーするには、 <code class="docutils literal"><span class="pre">docs-source/update.bat</span></code> を実行してください。</p>
+</div>
+</div>
+<div class="section" id="id10">
+<h2>ローカライズ<a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h2>
+<p>THRotatorはWindowsのMultilingual User Interface (MUI)による、
+GUIやエラーメッセージの多言語化が可能です。</p>
+<p>新しい言語を追加する際は、英語版のリソースをテンプレートとして容易に作成可能です。
+フランス語を追加することを例に、作成の流れを見ていきましょう。</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">ここでは、具体的な翻訳については扱いません。</p>
+</div>
+<div class="section" id="id11">
+<h3>1. テンプレートをコピー<a class="headerlink" href="#id11" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic simple">
+<li>まず、ひな型となる <code class="docutils literal"><span class="pre">localization_en-US</span></code> があるフォルダに、
+新しく <code class="docutils literal"><span class="pre">localization_&lt;言語名&gt;</span></code> を作成します。
+言語名は、 <a class="reference external" href="https://technet.microsoft.com/en-us/library/hh825678.aspx">Available Language Packs for Windows</a> の <strong>Language/culture name</strong> です。
+また、このページには <strong>Language hexadecimal identifier</strong> に言語IDも記載されていますので、このIDもメモしておきます。
+今回はフランス語を例としていますので、 <code class="docutils literal"><span class="pre">localization_fr-FR</span></code> を作成します。
+また、言語IDの <strong>0x040c</strong> をメモしておきます。</li>
+<li><code class="docutils literal"><span class="pre">localization_en-US</span></code> の中にある、 <code class="docutils literal"><span class="pre">CMakeLists.txt</span></code> 、 <code class="docutils literal"><span class="pre">resource.h</span></code> 、 <code class="docutils literal"><span class="pre">THRotator_en-US.rc</span></code> を、
+新たに作成した <code class="docutils literal"><span class="pre">localization_&lt;言語名&gt;</span></code> (今回は <code class="docutils literal"><span class="pre">localization_fr-FR</span></code>) にコピーします。</li>
+<li><code class="docutils literal"><span class="pre">localization_&lt;言語名&gt;\THRotator_en-US.rc</span></code> を、 <code class="docutils literal"><span class="pre">localization_&lt;言語名&gt;\THRotator_&lt;言語名&gt;.rc</span></code> (今回は <code class="docutils literal"><span class="pre">THRotator_fr-FR.rc</span></code>)にリネームします。</li>
+</ol>
+</div>
+<div class="section" id="id12">
+<h3>2. CMakeの準備<a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic simple">
+<li><code class="docutils literal"><span class="pre">localization_&lt;言語名&gt;\CMakeLists.txt</span></code> を開き、 <code class="docutils literal"><span class="pre">en-US</span></code> となっている部分を、 <code class="docutils literal"><span class="pre">&lt;言語名&gt;</span></code> に置換します。
+また、 <code class="docutils literal"><span class="pre">set(language_id</span> <span class="pre">0x0409)</span></code> の <strong>0x0409</strong> を、メモしておいた言語IDに置き換えます。
+今回は言語IDが <strong>0x040c</strong> なので、 <code class="docutils literal"><span class="pre">set(language_id</span> <span class="pre">0x040c)</span></code> に変更します。
+<code class="docutils literal"><span class="pre">localization_&lt;言語名&gt;\CMakeLists.txt</span></code> の編集は以上です。</li>
+<li>ソースコードのルートフォルダにある <code class="docutils literal"><span class="pre">CMakeLists.txt</span></code> を開き、</li>
+</ol>
+<p>フランス語の例では、<code class="docutils literal"><span class="pre">localization_fr-FR\CMakeLists.txt</span></code> の中身は次のようになります。</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># resource language and its ID</span>
+<span class="c1"># for a list of languages and IDs, visit https://msdn.microsoft.com/en-us/library/hh825678.aspx</span>
+<span class="nb">set</span><span class="p">(</span><span class="n">language</span> <span class="n">fr</span><span class="o">-</span><span class="n">FR</span><span class="p">)</span> <span class="c1"># 編集</span>
+<span class="nb">set</span><span class="p">(</span><span class="n">language_id</span> <span class="mh">0x040c</span><span class="p">)</span> <span class="c1"># 編集</span>
+
+<span class="n">include</span><span class="p">(</span><span class="o">../</span><span class="n">internationalization</span><span class="o">/</span><span class="n">THRotator_i18n</span><span class="o">.</span><span class="n">cmake</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>また、ルートフォルダにある <code class="docutils literal"><span class="pre">CMakeLists.txt</span></code> の中身は次のようになります。</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># 省略</span>
+
+<span class="n">add_subdirectory</span><span class="p">(</span><span class="n">d3d9</span><span class="p">)</span>
+<span class="n">add_subdirectory</span><span class="p">(</span><span class="n">d3d8</span><span class="p">)</span>
+<span class="n">add_subdirectory</span><span class="p">(</span><span class="n">localization_en</span><span class="o">-</span><span class="n">US</span><span class="p">)</span>
+<span class="n">add_subdirectory</span><span class="p">(</span><span class="n">localization_fr</span><span class="o">-</span><span class="n">FR</span><span class="p">)</span> <span class="c1"># 今回追加</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="id13">
+<h3>3. プロジェクトファイルの生成<a class="headerlink" href="#id13" title="Permalink to this headline">¶</a></h3>
+<p>本ページの <a class="reference internal" href="#devel-proj-gen"><span class="std std-ref">プロジェクトファイル生成</span></a> で説明している方法で、プロジェクトファイルを生成します。</p>
+</div>
+<div class="section" id="id14">
+<h3>4. 翻訳<a class="headerlink" href="#id14" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal"><span class="pre">THRotator.sln</span></code> を開きなおすか、再読み込みすると、
+プロジェクト <code class="docutils literal"><span class="pre">localization_&lt;言語名&gt;</span></code> が追加されているはずです。</p>
+<p>Visual Studioのリソースビューを開き、
+<code class="docutils literal"><span class="pre">localization_&lt;言語名&gt;</span></code> の中にあるString Tableやダイアログリソースを翻訳していきます。
+String Tableやダイアログリソースのプロパティの <code class="docutils literal"><span class="pre">Language</span></code> が、 <code class="docutils literal"><span class="pre">英語</span> <span class="pre">(米国)</span></code> になっていますので、
+翻訳先の言語に変更してください。フランス語の例では、 <code class="docutils literal"><span class="pre">フランス語</span> <span class="pre">(フランス)</span></code> に変更します。</p>
+</div>
+<div class="section" id="id15">
+<h3>5. ビルドと実行<a class="headerlink" href="#id15" title="Permalink to this headline">¶</a></h3>
+<p>プロジェクト <code class="docutils literal"><span class="pre">localization_&lt;言語名&gt;</span></code> をビルドすると、
+<code class="docutils literal"><span class="pre">d3d8.dll</span></code> 、 <code class="docutils literal"><span class="pre">d3d9.dll</span></code> の出力ディレクトリに言語名のフォルダができ、その中に <code class="docutils literal"><span class="pre">.mui</span></code> ファイルが出来上がります。</p>
+<p><code class="docutils literal"><span class="pre">d3d8.dll</span></code> または <code class="docutils literal"><span class="pre">d3d9.dll</span></code> と一緒に、言語名のフォルダもゲームの実行ファイルのフォルダにコピーします。
+そのままゲームを実行すると、お使いのPCにその言語が存在すれば、THRotatorのGUIやメッセージがその言語で表示されるようになります。</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">d3d8.dll.muiまたはd3d9.dll.muiには、それぞれd3d8.dll、d3d9.dllのチェックサムが埋め込まれます。
+.dllのチェックサムと.muiに埋め込まれたチェックサムが異なる場合は、言語の読み込みが失敗してしまいます。</p>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="uninstall.html" class="btn btn-neutral float-right" title="アンインストール方法" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="troubleshoot.html" class="btn btn-neutral" title="トラブルシューティング" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, massanoori.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'1.3.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

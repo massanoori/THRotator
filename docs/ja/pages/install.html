@@ -1,0 +1,318 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>インストール方法 &mdash; THRotator 1.3.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="THRotator 1.3.0 documentation" href="../index.html"/>
+        <link rel="next" title="使い方" href="usage.html"/>
+        <link rel="prev" title="THRotator ユーザーマニュアル" href="../index.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> THRotator
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.3.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">インストール方法</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#dll">コピーするDLLファイルの確認</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id2">DLLファイルのコピー</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id3">設定ファイルをコピー</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id4">ローカライズ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id5">デフォルトの設定ファイルのアスペクト比について</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">使い方</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshoot.html">トラブルシューティング</a></li>
+<li class="toctree-l1"><a class="reference internal" href="development.html">開発</a></li>
+<li class="toctree-l1"><a class="reference internal" href="uninstall.html">アンインストール方法</a></li>
+<li class="toctree-l1"><a class="reference internal" href="releasenotes.html">リリースノート</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">THRotator</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>インストール方法</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/pages/install.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="id1">
+<h1>インストール方法<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h1>
+<p>このページでは、インストール方法を説明します。</p>
+<div class="section" id="dll">
+<h2>コピーするDLLファイルの確認<a class="headerlink" href="#dll" title="Permalink to this headline">¶</a></h2>
+<p>まず、インストール先に対して、どのファイルをコピーするかを確認します。</p>
+<p>インストール先の作品が下記のいずれかの場合、コピーするのは <code class="docutils literal"><span class="pre">d3d8.dll</span></code> です。</p>
+<ul class="simple">
+<li>東方紅魔郷</li>
+<li>東方妖々夢</li>
+<li>東方永夜抄</li>
+<li>東方花映塚</li>
+<li>東方文花帖</li>
+</ul>
+<p>インストール先の作品が下記のいずれか、もしくはそれ以降にリリースされた作品の場合、コピーするのは <code class="docutils literal"><span class="pre">d3d9.dll</span></code> です。</p>
+<ul class="simple">
+<li>東方風神録</li>
+<li>東方地霊殿</li>
+<li>東方星蓮船</li>
+<li>ダブルスポイラー</li>
+<li>妖精大戦争</li>
+<li>東方神霊廟</li>
+<li>東方輝針城</li>
+<li>弾幕アマノジャク</li>
+<li>東方紺珠伝</li>
+<li>黄昏酒場</li>
+</ul>
+</div>
+<div class="section" id="id2">
+<h2>DLLファイルのコピー<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
+<p>ゲームのインストールディレクトリ(exeがあるところ)に、DLLファイルをコピーします。
+管理者権限を要求された場合は、管理者権限でコピーを行ってください。</p>
+</div>
+<div class="section" id="id3">
+<h2>設定ファイルをコピー<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h2>
+<p>作品名に対応した設定ファイル <code class="docutils literal"><span class="pre">throt_&lt;作品ナンバリング&gt;.ini</span></code> を、次のディレクトリにコピーし、コピー先でそれを <code class="docutils literal"><span class="pre">throt.ini</span></code> にリネームします。
+黄昏酒場の作品ナンバリングは、 <code class="docutils literal"><span class="pre">alcostg</span></code> としています。</p>
+<dl class="docutils">
+<dt>紅魔郷、妖々夢、永夜抄、花映塚、文花帖、風神録、地霊殿、星蓮船、黄昏酒場の場合</dt>
+<dd>ゲームのインストールディレクトリ</dd>
+<dt>ダブルスポイラー、妖精大戦争、神霊廟、輝針城、弾幕アマノジャク、紺珠伝、それ以降の場合</dt>
+<dd>セーブデータが保存されるディレクトリ</dd>
+</dl>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>セーブデータが保存されるディレクトリについて</p>
+<ul class="last simple">
+<li>OSがWindows Vista/7/8/10の場合<ul>
+<li><code class="docutils literal"><span class="pre">C:\Users\&lt;ログインユーザ名&gt;\AppData\Roaming\ShanghaiAlice\th&lt;作品ナンバリング&gt;\</span></code></li>
+</ul>
+</li>
+<li>バッチファイルで <code class="docutils literal"><span class="pre">set</span> <span class="pre">APPDATA=</span></code> を実行した後にゲームを起動している場合<ul>
+<li>インストールディレクトリ</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id4">
+<h2>ローカライズ<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h2>
+<p>THRotatorのGUIはデフォルトで日本語です。</p>
+<p><code class="docutils literal"><span class="pre">en-US</span></code> フォルダをDLLファイルと同じ場所に置くと、GUIが英語になります。</p>
+</div>
+<div class="section" id="id5">
+<h2>デフォルトの設定ファイルのアスペクト比について<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h2>
+<p>下記の作品では、表示桁数等を確保するために、一部のHUD要素のアスペクト比が保存されていません。</p>
+<ul class="simple">
+<li>東方永夜抄　～ Imperishable Night. (数値の桁をすべて表示するため)</li>
+<li>東方文花帖　～ Shoot the Bullet. (数値の桁をすべて表示するため)</li>
+<li>ダブルスポイラー　～ 東方文花帖 (数値の桁をすべて表示するため)</li>
+<li>妖精大戦争　～ 東方三月精 (パーフェクトフリーズの文字はすべて表示するため)</li>
+<li>東方神霊廟以降 (かけらの分母を表示するため)</li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="usage.html" class="btn btn-neutral float-right" title="使い方" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../index.html" class="btn btn-neutral" title="THRotator ユーザーマニュアル" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, massanoori.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'1.3.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

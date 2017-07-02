@@ -1,0 +1,458 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Development &mdash; THRotator 1.3.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="THRotator 1.3.0 documentation" href="../index.html"/>
+        <link rel="next" title="Uninstall" href="uninstall.html"/>
+        <link rel="prev" title="Troubleshoot" href="troubleshoot.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> THRotator
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.3.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install.html">Install</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">How to use</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshoot.html">Troubleshoot</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Development</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#get-the-throtator-source-code">Get the THRotator source code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#build-throtator">Build THRotator</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#install-microsoft-visual-c">Install Microsoft Visual C++</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#install-boost-c-libraries">Install Boost C++ Libraries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#install-cmake">Install CMake</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#generate-project-files">Generate project files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#build">Build</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#build-manual">Build manual</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#install-sphinx">Install Sphinx</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#install-a-theme-of-sphinx">Install a theme of Sphinx</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id1">Build</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#localization">Localization</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#copy-template">1. Copy template</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#prepare-for-cmake">2. Prepare for CMake</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id2">3. Generate project files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#translate">4. Translate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#build-and-launch">5. Build and launch</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="uninstall.html">Uninstall</a></li>
+<li class="toctree-l1"><a class="reference internal" href="releasenotes.html">Release notes</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">THRotator</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>Development</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/pages/development.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="development">
+<h1>Development<a class="headerlink" href="#development" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="get-the-throtator-source-code">
+<h2>Get the THRotator source code<a class="headerlink" href="#get-the-throtator-source-code" title="Permalink to this headline">¶</a></h2>
+<p>Source code of THRotator can be downloaded from <a class="reference external" href="https://github.com/massanoori/THRotator">GitHub</a>.</p>
+<p>If you just try to build or modify THRotator,
+you can directly download from GitHub.
+By clicking <code class="docutils literal"><span class="pre">Clone</span> <span class="pre">or</span> <span class="pre">download</span></code> and then clicking <code class="docutils literal"><span class="pre">Download</span> <span class="pre">ZIP</span></code>, the download will start.
+By extracting the downloaded ZIP file, the folder containing source code is created.</p>
+<p>If you have installed git on your PC,
+you can clone the repository from the URL shown after clicking <code class="docutils literal"><span class="pre">Clone</span> <span class="pre">or</span> <span class="pre">download</span></code>.</p>
+</div>
+<div class="section" id="build-throtator">
+<h2>Build THRotator<a class="headerlink" href="#build-throtator" title="Permalink to this headline">¶</a></h2>
+<p>This section gives you an instruction to build THRotator from source code.</p>
+<p>The prerequisites are the following:</p>
+<ul class="simple">
+<li>Microsoft Visual C++ (2012 or later)</li>
+<li>Boost C++ Libraries</li>
+<li>CMake</li>
+</ul>
+<div class="section" id="install-microsoft-visual-c">
+<h3>Install Microsoft Visual C++<a class="headerlink" href="#install-microsoft-visual-c" title="Permalink to this headline">¶</a></h3>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If you have installed Visual C++, skip this step.</p>
+</div>
+<p>Download Visual Studio from <a class="reference external" href="https://www.visualstudio.com/">Home page of Visual Studio</a>.
+Community Edition is just enough.</p>
+<p>Since the installer of Visual Studio 2015, Visual C++ is not installed by default.
+Edit the installation option so that Visual C++ is installed.</p>
+</div>
+<div class="section" id="install-boost-c-libraries">
+<h3>Install Boost C++ Libraries<a class="headerlink" href="#install-boost-c-libraries" title="Permalink to this headline">¶</a></h3>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If you have a built <code class="docutils literal"><span class="pre">filesystem</span></code> module, skip this step.</p>
+</div>
+<p>Access to <a class="reference external" href="http://www.boost.org/">Boost C++ Libraries</a> and download the latest release from <strong>Current Release</strong>.
+Then extract ZIP archive to some location (for example <code class="docutils literal"><span class="pre">C:\boost\</span></code>).</p>
+<p>Next, build <code class="docutils literal"><span class="pre">filesystem</span></code> module by following the steps given below.</p>
+<ol class="arabic simple">
+<li>If your system is x64-based, <code class="docutils literal"><span class="pre">Start</span> <span class="pre">Menu</span></code> → <code class="docutils literal"><span class="pre">Visual</span> <span class="pre">Studio</span> <span class="pre">20XX</span></code> → <code class="docutils literal"><span class="pre">VS20XX</span> <span class="pre">x64</span> <span class="pre">Native</span> <span class="pre">Tools</span> <span class="pre">Command</span> <span class="pre">Prompts</span></code>.
+If your system is x86-based, launch <code class="docutils literal"><span class="pre">VS20XX</span> <span class="pre">x86</span> <span class="pre">Native</span> <span class="pre">Tools</span> <span class="pre">Command</span> <span class="pre">Prompts</span></code>.</li>
+<li>On the opened command prompt, change directory to the location where extracted <code class="docutils literal"><span class="pre">bootstrap.bat</span></code> exists.</li>
+<li>Run <code class="docutils literal"><span class="pre">bootstrap.bat</span></code>.</li>
+<li><code class="docutils literal"><span class="pre">b2.exe</span></code> will be generated, then run <code class="docutils literal"><span class="pre">b2</span> <span class="pre">--with-filesystem</span> <span class="pre">runtime-link=shared,static</span></code>.</li>
+</ol>
+</div>
+<div class="section" id="install-cmake">
+<h3>Install CMake<a class="headerlink" href="#install-cmake" title="Permalink to this headline">¶</a></h3>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If you have installed CMake 3.5 or later, skip this step.</p>
+</div>
+<p>Access to <a class="reference external" href="https://cmake.org/">Home page of CMake</a>. Then download one of the following from <strong>Download</strong> page.</p>
+<ul class="simple">
+<li>Windows win64-x64 Installer</li>
+<li>Windows win64-x64 ZIP</li>
+<li>Windows win32-x86 Installer</li>
+<li>Windows win32-x86 ZIP</li>
+</ul>
+<p>If you are using x64-based system, you can use both win64-x64 and win32-x86.
+If you are using x86-based system, you can use only win32-x86.</p>
+</div>
+<div class="section" id="generate-project-files">
+<span id="devel-proj-gen"></span><h3>Generate project files<a class="headerlink" href="#generate-project-files" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic simple">
+<li>If you have installed CMake from installer, <code class="docutils literal"><span class="pre">Start</span> <span class="pre">Menu</span></code> → <code class="docutils literal"><span class="pre">CMake</span></code> → <code class="docutils literal"><span class="pre">CMake</span> <span class="pre">(cmake-gui)</span></code>.
+If you have downloaded CMake directly, run <code class="docutils literal"><span class="pre">bin\cmake-gui.exe</span></code>.</li>
+<li>Fill <code class="docutils literal"><span class="pre">Where</span> <span class="pre">is</span> <span class="pre">the</span> <span class="pre">source</span> <span class="pre">code:</span></code> by the location of THRotator source code.</li>
+<li>Fill <code class="docutils literal"><span class="pre">Where</span> <span class="pre">to</span> <span class="pre">build</span> <span class="pre">the</span> <span class="pre">binaries:</span></code> by the location of project files you want to generate.</li>
+<li>Press <code class="docutils literal"><span class="pre">Configure</span></code>. Then generator selection window appears. Choose <code class="docutils literal"><span class="pre">Visual</span> <span class="pre">Studio</span> <span class="pre">XX</span> <span class="pre">20XX</span></code> and press <code class="docutils literal"><span class="pre">Finish</span></code>.
+Don’t choose a generator name with Win64 or ARM.</li>
+<li>Set the boost installation directory (where bootstrap.bat exists) to <code class="docutils literal"><span class="pre">BOOST_INCLUDE_DIR</span></code>.</li>
+<li>Set the boost library directory (<code class="docutils literal"><span class="pre">&lt;boost</span> <span class="pre">install</span> <span class="pre">directory&gt;\stage\lib</span></code> by default) to <code class="docutils literal"><span class="pre">BOOST_LIB_DIR</span></code>.</li>
+<li>Press <code class="docutils literal"><span class="pre">Configure</span></code> again. If you don’t see any errors, press <code class="docutils literal"><span class="pre">Generate</span></code>.</li>
+</ol>
+</div>
+<div class="section" id="build">
+<h3>Build<a class="headerlink" href="#build" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic simple">
+<li>Open generated <code class="docutils literal"><span class="pre">THRotator.sln</span></code>.</li>
+<li>Five projects are loaded.</li>
+</ol>
+<blockquote>
+<div><ul class="simple">
+<li>ALL_BUILD (project to build all the other projects)</li>
+<li>d3d8 (THRotator based on Direct3D 8)</li>
+<li>d3d9 (THRotator based on Direct3D 9)</li>
+<li>localization_en-US (English resource DLL of THRotator)</li>
+<li>ZERO_CHECK (automatically generated by CMake)</li>
+</ul>
+</div></blockquote>
+<ol class="arabic simple" start="3">
+<li>Build <code class="docutils literal"><span class="pre">d3d8</span></code> for THRotator based on Direct3D 8, build <code class="docutils literal"><span class="pre">d3d9</span></code> for THRotator based on Direct3D 9.</li>
+</ol>
+</div>
+</div>
+<div class="section" id="build-manual">
+<h2>Build manual<a class="headerlink" href="#build-manual" title="Permalink to this headline">¶</a></h2>
+<p>Sphinx is used to build the manual of THRotator.</p>
+<div class="section" id="install-sphinx">
+<h3>Install Sphinx<a class="headerlink" href="#install-sphinx" title="Permalink to this headline">¶</a></h3>
+<p>See <a class="reference external" href="http://www.sphinx-doc.org/en/stable/install.html">http://www.sphinx-doc.org/en/stable/install.html</a>.</p>
+</div>
+<div class="section" id="install-a-theme-of-sphinx">
+<h3>Install a theme of Sphinx<a class="headerlink" href="#install-a-theme-of-sphinx" title="Permalink to this headline">¶</a></h3>
+<p>THRotator adopts a theme <a class="reference external" href="https://github.com/rtfd/sphinx_rtd_theme">sphinx_rtd_theme</a>.
+To install it, run <code class="docutils literal"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pip</span> <span class="pre">install</span> <span class="pre">sphinx_rtd_theme</span></code>.</p>
+</div>
+<div class="section" id="id1">
+<h3>Build<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<p>By running <code class="docutils literal"><span class="pre">docs-source/compile.bat</span></code>, html files are built for every languages to <code class="docutils literal"><span class="pre">docs-source/&lt;language&gt;/_build</span></code>.</p>
+<p>If you would like to build the manual in a specific language,
+run <code class="docutils literal"><span class="pre">docs-source/&lt;language&gt;/make.bat</span> <span class="pre">html</span></code>.</p>
+<p>To copy built html files to the root of GitHub pages <code class="docutils literal"><span class="pre">docs/</span></code>,
+run <code class="docutils literal"><span class="pre">docs-source/update.bat</span></code>.</p>
+</div>
+</div>
+<div class="section" id="localization">
+<h2>Localization<a class="headerlink" href="#localization" title="Permalink to this headline">¶</a></h2>
+<p>THRotator supports dialog boxes and error messages in multiple languages by
+Multilingual User Interface (MUI).</p>
+<p>You can easily add new language based on English localization resource.
+Let’s look at how to add a new language with French example.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This section doesn’t refer to the actual translation.</p>
+</div>
+<div class="section" id="copy-template">
+<h3>1. Copy template<a class="headerlink" href="#copy-template" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic simple">
+<li>Create <code class="docutils literal"><span class="pre">localization_&lt;language</span> <span class="pre">name&gt;</span></code> folder in the directory where <code class="docutils literal"><span class="pre">localization_en-US</span></code> exists.
+Language name is one of <strong>Language/culture name</strong> found in <a class="reference external" href="https://technet.microsoft.com/en-us/library/hh825678.aspx">Available Language Packs for Windows</a>.
+This page also provides language ID in <strong>Language hexadecimal identifier</strong>, which should be memorized for a later step.
+Since example is French, folder name is <code class="docutils literal"><span class="pre">localization_fr-FR</span></code> and memorize language ID <strong>0x040c</strong>.</li>
+<li>From <code class="docutils literal"><span class="pre">localization_en-US</span></code>, copy <code class="docutils literal"><span class="pre">CMakeLists.txt</span></code>, <code class="docutils literal"><span class="pre">resource.h</span></code>, and <code class="docutils literal"><span class="pre">THRotator_en-US.rc</span></code> folder to <code class="docutils literal"><span class="pre">localization_&lt;language</span> <span class="pre">name&gt;</span></code>
+(in current example, copy to <code class="docutils literal"><span class="pre">localization_fr-FR</span></code>).</li>
+<li>Rename <code class="docutils literal"><span class="pre">localization_&lt;language</span> <span class="pre">name&gt;\THRotator_en-US.rc</span></code> to <code class="docutils literal"><span class="pre">localization_&lt;language</span> <span class="pre">name&gt;\THRotator_&lt;language</span> <span class="pre">name&gt;.rc</span></code>
+(in current example, rename to <code class="docutils literal"><span class="pre">THRotator_fr-FR.rc</span></code>).</li>
+</ol>
+</div>
+<div class="section" id="prepare-for-cmake">
+<h3>2. Prepare for CMake<a class="headerlink" href="#prepare-for-cmake" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic simple">
+<li>Open <code class="docutils literal"><span class="pre">localization_&lt;language</span> <span class="pre">name&gt;\CMakeLists.txt</span></code> and replace all <code class="docutils literal"><span class="pre">en-US</span></code> occurrences with <code class="docutils literal"><span class="pre">&lt;language</span> <span class="pre">name&gt;</span></code>.
+Then replace <strong>0x0409</strong> in <code class="docutils literal"><span class="pre">set(language_id</span> <span class="pre">0x0409)</span></code> to the memorized language ID.
+In current example replace with <strong>0x040c</strong>.
+This is the end of editing <code class="docutils literal"><span class="pre">localization_&lt;language</span> <span class="pre">name&gt;\CMakeLists.txt</span></code>.</li>
+<li>Open <code class="docutils literal"><span class="pre">CMakeLists.txt</span></code> in the root directory of THRotator,
+add <code class="docutils literal"><span class="pre">add_subdirectory(localization_&lt;language</span> <span class="pre">name&gt;)</span></code> to the final line.</li>
+</ol>
+<p>In current French example, <code class="docutils literal"><span class="pre">localization_fr-FR\CMakeLists.txt</span></code> finally looks like the following:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># resource language and its ID</span>
+<span class="c1"># for a list of languages and IDs, visit https://msdn.microsoft.com/en-us/library/hh825678.aspx</span>
+<span class="nb">set</span><span class="p">(</span><span class="n">language</span> <span class="n">fr</span><span class="o">-</span><span class="n">FR</span><span class="p">)</span> <span class="c1"># Edited</span>
+<span class="nb">set</span><span class="p">(</span><span class="n">language_id</span> <span class="mh">0x040c</span><span class="p">)</span> <span class="c1"># Edited</span>
+
+<span class="n">include</span><span class="p">(</span><span class="o">../</span><span class="n">internationalization</span><span class="o">/</span><span class="n">THRotator_i18n</span><span class="o">.</span><span class="n">cmake</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal"><span class="pre">CMakeLists.txt</span></code> finally looks like the following:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># Abbreviated</span>
+
+<span class="n">add_subdirectory</span><span class="p">(</span><span class="n">d3d9</span><span class="p">)</span>
+<span class="n">add_subdirectory</span><span class="p">(</span><span class="n">d3d8</span><span class="p">)</span>
+<span class="n">add_subdirectory</span><span class="p">(</span><span class="n">localization_en</span><span class="o">-</span><span class="n">US</span><span class="p">)</span>
+<span class="n">add_subdirectory</span><span class="p">(</span><span class="n">localization_fr</span><span class="o">-</span><span class="n">FR</span><span class="p">)</span> <span class="c1"># Added</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="id2">
+<h3>3. Generate project files<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<p>Generate project files as described in <a class="reference internal" href="#devel-proj-gen"><span class="std std-ref">Generate project files</span></a>.</p>
+</div>
+<div class="section" id="translate">
+<h3>4. Translate<a class="headerlink" href="#translate" title="Permalink to this headline">¶</a></h3>
+<p>After reopening or reloading <code class="docutils literal"><span class="pre">THRotator.sln</span></code>,
+you can find that a project <code class="docutils literal"><span class="pre">localization_&lt;language</span> <span class="pre">name&gt;</span></code> is added.</p>
+<p>From Resource View of Visual Studio, you can start to translate string table and dialog box resources that belong to <code class="docutils literal"><span class="pre">localization_&lt;language</span> <span class="pre">name&gt;</span></code>.
+On property window, change language of string table and dialog boxes from <code class="docutils literal"><span class="pre">English</span> <span class="pre">(United</span> <span class="pre">States)</span></code> to the language name you want to translate into.
+In French example, change to <code class="docutils literal"><span class="pre">French</span> <span class="pre">(France)</span></code>.</p>
+</div>
+<div class="section" id="build-and-launch">
+<h3>5. Build and launch<a class="headerlink" href="#build-and-launch" title="Permalink to this headline">¶</a></h3>
+<p>By building <code class="docutils literal"><span class="pre">localization_&lt;language</span> <span class="pre">name&gt;</span></code>, <code class="docutils literal"><span class="pre">.mui</span></code> files are generated to the <code class="docutils literal"><span class="pre">&lt;language</span> <span class="pre">name&gt;</span></code> folder located in the output directories of <code class="docutils literal"><span class="pre">d3d8.dll</span></code> and <code class="docutils literal"><span class="pre">d3d9.dll</span></code>.</p>
+<p>Copy <code class="docutils literal"><span class="pre">d3d8.dll</span></code> or <code class="docutils literal"><span class="pre">d3d9.dll</span></code> and <code class="docutils literal"><span class="pre">&lt;language</span> <span class="pre">name&gt;</span></code> folder to the directory where the executable of the game is located.
+If your system supports the language you are trying to add, GUI and messages are now in that language.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The respective checksum of <code class="docutils literal"><span class="pre">d3d8.dll</span></code> and <code class="docutils literal"><span class="pre">d3d9.dll</span></code> is embedded to <code class="docutils literal"><span class="pre">d3d8.dll.mui</span></code> and <code class="docutils literal"><span class="pre">d3d9.dll.mui</span></code>.
+If the embedded checksum doesn’t match that of .dll, that language will not be loaded.</p>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="uninstall.html" class="btn btn-neutral float-right" title="Uninstall" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="troubleshoot.html" class="btn btn-neutral" title="Troubleshoot" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, massanoori.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'1.3.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
