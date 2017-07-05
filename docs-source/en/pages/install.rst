@@ -4,9 +4,15 @@ Install
 
 This page shows the steps to install THRotator.
 
-Determine which DLL is needed
+Download THRotator
 =============================
 
+Download the latest release from `<https://github.com/massanoori/THRotator/releases>`_.
+The file named like ``THRotator_X_Y_Z.zip`` is what has to be downloaded.
+
+
+Determine which DLL is needed
+=============================
 
 If you would like to install THRotator to one of the following, the file to copy is ``d3d8.dll``.
 
