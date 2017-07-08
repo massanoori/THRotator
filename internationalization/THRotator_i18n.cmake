@@ -28,5 +28,6 @@ foreach (main_target ${main_targets})
 		COMMAND if not exist ${main_mui_dir} mkdir \"${main_mui_dir}\"
 		COMMAND muirct -q ${CMAKE_CURRENT_LIST_DIR}/DoReverseMuiLoc.rcconfig -x ${language_id} -g 0x0409 ${loc_target_file} ${loc_target_file}.discarded ${main_mui}
 		COMMAND muirct -c ${main_target_file} -e ${main_mui})
-endforeach ()
 
+	install(FILES ${main_mui} DESTINATION ${main_target}/${language})
+endforeach ()
