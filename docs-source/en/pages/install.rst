@@ -14,7 +14,7 @@ The file named like ``THRotator_X_Y_Z.zip`` is what has to be downloaded.
 Determine which DLL is needed
 =============================
 
-If you would like to install THRotator to one of the following, the file to copy is ``d3d8.dll``.
+If you would like to install THRotator to one of the following, the file to copy is ``d3d8/d3d8.dll``.
 
 - the Embodiment of Scarlet Devil (Th06)
 - Perfect Cherry Blossom (Th07)
@@ -22,7 +22,7 @@ If you would like to install THRotator to one of the following, the file to copy
 - Phantasmagoria of Flower View (Th09)
 - Shoot the Bullet (Th095)
 
-If you would like to install THRotator to one of the following or later products, the file to copy is ``d3d9.dll``.
+If you would like to install THRotator to one of the following or later products, the file to copy is ``d3d9/d3d9.dll``.
 
 - Mountain of Faith (Th10)
 - Subterranean Animism (Th11)
@@ -71,7 +71,7 @@ Localize
 
 GUI and messages are in Japanese by default.
 
-If you copy ``en-US`` folder to the same directory where DLL file exists, GUI and messages become in English.
+If you copy ``d3d8/en-US`` (for  ``d3d8/d3d8.dll``) or ``d3d9/en-US`` (for ``d3d9/d3d9.dll``) folder to the same directory where DLL file exists, GUI and messages become in English.
 
 
 
