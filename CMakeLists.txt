@@ -34,5 +34,5 @@ add_subdirectory(d3d8)
 add_subdirectory(localization_en-US)
 
 install(DIRECTORY sample_ini DESTINATION .)
-install(FILES README.md DESTINATION .)
+install(FILES MANUAL.txt DESTINATION .)
 

@@ -1,0 +1,10 @@
+﻿オンラインマニュアル Online manual
+==================================
+
+インストール方法、使い方は下記ページを参照してください。
+
+* オンラインマニュアル(日本語): TBW
+
+The following URI gives you an instruction of the installation and the usage of THRotator.
+
+* Online manual (English): TBW
