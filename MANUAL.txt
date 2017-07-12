@@ -5,6 +5,10 @@
 
 * オンラインマニュアル(日本語): TBW
 
-The following URI gives you an instruction of the installation and the usage of THRotator.
+To install and use THRotator, visit the following URI.
 
 * Online manual (English): TBW
+
+
+Source code: https://github.com/massanoori/THRotator
+(c) 2017 massanoori
