@@ -17,12 +17,28 @@
 
 namespace
 {
+
 LPCTSTR THROTATOR_VERSION_STRING = _T("1.3.0");
 HHOOK ms_hHook;
 std::map<HWND, std::weak_ptr<THRotatorEditorContext>> ms_touhouWinToContext;
 UINT ms_switchVisibilityID = 12345u;
 
 typedef std::basic_string<TCHAR> std_tstring;
+
+// Tがenumなら、その内部の型を、そうでなければTを、RawTypeOfEnum<T>::typeで取得できる
+template <typename T, typename IsEnum = std::is_enum<T>::type>
+struct RawTypeOfEnum
+{
+	typedef T type;
+};
+
+// Tがenumの時の特殊化
+template <typename T>
+struct RawTypeOfEnum<T, std::true_type>
+{
+	typedef typename std::underlying_type<T>::type type;
+};
+
 }
 
 std::basic_string<TCHAR> LoadTHRotatorString(HINSTANCE hModule, UINT nID)
@@ -1027,6 +1043,14 @@ bool THRotatorEditorContext::SaveSettings()
 	proptree::basic_ptree<std::string, std::string> tree;
 
 #define WRITE_INI_PARAM(name, value) tree.add(m_appName + "." + name, value)
+#define WRITE_INDEXED_INI_PARAM(name, index, value) \
+	do { \
+		std::ostringstream ss(std::ios::ate); \
+		ss.str(name); \
+		ss << (index); \
+		WRITE_INI_PARAM(ss.str(), value); \
+	} while(false)
+
 	WRITE_INI_PARAM("JC", m_judgeThreshold);
 	WRITE_INI_PARAM("PL", m_mainScreenLeft);
 	WRITE_INI_PARAM("PT", m_mainScreenTop);
@@ -1051,42 +1075,24 @@ bool THRotatorEditorContext::SaveSettings()
 #else
 		const auto* nameBufferPtr = itr->name.c_str();
 #endif
-		ss.str("Name"); ss << i;
-		WRITE_INI_PARAM(ss.str(), nameBufferPtr);
+		WRITE_INDEXED_INI_PARAM("Name", i, nameBufferPtr);
 
-		ss.str("OSL"); ss << i;
-		WRITE_INI_PARAM(ss.str(), itr->sourcePosition.x);
+		WRITE_INDEXED_INI_PARAM("OSL", i, itr->sourcePosition.x);
+		WRITE_INDEXED_INI_PARAM("OST", i, itr->sourcePosition.y);
+		WRITE_INDEXED_INI_PARAM("OSW", i, itr->sourceSize.cx);
+		WRITE_INDEXED_INI_PARAM("OSH", i, itr->sourceSize.cy);
 
-		ss.str("OST"); ss << i;
-		WRITE_INI_PARAM(ss.str(), itr->sourcePosition.y);
+		WRITE_INDEXED_INI_PARAM("ODL", i, itr->destPosition.x);
+		WRITE_INDEXED_INI_PARAM("ODT", i, itr->destPosition.y);
+		WRITE_INDEXED_INI_PARAM("ODW", i, itr->destSize.cx);
+		WRITE_INDEXED_INI_PARAM("ODH", i, itr->destSize.cy);
 
-		ss.str("OSW"); ss << i;
-		WRITE_INI_PARAM(ss.str(), itr->sourceSize.cx);
-
-		ss.str("OSH"); ss << i;
-		WRITE_INI_PARAM(ss.str(), itr->sourceSize.cy);
-
-		ss.str("ODL"); ss << i;
-		WRITE_INI_PARAM(ss.str(), itr->destPosition.x);
-
-		ss.str("ODT"); ss << i;
-		WRITE_INI_PARAM(ss.str(), itr->destPosition.y);
-
-		ss.str("ODW"); ss << i;
-		WRITE_INI_PARAM(ss.str(), itr->destSize.cx);
-
-		ss.str("ODH"); ss << i;
-		WRITE_INI_PARAM(ss.str(), itr->destSize.cy);
-
-		ss.str("OR"); ss << i;
-		WRITE_INI_PARAM(ss.str(), itr->rotation);
-
-		ss.str("ORHas"); ss << i;
-		WRITE_INI_PARAM(ss.str(), TRUE);
+		WRITE_INDEXED_INI_PARAM("OR", i, itr->rotation);
+		WRITE_INDEXED_INI_PARAM("ORHas", i, TRUE);
 	}
 
-	ss.str("ORHas"); ss << i;
-	WRITE_INI_PARAM(ss.str(), FALSE);
+	WRITE_INDEXED_INI_PARAM("ORHas", m_currentRectTransfers.size(), FALSE);
+#undef WRITE_INDEXED_INI_PARAM
 #undef WRITE_INI_PARAM
 
 	try
@@ -1115,69 +1121,69 @@ void THRotatorEditorContext::LoadSettings()
 		// ファイルオープン失敗だが、boost::optional::get_value_or()でデフォルト値を設定できるので、そのまま進行
 	}
 
-#define READ_INI_PARAM(type, name, default_value) tree.get_optional<type>(m_appName + "." + name).get_value_or(default_value)
-	m_judgeThreshold = READ_INI_PARAM(int, "JC", 999);
-	m_mainScreenLeft = READ_INI_PARAM(int, "PL", 32);
-	m_mainScreenTop = READ_INI_PARAM(int, "PT", 16);
-	m_mainScreenWidth = READ_INI_PARAM(int, "PW", 384);
-	m_mainScreenHeight = READ_INI_PARAM(int, "PH", 448);
-	m_yOffset = READ_INI_PARAM(int, "YOffset", 0);
-	m_bVisible = READ_INI_PARAM(BOOL, "Visible", FALSE) != FALSE;
-	m_bVerticallyLongWindow = READ_INI_PARAM(BOOL, "PivRot", FALSE) != FALSE;
-	m_rotationAngle = static_cast<RotationAngle>(READ_INI_PARAM(std::uint32_t, "Rot", Rotation_0));
-	m_filterType = static_cast<D3DTEXTUREFILTERTYPE>(READ_INI_PARAM(int, "Filter", D3DTEXF_LINEAR));
+#define READ_INI_PARAM(destination, name, defaultValue) \
+	do { \
+		auto rawDefaultValue = static_cast<RawTypeOfEnum<decltype(destination)>::type>(defaultValue); \
+		auto rawValue = tree.get_optional<RawTypeOfEnum<decltype(rawDefaultValue)>::type>(m_appName + "." + name).get_value_or(rawDefaultValue); \
+		(destination) = static_cast<decltype(destination)>(rawValue); \
+	} while(false)
 
-	BOOL bHasNext = READ_INI_PARAM(BOOL, "ORHas0", FALSE);
-	int cnt = 0;
-	std::ostringstream ss(std::ios::ate);
+#define READ_INDEXED_INI_PARAM(destination, name, index, defaultValue) \
+	do { \
+		std::ostringstream ss(std::ios::ate); \
+		ss.str(name); \
+		ss << (index); \
+		READ_INI_PARAM(destination, ss.str(), defaultValue); \
+	} while(false)
+
+	READ_INI_PARAM(m_judgeThreshold, "JC", 999);
+	READ_INI_PARAM(m_mainScreenLeft, "PL", 32);
+	READ_INI_PARAM(m_mainScreenTop, "PT", 16);
+	READ_INI_PARAM(m_mainScreenWidth, "PW", 384);
+	READ_INI_PARAM(m_mainScreenHeight, "PH", 448);
+	READ_INI_PARAM(m_yOffset, "YOffset", 0);
+	READ_INI_PARAM(m_bVisible, "Visible", FALSE);
+	READ_INI_PARAM(m_bVerticallyLongWindow, "PivRot", FALSE);
+	READ_INI_PARAM(m_rotationAngle, "Rot", Rotation_0);
+	READ_INI_PARAM(m_filterType, "Filter", D3DTEXF_LINEAR);
+
+	BOOL bHasNext;
+	READ_INI_PARAM(bHasNext, "ORHas0", FALSE);
+	int rectIndex = 0;
 	while (bHasNext)
 	{
-		RectTransferData erd;
+		RectTransferData rectData;
 
-		ss.str("Name"); ss << cnt;
-		std::string rectName = READ_INI_PARAM(std::string, ss.str(), "");
+		std::string rectName;
+		READ_INDEXED_INI_PARAM(rectName, "Name", rectIndex, "");
+
 #ifdef _UNICODE
 		auto bufferSize = MultiByteToWideChar(CP_ACP, 0, rectName.c_str(), -1, nullptr, 0);
 		std::unique_ptr<TCHAR> nameBuffer(new TCHAR[bufferSize]);
 		MultiByteToWideChar(CP_ACP, 0, rectName.c_str(), -1, nameBuffer.get(), bufferSize);
-		erd.name = nameBuffer.get();
+		rectData.name = nameBuffer.get();
 #else
-		erd.name = std::move(rectName);
+		rectData.name = std::move(rectName);
 #endif
 
-		ss.str("OSL"); ss << cnt;
-		erd.sourcePosition.x = READ_INI_PARAM(int, ss.str(), 0);
+		READ_INDEXED_INI_PARAM(rectData.sourcePosition.x, "OSL", rectIndex, 0);
+		READ_INDEXED_INI_PARAM(rectData.sourcePosition.y, "OST", rectIndex, 0);
+		READ_INDEXED_INI_PARAM(rectData.sourceSize.cx, "OSW", rectIndex, 0);
+		READ_INDEXED_INI_PARAM(rectData.sourceSize.cy, "OSH", rectIndex, 0);
 
-		ss.str("OST"); ss << cnt;
-		erd.sourcePosition.y = READ_INI_PARAM(int, ss.str(), 0);
+		READ_INDEXED_INI_PARAM(rectData.destPosition.x, "ODL", rectIndex, 0);
+		READ_INDEXED_INI_PARAM(rectData.destPosition.y, "ODT", rectIndex, 0);
+		READ_INDEXED_INI_PARAM(rectData.destSize.cx, "ODW", rectIndex, 0);
+		READ_INDEXED_INI_PARAM(rectData.destSize.cy, "ODH", rectIndex, 0);
 
-		ss.str("OSW"); ss << cnt;
-		erd.sourceSize.cx = READ_INI_PARAM(int, ss.str(), 0);
+		READ_INDEXED_INI_PARAM(rectData.rotation, "OR", rectIndex, Rotation_0);
 
-		ss.str("OSH"); ss << cnt;
-		erd.sourceSize.cy = READ_INI_PARAM(int, ss.str(), 0);
+		m_editedRectTransfers.push_back(rectData);
+		rectIndex++;
 
-		ss.str("ODL"); ss << cnt;
-		erd.destPosition.x = READ_INI_PARAM(int, ss.str(), 0);
-
-		ss.str("ODT"); ss << cnt;
-		erd.destPosition.y = READ_INI_PARAM(int, ss.str(), 0);
-
-		ss.str("ODW"); ss << cnt;
-		erd.destSize.cx = READ_INI_PARAM(int, ss.str(), 0);
-
-		ss.str("ODH"); ss << cnt;
-		erd.destSize.cy = READ_INI_PARAM(int, ss.str(), 0);
-
-		ss.str("OR"); ss << cnt;
-		erd.rotation = static_cast<RotationAngle>(READ_INI_PARAM(int, ss.str(), 0));
-
-		m_editedRectTransfers.push_back(erd);
-		cnt++;
-
-		ss.str("ORHas"); ss << cnt;
-		bHasNext = READ_INI_PARAM(BOOL, ss.str(), FALSE);
+		READ_INDEXED_INI_PARAM(bHasNext, "ORHas", rectIndex, FALSE);
 	}
+#undef READ_INDEXED_INI_PARAM
 #undef READ_INI_PARAM
 }
 
