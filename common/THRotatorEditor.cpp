@@ -650,24 +650,14 @@ RotationAngle THRotatorEditorContext::GetRotationAngle() const
 	return m_rotationAngle;
 }
 
-DWORD THRotatorEditorContext::GetMainScreenLeft() const
+POINT THRotatorEditorContext::GetMainScreenTopLeft() const
 {
-	return m_mainScreenTopLeft.x;
+	return m_mainScreenTopLeft;
 }
 
-DWORD THRotatorEditorContext::GetMainScreenWidth() const
+SIZE THRotatorEditorContext::GetMainScreenSize() const
 {
-	return m_mainScreenSize.cx;
-}
-
-DWORD THRotatorEditorContext::GetMainScreenTop() const
-{
-	return m_mainScreenTopLeft.y;
-}
-
-DWORD THRotatorEditorContext::GetMainScreenHeight() const
-{
-	return m_mainScreenSize.cy;
+	return m_mainScreenSize;
 }
 
 LONG THRotatorEditorContext::GetYOffset() const

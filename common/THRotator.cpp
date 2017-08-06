@@ -2390,35 +2390,30 @@ void THRotatorDirect3DDevice::EndSceneInternal()
 		aspectLessThanRequested = m_d3dpp.BackBufferHeight * m_requestedHeight < m_d3dpp.BackBufferWidth * m_requestedWidth;
 	}
 
-	LONG mainScreenLeft = static_cast<LONG>(m_pEditorContext->GetMainScreenLeft());
-	LONG mainScreenTop = static_cast<LONG>(m_pEditorContext->GetMainScreenTop());
-	LONG mainScreenWidth = static_cast<LONG>(m_pEditorContext->GetMainScreenWidth());
-	LONG mainScreenHeight = static_cast<LONG>(m_pEditorContext->GetMainScreenHeight());
-
 	// エネミーマーカーと周囲の枠が表示されるよう、ゲーム画面の矩形を拡張
 
-	POINT prPosition = { mainScreenLeft, mainScreenTop };
-	SIZE prSize = { mainScreenWidth, mainScreenHeight };
-	if (mainScreenWidth * m_requestedWidth < mainScreenHeight * m_requestedHeight)
+	POINT mainScreenTopLeft = m_pEditorContext->GetMainScreenTopLeft();
+	SIZE mainScreenSize = m_pEditorContext->GetMainScreenSize();
+	if (mainScreenSize.cx * m_requestedWidth < mainScreenSize.cy * m_requestedHeight)
 	{
-		prPosition.x = mainScreenLeft - (mainScreenHeight * m_requestedHeight / m_requestedWidth - mainScreenWidth) / 2;
-		prSize.cx = mainScreenHeight * m_requestedHeight / m_requestedWidth;
+		mainScreenTopLeft.x -= (mainScreenSize.cy * m_requestedHeight / m_requestedWidth - mainScreenSize.cx) / 2;
+		mainScreenSize.cx = mainScreenSize.cy * m_requestedHeight / m_requestedWidth;
 	}
-	else if (mainScreenWidth * m_requestedWidth > mainScreenHeight * m_requestedHeight)
+	else if (mainScreenSize.cx * m_requestedWidth > mainScreenSize.cy * m_requestedHeight)
 	{
-		prPosition.y = mainScreenTop - (mainScreenWidth * m_requestedWidth / m_requestedHeight - mainScreenHeight) / 2;
-		prSize.cy = mainScreenWidth * m_requestedWidth / m_requestedHeight;
+		mainScreenTopLeft.y -= (mainScreenSize.cy * m_requestedWidth / m_requestedHeight - mainScreenSize.cy) / 2;
+		mainScreenSize.cy = mainScreenSize.cx * m_requestedWidth / m_requestedHeight;
 	}
 
-	prPosition.y -= m_pEditorContext->GetYOffset();
+	mainScreenTopLeft.y -= m_pEditorContext->GetYOffset();
 
 	UINT correctedBaseScreenWidth = (std::max)(BASE_SCREEN_WIDTH, BASE_SCREEN_HEIGHT * m_requestedWidth / m_requestedHeight);
 	UINT correctedBaseScreenHeight = (std::max)(BASE_SCREEN_HEIGHT, BASE_SCREEN_WIDTH * m_requestedHeight / m_requestedWidth);
 
 	bool bNeedsRearrangeHUD = m_pEditorContext->IsHUDRearrangeForced()
 		|| aspectLessThanRequested && m_pEditorContext->IsViewportSetCountOverThreshold();
-	LONG baseDestRectWidth = bNeedsRearrangeHUD ? prSize.cx : static_cast<LONG>(correctedBaseScreenWidth);
-	LONG baseDestRectHeight = bNeedsRearrangeHUD ? prSize.cy : static_cast<LONG>(correctedBaseScreenHeight);
+	LONG baseDestRectWidth = bNeedsRearrangeHUD ? mainScreenSize.cx : static_cast<LONG>(correctedBaseScreenWidth);
+	LONG baseDestRectHeight = bNeedsRearrangeHUD ? mainScreenSize.cy : static_cast<LONG>(correctedBaseScreenHeight);
 
 
 
@@ -2549,7 +2544,7 @@ void THRotatorDirect3DDevice::EndSceneInternal()
 	else
 	{
 		POINT pointZero = {};
-		rectDrawer(prPosition, prSize, pointZero, prSize, prSize, Rotation_0);
+		rectDrawer(mainScreenTopLeft, mainScreenSize, pointZero, mainScreenSize, mainScreenSize, Rotation_0);
 
 		for (const auto& rectData : m_pEditorContext->GetRectTransfers())
 		{
@@ -2559,7 +2554,7 @@ void THRotatorDirect3DDevice::EndSceneInternal()
 			}
 
 			rectDrawer(rectData.sourcePosition, rectData.sourceSize, rectData.destPosition, rectData.destSize,
-				prSize, rectData.rotation);
+				mainScreenSize, rectData.rotation);
 		}
 	}
 

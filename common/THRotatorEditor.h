@@ -74,13 +74,9 @@ public:
 
 	RotationAngle GetRotationAngle() const;
 
-	DWORD GetMainScreenLeft() const;
+	POINT GetMainScreenTopLeft() const;
 
-	DWORD GetMainScreenWidth() const;
-
-	DWORD GetMainScreenTop() const;
-
-	DWORD GetMainScreenHeight() const;
+	SIZE GetMainScreenSize() const;
 
 	LONG GetYOffset() const;
 
