@@ -122,7 +122,7 @@ private:
 		ApplyRotationToEditorWindow(m_hEditorWin);
 	}
 
-	bool SaveSettings();
+	bool SaveSettings() const;
 
 	void LoadSettings();
 
@@ -145,7 +145,8 @@ private:
 	* THRotator parameters
 	****************************************/
 
-	DWORD m_mainScreenLeft, m_mainScreenTop, m_mainScreenWidth, m_mainScreenHeight;
+	POINT m_mainScreenTopLeft;
+	SIZE m_mainScreenSize;
 	int m_yOffset;
 	int m_judgeThreshold;
 	int m_judgeCount, m_judgeCountPrev;
