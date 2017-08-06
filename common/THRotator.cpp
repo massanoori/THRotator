@@ -2401,7 +2401,7 @@ void THRotatorDirect3DDevice::EndSceneInternal()
 	}
 	else if (mainScreenSize.cx * m_requestedWidth > mainScreenSize.cy * m_requestedHeight)
 	{
-		mainScreenTopLeft.y -= (mainScreenSize.cy * m_requestedWidth / m_requestedHeight - mainScreenSize.cy) / 2;
+		mainScreenTopLeft.y -= (mainScreenSize.cx * m_requestedWidth / m_requestedHeight - mainScreenSize.cy) / 2;
 		mainScreenSize.cy = mainScreenSize.cx * m_requestedWidth / m_requestedHeight;
 	}
 
