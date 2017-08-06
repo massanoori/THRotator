@@ -249,11 +249,11 @@ void THRotatorSetting::LoadFormatVer1(const boost::property_tree::basic_ptree<st
 	READ_INI_PARAM(outSetting.mainScreenSize.cy, "PH");
 	READ_INI_PARAM(outSetting.yOffset, "YOffset");
 
-	BOOL bVisibleTemp;
+	BOOL bVisibleTemp = FALSE;
 	READ_INI_PARAM(bVisibleTemp, "Visible");
 	outSetting.bVisible = bVisibleTemp != FALSE;
 
-	BOOL bVerticallyLongWindowTemp;
+	BOOL bVerticallyLongWindowTemp = FALSE;
 	READ_INI_PARAM(bVerticallyLongWindowTemp, "PivRot");
 	outSetting.bVerticallyLongWindow = bVerticallyLongWindowTemp != FALSE;
 
