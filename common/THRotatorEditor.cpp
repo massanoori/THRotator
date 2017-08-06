@@ -59,6 +59,54 @@ struct RawTypeOfEnum<T, std::true_type>
 	typedef typename std::underlying_type<T>::type type;
 };
 
+std::wstring ConvertFromSjisToUnicode(const std::string& from)
+{
+	int unicodeBufferSize = ::MultiByteToWideChar(CP_ACP, 0, from.c_str(), -1, nullptr, 0);
+	std::unique_ptr<WCHAR[]> unicodeChar(new WCHAR[unicodeBufferSize]);
+	::MultiByteToWideChar(CP_ACP, 0, from.c_str(), -1, unicodeChar.get(), unicodeBufferSize);
+
+	return std::wstring(unicodeChar.get());
+}
+
+std::string ConvertFromUnicodeToSjis(const std::wstring& from)
+{
+	int utf8BufferSize = ::WideCharToMultiByte(CP_ACP, 0, from.c_str(), -1, nullptr, 0, nullptr, nullptr);
+	std::unique_ptr<CHAR[]> sjisChar(new CHAR[utf8BufferSize]);
+	::WideCharToMultiByte(CP_ACP, 0, from.c_str(), -1, sjisChar.get(), utf8BufferSize, nullptr, nullptr);
+
+	return std::string(sjisChar.get());
+}
+
+std::string ConvertFromUnicodeToUtf8(const std::wstring& from)
+{
+	int utf8BufferSize = ::WideCharToMultiByte(CP_UTF8, 0, from.c_str(), -1, nullptr, 0, nullptr, nullptr);
+	std::unique_ptr<CHAR[]> utf8Char(new CHAR[utf8BufferSize]);
+	::WideCharToMultiByte(CP_UTF8, 0, from.c_str(), -1, utf8Char.get(), utf8BufferSize, nullptr, nullptr);
+
+	return std::string(utf8Char.get());
+}
+
+std::wstring ConvertFromUtf8ToUnicode(const std::string& from)
+{
+	int unicodeBufferSize = ::MultiByteToWideChar(CP_UTF8, 0, from.c_str(), -1, nullptr, 0);
+	std::unique_ptr<WCHAR[]> unicodeChar(new WCHAR[unicodeBufferSize]);
+	::MultiByteToWideChar(CP_UTF8, 0, from.c_str(), -1, unicodeChar.get(), unicodeBufferSize);
+
+	return std::wstring(unicodeChar.get());
+}
+
+std::string ConvertFromSjisToUtf8(const std::string& from)
+{
+	std::wstring unicodeStr = ConvertFromSjisToUnicode(from);
+	return ConvertFromUnicodeToUtf8(unicodeStr);
+}
+
+std::string ConvertFromUtf8ToSjis(const std::string& from)
+{
+	std::wstring unicodeStr = ConvertFromUtf8ToUnicode(from);
+	return ConvertFromUnicodeToSjis(unicodeStr);
+}
+
 struct InputFilerIgnoringBOM
 {
 	typedef char char_type;
@@ -175,7 +223,7 @@ struct THRotatorSetting
 
 #define READ_INI_PARAM(destination, name) \
 	do { \
-		auto rawValue = tree.get_optional<RawTypeOfEnum<decltype(destination)>::type>(appName + "." + name); \
+		auto rawValue = tree.get_optional<RawTypeOfEnum<decltype(destination)>::type>(appNameUtf8 + "." + name); \
 		if (rawValue) (destination) = static_cast<decltype(destination)>(*rawValue); \
 	} while(false)
 
@@ -191,6 +239,9 @@ void THRotatorSetting::LoadFormatVer1(const boost::property_tree::basic_ptree<st
 	const std::string& appName,
 	THRotatorSetting& outSetting)
 {
+	// Ver. 1ではShift JISで保存されるため、ShiftJISの文字列をUTF-8として扱う
+	const auto& appNameUtf8 = appName;
+
 	READ_INI_PARAM(outSetting.judgeThreshold, "JC");
 	READ_INI_PARAM(outSetting.mainScreenTopLeft.x, "PL");
 	READ_INI_PARAM(outSetting.mainScreenTopLeft.y, "PT");
@@ -222,10 +273,7 @@ void THRotatorSetting::LoadFormatVer1(const boost::property_tree::basic_ptree<st
 		READ_INDEXED_INI_PARAM(rectName, "Name", rectIndex);
 
 #ifdef _UNICODE
-		auto bufferSize = MultiByteToWideChar(CP_ACP, 0, rectName.c_str(), -1, nullptr, 0);
-		std::unique_ptr<TCHAR> nameBuffer(new TCHAR[bufferSize]);
-		MultiByteToWideChar(CP_ACP, 0, rectName.c_str(), -1, nameBuffer.get(), bufferSize);
-		rectData.name = nameBuffer.get();
+		rectData.name = ConvertFromSjisToUnicode(rectName);
 #else
 		rectData.name = std::move(rectName);
 #endif
@@ -253,6 +301,8 @@ void THRotatorSetting::LoadFormatVer2(const boost::property_tree::basic_ptree<st
 	const std::string& appName,
 	THRotatorSetting& outSetting)
 {
+	auto appNameUtf8 = ConvertFromSjisToUtf8(appName);
+
 	READ_INI_PARAM(outSetting.judgeThreshold, "JudgeThreshold");
 	READ_INI_PARAM(outSetting.mainScreenTopLeft.x, "MainScreenLeft");
 	READ_INI_PARAM(outSetting.mainScreenTopLeft.y, "MainScreenTop");
@@ -285,13 +335,9 @@ void THRotatorSetting::LoadFormatVer2(const boost::property_tree::basic_ptree<st
 		READ_INDEXED_INI_PARAM(rectName, "RectName", rectIndex);
 
 #ifdef _UNICODE
-		auto bufferSize = MultiByteToWideChar(CP_UTF8, 0, rectName.c_str(), -1, nullptr, 0);
-		std::unique_ptr<TCHAR> nameBuffer(new TCHAR[bufferSize]);
-		MultiByteToWideChar(CP_UTF8, 0, rectName.c_str(), -1, nameBuffer.get(), bufferSize);
-		rectData.name = nameBuffer.get();
+		rectData.name = ConvertFromUtf8ToUnicode(rectName);
 #else
-		// TODO: UTF8 -> ShiftJIS
-		rectData.name = std::move(rectName);
+		rectData.name = ConvertFromUtf8ToSjis(rectName);
 #endif
 
 		READ_INDEXED_INI_PARAM(rectData.sourcePosition.x, "SourceLeft", rectIndex);
@@ -327,6 +373,7 @@ void THRotatorSetting::Load(const std::string& filename, const std::string& appN
 		// ファイルオープン失敗だが、boost::optional::get_value_or()でデフォルト値を設定できるので、そのまま進行
 	}
 
+	auto appNameUtf8 = ConvertFromSjisToUtf8(appName); // READ_INI_PARAMの中で参照
 	THRotatorFormatVersion formatVersion = THRotatorFormatVersion::Version_1;
 	READ_INI_PARAM(formatVersion, "FormatVersion");
 	
@@ -353,7 +400,9 @@ bool THRotatorSetting::Save(const std::string& filename, const std::string& appN
 	namespace proptree = boost::property_tree;
 	proptree::basic_ptree<std::string, std::string> tree;
 
-#define WRITE_INI_PARAM(name, value) tree.add(appName + "." + name, static_cast<RawTypeOfEnum<decltype(value)>::type>(value))
+	auto appNameUtf8 = ConvertFromSjisToUtf8(appName);
+
+#define WRITE_INI_PARAM(name, value) tree.add(appNameUtf8 + "." + name, static_cast<RawTypeOfEnum<decltype(value)>::type>(value))
 #define WRITE_INDEXED_INI_PARAM(name, index, value) \
 	do { \
 		std::ostringstream ss(std::ios::ate); \
@@ -382,16 +431,12 @@ bool THRotatorSetting::Save(const std::string& filename, const std::string& appN
 	for (const auto& rectData : inSetting.rectTransfers)
 	{
 #ifdef _UNICODE
-		auto bufferSize = WideCharToMultiByte(CP_UTF8, 0, rectData.name.c_str(), -1, nullptr, 0, nullptr, nullptr);
-		std::unique_ptr<CHAR[]> nameBuffer(new CHAR[bufferSize / sizeof(CHAR)]);
-		WideCharToMultiByte(CP_UTF8, 0, rectData.name.c_str(), -1, nameBuffer.get(), bufferSize, nullptr, nullptr);
-		const auto* nameBufferPtr = nameBuffer.get();
+		const auto& nameToSave = ConvertFromUnicodeToUtf8(rectData.name);
 #else
-		// TODO: ShiftJIS -> UTF8
-		const auto* nameBufferPtr = rectData.name.c_str();
+		const auto* nameToSave = ConvertFromSjisToUtf8(rectData.name);
 #endif
 
-		WRITE_INDEXED_INI_PARAM("RectName", rectIndex, nameBufferPtr);
+		WRITE_INDEXED_INI_PARAM("RectName", rectIndex, nameToSave);
 
 		WRITE_INDEXED_INI_PARAM("SourceLeft", rectIndex, rectData.sourcePosition.x);
 		WRITE_INDEXED_INI_PARAM("SourceTop", rectIndex, rectData.sourcePosition.y);
@@ -464,11 +509,8 @@ std::basic_string<TCHAR> LoadTHRotatorString(HINSTANCE hModule, UINT nID)
 #ifdef _UNICODE
 		return std::wstring(temp, bufferLength);
 #else
-		auto returnedBufferSize = WideCharToMultiByte(CP_ACP, 0, temp, bufferLength, nullptr, 0, nullptr, nullptr);
-		std::unique_ptr<CHAR[]> bufferInMultiByte(new CHAR[returnedBufferSize]);
-		WideCharToMultiByte(CP_ACP, 0, temp, bufferLength, bufferInMultiByte.get(), returnedBufferSize, nullptr, nullptr);
-
-		return std::string(bufferInMultiByte.get(), returnedBufferSize);
+		std::wstring unicodeStr(temp, bufferLength);
+		return ConvertFromUnicodeToSjis(unicodeStr);
 #endif
 	}
 }
