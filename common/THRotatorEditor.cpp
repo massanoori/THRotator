@@ -262,7 +262,7 @@ void THRotatorSetting::LoadFormatVer1(const boost::property_tree::basic_ptree<st
 
 	outSetting.rectTransfers.clear();
 
-	BOOL bHasNext;
+	BOOL bHasNext = FALSE;
 	READ_INI_PARAM(bHasNext, "ORHas0");
 	int rectIndex = 0;
 	while (bHasNext)
@@ -370,7 +370,7 @@ void THRotatorSetting::Load(const std::string& filename, const std::string& appN
 		inStream.push(boost::iostreams::file_descriptor_source(filename));
 		proptree::read_ini(inStream, tree);
 	}
-	catch (const proptree::ptree_error&)
+	catch (const std::ios::failure&)
 	{
 		// ファイルオープン失敗だが、boost::optional::get_value_or()でデフォルト値を設定できるので、そのまま進行
 	}
@@ -465,9 +465,8 @@ bool THRotatorSetting::Save(const std::string& filename, const std::string& appN
 
 		proptree::write_ini(outStream, tree);
 	}
-	catch (const proptree::ini_parser_error& e)
+	catch (const std::ios::failure&)
 	{
-		MessageBoxA(nullptr, e.what(), nullptr, 0);
 		return false;
 	}
 
