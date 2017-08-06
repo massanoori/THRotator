@@ -372,7 +372,13 @@ void THRotatorSetting::Load(const std::string& filename, const std::string& appN
 	}
 	catch (const std::ios::failure&)
 	{
-		// ファイルオープン失敗だが、boost::optional::get_value_or()でデフォルト値を設定できるので、そのまま進行
+		// デフォルト値を用いる
+		return;
+	}
+	catch (const proptree::ini_parser_error&)
+	{
+		// デフォルト値を用いる
+		return;
 	}
 
 	auto appNameUtf8 = ConvertFromSjisToUtf8(appName); // READ_INI_PARAMの中で参照
