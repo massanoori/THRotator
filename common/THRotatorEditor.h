@@ -22,6 +22,19 @@ struct RectTransferData
 
 	RotationAngle rotation;
 	std::basic_string<TCHAR> name;
+
+	RectTransferData()
+		: rotation(Rotation_0)
+	{
+		sourcePosition.x = 0;
+		sourcePosition.y = 0;
+		sourceSize.cx = 0;
+		sourceSize.cy = 0;
+		destPosition.x = 0;
+		destPosition.y = 0;
+		destSize.cx = 0;
+		destSize.cy = 0;
+	}
 };
 
 inline bool IsZeroSize(const SIZE& size)
@@ -176,6 +189,7 @@ private:
 
 	HMENU m_hSysMenu;
 	HWND m_hEditorWin, m_hTouhouWin;
+	bool m_bModalEditorPreferred;
 	bool m_bNeedModalEditor;
 	int m_modalEditorWindowPosX, m_modalEditorWindowPosY;
 	UINT m_insertedMenuSeparatorID;

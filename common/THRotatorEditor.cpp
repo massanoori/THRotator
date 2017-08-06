@@ -9,6 +9,11 @@
 #include <sstream>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
+#include <boost/iostreams/categories.hpp> // input_filter_tag
+#include <boost/iostreams/operations.hpp> // get, WOULD_BLOCK
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/iostreams/device/file_descriptor.hpp>
+
 
 #include "THRotatorEditor.h"
 #include "resource.h"
@@ -19,9 +24,24 @@ namespace
 {
 
 LPCTSTR THROTATOR_VERSION_STRING = _T("1.3.0");
+
+enum class THRotatorFormatVersion
+{
+	Version_1 = 1,
+	Version_2,
+
+	LatestPlusOne,
+	Latest = LatestPlusOne - 1,
+};
+
 HHOOK ms_hHook;
 std::map<HWND, std::weak_ptr<THRotatorEditorContext>> ms_touhouWinToContext;
 UINT ms_switchVisibilityID = 12345u;
+
+static const int UTF8_BOM[3] =
+{
+	0xEF, 0xBB, 0xBF,
+};
 
 typedef std::basic_string<TCHAR> std_tstring;
 
@@ -39,6 +59,79 @@ struct RawTypeOfEnum<T, std::true_type>
 	typedef typename std::underlying_type<T>::type type;
 };
 
+struct InputFilerIgnoringBOM
+{
+	typedef char char_type;
+	typedef boost::iostreams::input_filter_tag category;
+
+	bool bBOMRead;
+	std::list<int> residualsOfBOMSkip;
+
+	InputFilerIgnoringBOM() : bBOMRead(false)
+	{
+	}
+
+	template<typename Source>
+	int get(Source& src)
+	{
+		if (!bBOMRead)
+		{
+			int readBOM[3];
+
+			readBOM[0] = boost::iostreams::get(src);
+			readBOM[1] = boost::iostreams::get(src);
+			readBOM[2] = boost::iostreams::get(src);
+
+			if (readBOM[0] != UTF8_BOM[0] ||
+				readBOM[1] != UTF8_BOM[1] ||
+				readBOM[2] != UTF8_BOM[2])
+			{
+				residualsOfBOMSkip.push_back(readBOM[0]);
+				residualsOfBOMSkip.push_back(readBOM[1]);
+				residualsOfBOMSkip.push_back(readBOM[2]);
+			}
+			
+			bBOMRead = true;
+		}
+
+		if (!residualsOfBOMSkip.empty())
+		{
+			int residual = residualsOfBOMSkip.front();
+			residualsOfBOMSkip.pop_front();
+			return residual;
+		}
+
+		return boost::iostreams::get(src);
+	}
+};
+
+struct OutputFilterWithBOM
+{
+	typedef char char_type;
+	typedef boost::iostreams::output_filter_tag category;
+
+	bool bBOMWritten;
+
+	OutputFilterWithBOM() : bBOMWritten(false)
+	{
+	}
+
+	template <typename Sink>
+	bool put(Sink& sink, char_type c)
+	{
+		if (!bBOMWritten)
+		{
+			boost::iostreams::put(sink, UTF8_BOM[0]);
+			boost::iostreams::put(sink, UTF8_BOM[1]);
+			boost::iostreams::put(sink, UTF8_BOM[2]);
+
+			bBOMWritten = true;
+		}
+
+		return boost::iostreams::put(sink, c);
+	}
+};
+
 struct THRotatorSetting
 {
 	int judgeThreshold;
@@ -47,73 +140,86 @@ struct THRotatorSetting
 	int yOffset;
 	bool bVisible;
 	bool bVerticallyLongWindow;
+	bool bModalEditorPreferred;
 	RotationAngle rotationAngle;
 	D3DTEXTUREFILTERTYPE filterType;
 
 	std::vector<RectTransferData> rectTransfers;
 
+	THRotatorSetting()
+		: judgeThreshold(999)
+		, yOffset(0)
+		, bVisible(false)
+		, bVerticallyLongWindow(false)
+		, bModalEditorPreferred(false)
+		, rotationAngle(Rotation_0)
+		, filterType(D3DTEXF_LINEAR)
+	{
+		mainScreenTopLeft.x = 32;
+		mainScreenTopLeft.y = 16;
+		mainScreenSize.cx = 384;
+		mainScreenSize.cy = 448;
+	}
+
 	static void Load(const std::string& filename, const std::string& appName, THRotatorSetting& outSetting);
 	static bool Save(const std::string& filename, const std::string& appName, const THRotatorSetting& inSetting);
+
+	static void LoadFormatVer1(const boost::property_tree::basic_ptree<std::string, std::string>& tree,
+		const std::string& appName,
+		THRotatorSetting& outSetting);
+
+	static void LoadFormatVer2(const boost::property_tree::basic_ptree<std::string, std::string>& tree,
+		const std::string& appName,
+		THRotatorSetting& outSetting);
 };
 
-void THRotatorSetting::Load(const std::string& filename, const std::string& appName, THRotatorSetting& outSetting)
-{
-	namespace proptree = boost::property_tree;
-
-	proptree::basic_ptree<std::string, std::string> tree;
-	try
-	{
-		proptree::read_ini(filename, tree);
-	}
-	catch (const proptree::ptree_error&)
-	{
-		// ファイルオープン失敗だが、boost::optional::get_value_or()でデフォルト値を設定できるので、そのまま進行
-	}
-
-#define READ_INI_PARAM(destination, name, defaultValue) \
+#define READ_INI_PARAM(destination, name) \
 	do { \
-		auto rawDefaultValue = static_cast<RawTypeOfEnum<decltype(destination)>::type>(defaultValue); \
-		auto rawValue = tree.get_optional<RawTypeOfEnum<decltype(rawDefaultValue)>::type>(appName + "." + name).get_value_or(rawDefaultValue); \
-		(destination) = static_cast<decltype(destination)>(rawValue); \
+		auto rawValue = tree.get_optional<RawTypeOfEnum<decltype(destination)>::type>(appName + "." + name); \
+		if (rawValue) (destination) = static_cast<decltype(destination)>(*rawValue); \
 	} while(false)
 
-#define READ_INDEXED_INI_PARAM(destination, name, index, defaultValue) \
+#define READ_INDEXED_INI_PARAM(destination, name, index) \
 	do { \
 		std::ostringstream ss(std::ios::ate); \
 		ss.str(name); \
 		ss << (index); \
-		READ_INI_PARAM(destination, ss.str(), defaultValue); \
+		READ_INI_PARAM(destination, ss.str()); \
 	} while(false)
 
-	READ_INI_PARAM(outSetting.judgeThreshold, "JC", 999);
-	READ_INI_PARAM(outSetting.mainScreenTopLeft.x, "PL", 32);
-	READ_INI_PARAM(outSetting.mainScreenTopLeft.y, "PT", 16);
-	READ_INI_PARAM(outSetting.mainScreenSize.cx, "PW", 384);
-	READ_INI_PARAM(outSetting.mainScreenSize.cy, "PH", 448);
-	READ_INI_PARAM(outSetting.yOffset, "YOffset", 0);
+void THRotatorSetting::LoadFormatVer1(const boost::property_tree::basic_ptree<std::string, std::string>& tree,
+	const std::string& appName,
+	THRotatorSetting& outSetting)
+{
+	READ_INI_PARAM(outSetting.judgeThreshold, "JC");
+	READ_INI_PARAM(outSetting.mainScreenTopLeft.x, "PL");
+	READ_INI_PARAM(outSetting.mainScreenTopLeft.y, "PT");
+	READ_INI_PARAM(outSetting.mainScreenSize.cx, "PW");
+	READ_INI_PARAM(outSetting.mainScreenSize.cy, "PH");
+	READ_INI_PARAM(outSetting.yOffset, "YOffset");
 
 	BOOL bVisibleTemp;
-	READ_INI_PARAM(bVisibleTemp, "Visible", FALSE);
+	READ_INI_PARAM(bVisibleTemp, "Visible");
 	outSetting.bVisible = bVisibleTemp != FALSE;
 
 	BOOL bVerticallyLongWindowTemp;
-	READ_INI_PARAM(bVerticallyLongWindowTemp, "PivRot", FALSE);
+	READ_INI_PARAM(bVerticallyLongWindowTemp, "PivRot");
 	outSetting.bVerticallyLongWindow = bVerticallyLongWindowTemp != FALSE;
 
-	READ_INI_PARAM(outSetting.rotationAngle, "Rot", Rotation_0);
-	READ_INI_PARAM(outSetting.filterType, "Filter", D3DTEXF_LINEAR);
+	READ_INI_PARAM(outSetting.rotationAngle, "Rot");
+	READ_INI_PARAM(outSetting.filterType, "Filter");
 
 	outSetting.rectTransfers.clear();
 
 	BOOL bHasNext;
-	READ_INI_PARAM(bHasNext, "ORHas0", FALSE);
+	READ_INI_PARAM(bHasNext, "ORHas0");
 	int rectIndex = 0;
 	while (bHasNext)
 	{
 		RectTransferData rectData;
 
 		std::string rectName;
-		READ_INDEXED_INI_PARAM(rectName, "Name", rectIndex, "");
+		READ_INDEXED_INI_PARAM(rectName, "Name", rectIndex);
 
 #ifdef _UNICODE
 		auto bufferSize = MultiByteToWideChar(CP_ACP, 0, rectName.c_str(), -1, nullptr, 0);
@@ -124,33 +230,130 @@ void THRotatorSetting::Load(const std::string& filename, const std::string& appN
 		rectData.name = std::move(rectName);
 #endif
 
-		READ_INDEXED_INI_PARAM(rectData.sourcePosition.x, "OSL", rectIndex, 0);
-		READ_INDEXED_INI_PARAM(rectData.sourcePosition.y, "OST", rectIndex, 0);
-		READ_INDEXED_INI_PARAM(rectData.sourceSize.cx, "OSW", rectIndex, 0);
-		READ_INDEXED_INI_PARAM(rectData.sourceSize.cy, "OSH", rectIndex, 0);
+		READ_INDEXED_INI_PARAM(rectData.sourcePosition.x, "OSL", rectIndex);
+		READ_INDEXED_INI_PARAM(rectData.sourcePosition.y, "OST", rectIndex);
+		READ_INDEXED_INI_PARAM(rectData.sourceSize.cx, "OSW", rectIndex);
+		READ_INDEXED_INI_PARAM(rectData.sourceSize.cy, "OSH", rectIndex);
 
-		READ_INDEXED_INI_PARAM(rectData.destPosition.x, "ODL", rectIndex, 0);
-		READ_INDEXED_INI_PARAM(rectData.destPosition.y, "ODT", rectIndex, 0);
-		READ_INDEXED_INI_PARAM(rectData.destSize.cx, "ODW", rectIndex, 0);
-		READ_INDEXED_INI_PARAM(rectData.destSize.cy, "ODH", rectIndex, 0);
+		READ_INDEXED_INI_PARAM(rectData.destPosition.x, "ODL", rectIndex);
+		READ_INDEXED_INI_PARAM(rectData.destPosition.y, "ODT", rectIndex);
+		READ_INDEXED_INI_PARAM(rectData.destSize.cx, "ODW", rectIndex);
+		READ_INDEXED_INI_PARAM(rectData.destSize.cy, "ODH", rectIndex);
 
-		READ_INDEXED_INI_PARAM(rectData.rotation, "OR", rectIndex, Rotation_0);
+		READ_INDEXED_INI_PARAM(rectData.rotation, "OR", rectIndex);
 
 		outSetting.rectTransfers.push_back(rectData);
 		rectIndex++;
 
-		READ_INDEXED_INI_PARAM(bHasNext, "ORHas", rectIndex, FALSE);
+		READ_INDEXED_INI_PARAM(bHasNext, "ORHas", rectIndex);
 	}
+}
+
+void THRotatorSetting::LoadFormatVer2(const boost::property_tree::basic_ptree<std::string, std::string>& tree,
+	const std::string& appName,
+	THRotatorSetting& outSetting)
+{
+	READ_INI_PARAM(outSetting.judgeThreshold, "JudgeThreshold");
+	READ_INI_PARAM(outSetting.mainScreenTopLeft.x, "MainScreenLeft");
+	READ_INI_PARAM(outSetting.mainScreenTopLeft.y, "MainScreenTop");
+	READ_INI_PARAM(outSetting.mainScreenSize.cx, "MainScreenWidth");
+	READ_INI_PARAM(outSetting.mainScreenSize.cy, "MainScreenHeight");
+	READ_INI_PARAM(outSetting.yOffset, "YOffset");
+	READ_INI_PARAM(outSetting.bVisible, "WindowVisible");
+	READ_INI_PARAM(outSetting.bVerticallyLongWindow, "VerticallyLongWindow");
+	READ_INI_PARAM(outSetting.bModalEditorPreferred, "UseModalEditor");
+	READ_INI_PARAM(outSetting.rotationAngle, "RotationAngle");
+	READ_INI_PARAM(outSetting.filterType, "FilterType");
+
+	outSetting.rectTransfers.clear();
+
+	int numRectTransfers = -1;
+	READ_INI_PARAM(numRectTransfers, "NumRectTransfers");
+
+	if (numRectTransfers < 0)
+	{
+		return;
+	}
+
+	std::vector<RectTransferData> newRectTransfers;
+	newRectTransfers.reserve(numRectTransfers);
+	for (int rectIndex = 0; rectIndex < numRectTransfers; rectIndex++)
+	{
+		RectTransferData rectData;
+
+		std::string rectName;
+		READ_INDEXED_INI_PARAM(rectName, "RectName", rectIndex);
+
+#ifdef _UNICODE
+		auto bufferSize = MultiByteToWideChar(CP_UTF8, 0, rectName.c_str(), -1, nullptr, 0);
+		std::unique_ptr<TCHAR> nameBuffer(new TCHAR[bufferSize]);
+		MultiByteToWideChar(CP_UTF8, 0, rectName.c_str(), -1, nameBuffer.get(), bufferSize);
+		rectData.name = nameBuffer.get();
+#else
+		// TODO: UTF8 -> ShiftJIS
+		rectData.name = std::move(rectName);
+#endif
+
+		READ_INDEXED_INI_PARAM(rectData.sourcePosition.x, "SourceLeft", rectIndex);
+		READ_INDEXED_INI_PARAM(rectData.sourcePosition.y, "SourceTop", rectIndex);
+		READ_INDEXED_INI_PARAM(rectData.sourceSize.cx, "SourceWidth", rectIndex);
+		READ_INDEXED_INI_PARAM(rectData.sourceSize.cy, "SourceHeight", rectIndex);
+
+		READ_INDEXED_INI_PARAM(rectData.destPosition.x, "DestinationLeft", rectIndex);
+		READ_INDEXED_INI_PARAM(rectData.destPosition.y, "DestinationTop", rectIndex);
+		READ_INDEXED_INI_PARAM(rectData.destSize.cx, "DestinationWidth", rectIndex);
+		READ_INDEXED_INI_PARAM(rectData.destSize.cy, "DestinationHeight", rectIndex);
+
+		READ_INDEXED_INI_PARAM(rectData.rotation, "RectRotation", rectIndex);
+
+		newRectTransfers.push_back(rectData);
+	}
+}
+
+void THRotatorSetting::Load(const std::string& filename, const std::string& appName, THRotatorSetting& outSetting)
+{
+	namespace proptree = boost::property_tree;
+
+	proptree::basic_ptree<std::string, std::string> tree;
+	try
+	{
+		boost::iostreams::filtering_istream inStream;
+		inStream.push(InputFilerIgnoringBOM());
+		inStream.push(boost::iostreams::file_descriptor_source(filename));
+		proptree::read_ini(inStream, tree);
+	}
+	catch (const proptree::ptree_error&)
+	{
+		// ファイルオープン失敗だが、boost::optional::get_value_or()でデフォルト値を設定できるので、そのまま進行
+	}
+
+	THRotatorFormatVersion formatVersion = THRotatorFormatVersion::Version_1;
+	READ_INI_PARAM(formatVersion, "FormatVersion");
+	
+	switch (formatVersion)
+	{
+	case THRotatorFormatVersion::Version_1:
+		THRotatorSetting::LoadFormatVer1(tree, appName, outSetting);
+		break;
+
+	case THRotatorFormatVersion::Version_2:
+		THRotatorSetting::LoadFormatVer2(tree, appName, outSetting);
+		break;
+
+	default:
+		break;
+	}
+}
+
 #undef READ_INDEXED_INI_PARAM
 #undef READ_INI_PARAM
-}
 
 bool THRotatorSetting::Save(const std::string& filename, const std::string& appName, const THRotatorSetting& inSetting)
 {
 	namespace proptree = boost::property_tree;
 	proptree::basic_ptree<std::string, std::string> tree;
 
-#define WRITE_INI_PARAM(name, value) tree.add(appName + "." + name, value)
+#define WRITE_INI_PARAM(name, value) tree.add(appName + "." + name, static_cast<RawTypeOfEnum<decltype(value)>::type>(value))
 #define WRITE_INDEXED_INI_PARAM(name, index, value) \
 	do { \
 		std::ostringstream ss(std::ios::ate); \
@@ -159,60 +362,90 @@ bool THRotatorSetting::Save(const std::string& filename, const std::string& appN
 		WRITE_INI_PARAM(ss.str(), value); \
 	} while(false)
 
-	WRITE_INI_PARAM("JC", inSetting.judgeThreshold);
-	WRITE_INI_PARAM("PL", inSetting.mainScreenTopLeft.x);
-	WRITE_INI_PARAM("PT", inSetting.mainScreenTopLeft.y);
-	WRITE_INI_PARAM("PW", inSetting.mainScreenSize.cx);
-	WRITE_INI_PARAM("PH", inSetting.mainScreenSize.cy);
+	WRITE_INI_PARAM("FormatVersion", THRotatorFormatVersion::Latest);
+	WRITE_INI_PARAM("JudgeThreshold", inSetting.judgeThreshold);
+	WRITE_INI_PARAM("MainScreenLeft", inSetting.mainScreenTopLeft.x);
+	WRITE_INI_PARAM("MainScreenTop", inSetting.mainScreenTopLeft.y);
+	WRITE_INI_PARAM("MainScreenWidth", inSetting.mainScreenSize.cx);
+	WRITE_INI_PARAM("MainScreenHeight", inSetting.mainScreenSize.cy);
 	WRITE_INI_PARAM("YOffset", inSetting.yOffset);
-	WRITE_INI_PARAM("Visible", static_cast<BOOL>(inSetting.bVisible));
-	WRITE_INI_PARAM("PivRot", static_cast<BOOL>(inSetting.bVerticallyLongWindow));
-	WRITE_INI_PARAM("Filter", inSetting.filterType);
-	WRITE_INI_PARAM("Rot", inSetting.rotationAngle);
+	WRITE_INI_PARAM("WindowVisible", inSetting.bVisible);
+	WRITE_INI_PARAM("VerticallyLongWindow", inSetting.bVerticallyLongWindow);
+	WRITE_INI_PARAM("FilterType", inSetting.filterType);
+	WRITE_INI_PARAM("RotationAngle", inSetting.rotationAngle);
+	WRITE_INI_PARAM("NumRectTransfers", inSetting.rectTransfers.size());
+	WRITE_INI_PARAM("UseModalEditor", inSetting.bModalEditorPreferred);
 
-	int i = 0;
+	int rectIndex = 0;
 	std::ostringstream ss(std::ios::ate);
-	for (std::vector<RectTransferData>::const_iterator itr = inSetting.rectTransfers.cbegin();
-		itr != inSetting.rectTransfers.cend(); ++itr, ++i)
+
+	for (const auto& rectData : inSetting.rectTransfers)
 	{
 #ifdef _UNICODE
-		auto bufferSize = WideCharToMultiByte(CP_ACP, 0, itr->name.c_str(), -1, nullptr, 0, nullptr, nullptr);
+		auto bufferSize = WideCharToMultiByte(CP_UTF8, 0, rectData.name.c_str(), -1, nullptr, 0, nullptr, nullptr);
 		std::unique_ptr<CHAR[]> nameBuffer(new CHAR[bufferSize / sizeof(CHAR)]);
-		WideCharToMultiByte(CP_ACP, 0, itr->name.c_str(), -1, nameBuffer.get(), bufferSize, nullptr, nullptr);
+		WideCharToMultiByte(CP_UTF8, 0, rectData.name.c_str(), -1, nameBuffer.get(), bufferSize, nullptr, nullptr);
 		const auto* nameBufferPtr = nameBuffer.get();
 #else
-		const auto* nameBufferPtr = itr->name.c_str();
+		// TODO: ShiftJIS -> UTF8
+		const auto* nameBufferPtr = rectData.name.c_str();
 #endif
-		WRITE_INDEXED_INI_PARAM("Name", i, nameBufferPtr);
 
-		WRITE_INDEXED_INI_PARAM("OSL", i, itr->sourcePosition.x);
-		WRITE_INDEXED_INI_PARAM("OST", i, itr->sourcePosition.y);
-		WRITE_INDEXED_INI_PARAM("OSW", i, itr->sourceSize.cx);
-		WRITE_INDEXED_INI_PARAM("OSH", i, itr->sourceSize.cy);
+		WRITE_INDEXED_INI_PARAM("RectName", rectIndex, nameBufferPtr);
 
-		WRITE_INDEXED_INI_PARAM("ODL", i, itr->destPosition.x);
-		WRITE_INDEXED_INI_PARAM("ODT", i, itr->destPosition.y);
-		WRITE_INDEXED_INI_PARAM("ODW", i, itr->destSize.cx);
-		WRITE_INDEXED_INI_PARAM("ODH", i, itr->destSize.cy);
+		WRITE_INDEXED_INI_PARAM("SourceLeft", rectIndex, rectData.sourcePosition.x);
+		WRITE_INDEXED_INI_PARAM("SourceTop", rectIndex, rectData.sourcePosition.y);
+		WRITE_INDEXED_INI_PARAM("SourceWidth", rectIndex, rectData.sourceSize.cx);
+		WRITE_INDEXED_INI_PARAM("SourceHeight", rectIndex, rectData.sourceSize.cy);
 
-		WRITE_INDEXED_INI_PARAM("OR", i, itr->rotation);
-		WRITE_INDEXED_INI_PARAM("ORHas", i, TRUE);
+		WRITE_INDEXED_INI_PARAM("DestinationLeft", rectIndex, rectData.destPosition.x);
+		WRITE_INDEXED_INI_PARAM("DestinationTop", rectIndex, rectData.destPosition.y);
+		WRITE_INDEXED_INI_PARAM("DestinationWidth", rectIndex, rectData.destSize.cx);
+		WRITE_INDEXED_INI_PARAM("DestinationHeight", rectIndex, rectData.destSize.cy);
+
+		WRITE_INDEXED_INI_PARAM("RectRotation", rectIndex, rectData.rotation);
+
+		rectIndex++;
 	}
-
-	WRITE_INDEXED_INI_PARAM("ORHas", inSetting.rectTransfers.size(), FALSE);
 #undef WRITE_INDEXED_INI_PARAM
 #undef WRITE_INI_PARAM
 
 	try
 	{
-		proptree::write_ini(filename, tree);
+		boost::iostreams::filtering_ostream outStream;
+		outStream.push(OutputFilterWithBOM());
+		outStream.push(boost::iostreams::file_descriptor_sink(filename));
+
+		proptree::write_ini(outStream, tree);
 	}
-	catch (const proptree::ini_parser_error&)
+	catch (const proptree::ini_parser_error& e)
 	{
+		MessageBoxA(nullptr, e.what(), nullptr, 0);
 		return false;
 	}
 
 	return true;
+}
+
+double ExtractTouhouIndex(const std_tstring& exeFilename)
+{
+	double touhouIndex = 0.0;
+	if (exeFilename.compare(_T("東方紅魔郷")) == 0)
+	{
+		touhouIndex = 6.0;
+	}
+	else
+	{
+		TCHAR dummy[128];
+		_stscanf_s(exeFilename.c_str(), _T("th%lf%s"), &touhouIndex, dummy, _countof(dummy));
+	}
+
+	while (touhouIndex > 90.0)
+	{
+		touhouIndex /= 10.0;
+	}
+
+	return touhouIndex;
 }
 
 }
@@ -241,9 +474,11 @@ std::basic_string<TCHAR> LoadTHRotatorString(HINSTANCE hModule, UINT nID)
 }
 
 THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
-	: m_hTouhouWin(hTouhouWin)
+	: m_judgeCountPrev(0)
+	, m_hTouhouWin(hTouhouWin)
 	, m_bHUDRearrangeForced(false)
 	, m_deviceResetRevision(0)
+	, m_bModalEditorPreferred(false)
 #ifdef TOUHOU_ON_D3D8
 	, m_bNeedModalEditor(true)
 #else
@@ -297,22 +532,9 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 	size_t retSize;
 	errno_t en = _tgetenv_s(&retSize, path, _T("APPDATA"));
 
-	double touhouIndex = 0.0;
-	if (pth.filename().generic_string<std_tstring>().compare(_T("東方紅魔郷")) == 0)
-	{
-		touhouIndex = 6.0;
-	}
-	else
-	{
-		TCHAR dummy[128];
-		_stscanf_s(pth.filename().generic_string<std_tstring>().c_str(), _T("th%lf%s"), &touhouIndex, dummy, _countof(dummy));
-	}
+	double touhouIndex = ExtractTouhouIndex(pth.filename().generic_string<std_tstring>());
 
-	while (touhouIndex > 90.0)
-	{
-		touhouIndex /= 10.0;
-	}
-
+	// ダブルスポイラー(12.5)以降からexeファイルと同じ場所に保存されなくなる
 	if (touhouIndex > 12.3 && en == 0 && retSize > 0)
 	{
 		m_workingDir = boost::filesystem::path(path) / _T("ShanghaiAlice") / pth.filename();
@@ -322,9 +544,18 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 	{
 		m_workingDir = boost::filesystem::current_path();
 	}
+
+	// 妖々夢の場合モーダルで開かないと、入力のフォーカスが奪われる
+	if (6.0 < touhouIndex && touhouIndex < 7.5)
+	{
+		m_bNeedModalEditor = true;
+	}
+
 	m_iniPath = m_workingDir / _T("throt.ini");
 
 	LoadSettings();
+
+	m_bNeedModalEditor = m_bNeedModalEditor || m_bModalEditorPreferred;
 
 	// スクリーンキャプチャ機能がないのは紅魔郷
 	m_bTouhouWithoutScreenCapture = touhouIndex == 6.0;
@@ -1225,6 +1456,7 @@ bool THRotatorEditorContext::SaveSettings() const
 	settings.filterType = m_filterType;
 	settings.rotationAngle = m_rotationAngle;
 	settings.rectTransfers = m_currentRectTransfers;
+	settings.bModalEditorPreferred = m_bModalEditorPreferred;
 
 	return THRotatorSetting::Save(m_iniPath.generic_string(), m_appName, settings);
 }
@@ -1242,6 +1474,7 @@ void THRotatorEditorContext::LoadSettings()
 	m_bVerticallyLongWindow = setting.bVerticallyLongWindow;
 	m_rotationAngle = setting.rotationAngle;
 	m_filterType = setting.filterType;
+	m_bModalEditorPreferred = setting.bModalEditorPreferred;
 
 	m_editedRectTransfers = std::move(setting.rectTransfers);
 }
