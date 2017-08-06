@@ -354,6 +354,8 @@ void THRotatorSetting::LoadFormatVer2(const boost::property_tree::basic_ptree<st
 
 		newRectTransfers.push_back(rectData);
 	}
+
+	outSetting.rectTransfers = std::move(newRectTransfers);
 }
 
 void THRotatorSetting::Load(const std::string& filename, const std::string& appName, THRotatorSetting& outSetting)
