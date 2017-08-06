@@ -642,7 +642,7 @@ void THRotatorEditorContext::SubmitViewportSetCountToEditor()
 
 bool THRotatorEditorContext::IsViewportSetCountOverThreshold() const
 {
-	return m_judgeThreshold <= m_judgeCount;
+	return m_judgeThreshold <= m_judgeCountPrev;
 }
 
 RotationAngle THRotatorEditorContext::GetRotationAngle() const
