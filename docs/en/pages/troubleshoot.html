@@ -93,7 +93,16 @@
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="install.html">Install</a></li>
 <li class="toctree-l1"><a class="reference internal" href="usage.html">How to use</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Troubleshoot</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Troubleshoot</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#screen-doesn-t-rotate-by-alt-left-and-alt-right-keys">Screen doesn’t rotate by <code class="docutils literal"><span class="pre">Alt+Left</span></code> and <code class="docutils literal"><span class="pre">Alt+Right</span></code> keys</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#show-throtator-window-or-open-throtator-doesn-t-appears-from-title-bar"><code class="docutils literal"><span class="pre">Show</span> <span class="pre">THRotator</span> <span class="pre">window</span></code> or <code class="docutils literal"><span class="pre">Open</span> <span class="pre">THRotator</span></code> doesn’t appears from title bar</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pixels-are-not-smooth-in-windowed-mode-when-the-resolution-is-960720-or-1280960">Pixels are not smooth in windowed mode when the resolution is 960×720 or 1280×960</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#hud-elements-are-not-rearranged-for-vertically-long-screen">HUD elements are not rearranged for vertically-long screen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#scores-bombs-and-other-hud-elements-are-not-shown">Scores, bombs and other HUD elements are not shown</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#misalignment-in-touhou-9-5-12-5-12-8-and-14-3">Misalignment in Touhou 9.5, 12.5, 12.8, and 14.3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#player-s-inputs-are-not-accepted-or-the-game-terminates-after-customization-window-is-opened">Player’s inputs are not accepted or the game terminates after customization window is opened</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="development.html">Development</a></li>
 <li class="toctree-l1"><a class="reference internal" href="uninstall.html">Uninstall</a></li>
 <li class="toctree-l1"><a class="reference internal" href="releasenotes.html">Release notes</a></li>
@@ -162,25 +171,56 @@
             
   <div class="section" id="troubleshoot">
 <h1>Troubleshoot<a class="headerlink" href="#troubleshoot" title="Permalink to this headline">¶</a></h1>
-<ul class="simple">
-<li>Screen doesn’t rotate by <code class="docutils literal"><span class="pre">Alt+Left</span></code> and <code class="docutils literal"><span class="pre">Alt+Right</span></code> keys.</li>
-<li><code class="docutils literal"><span class="pre">Show</span> <span class="pre">THRotator</span> <span class="pre">window</span></code> or <code class="docutils literal"><span class="pre">Open</span> <span class="pre">THRotator</span></code> doesn’t appears by right-clicking title bar.</li>
-<li>Pixels are not smooth in windowed mode when the resolution is 960×720 or 1280×960.<ul>
-<li>Make sure that <code class="docutils literal"><span class="pre">d3d8.dll</span></code> or <code class="docutils literal"><span class="pre">d3d9.dll</span></code> has been copied to the appropriate location.
+<div class="section" id="screen-doesn-t-rotate-by-alt-left-and-alt-right-keys">
+<h2>Screen doesn’t rotate by <code class="docutils literal"><span class="pre">Alt+Left</span></code> and <code class="docutils literal"><span class="pre">Alt+Right</span></code> keys<a class="headerlink" href="#screen-doesn-t-rotate-by-alt-left-and-alt-right-keys" title="Permalink to this headline">¶</a></h2>
+<p>Make sure that <code class="docutils literal"><span class="pre">d3d8.dll</span></code> or <code class="docutils literal"><span class="pre">d3d9.dll</span></code> has been copied to the appropriate location.
 If it doesn’t work correctly even after copy, make sure that the appropriate file has been copied.
-For example, <code class="docutils literal"><span class="pre">d3d9.dll</span></code> doesn’t work on games run on Direct3D 8. Follow instruction described in <a class="reference internal" href="install.html"><span class="doc">Install</span></a> carefully.</li>
-</ul>
-</li>
-<li>HUD elements are not rearranged for vertically-long screen even when they should be.</li>
-<li>Scores, bombs and other HUD elements are not shown.</li>
-<li>Misalignment in Shoot the Bullets (Th095), Double Spoiler (Th125), Fairy Wars (Th128), and Impossible Spell Card (Th143).<ul>
-<li>Make sure that config file correctly corresponds to the product.
+For example, <code class="docutils literal"><span class="pre">d3d9.dll</span></code> doesn’t work on games run on Direct3D 8. Follow instruction described in <a class="reference internal" href="install.html"><span class="doc">Install</span></a> carefully.</p>
+</div>
+<div class="section" id="show-throtator-window-or-open-throtator-doesn-t-appears-from-title-bar">
+<h2><code class="docutils literal"><span class="pre">Show</span> <span class="pre">THRotator</span> <span class="pre">window</span></code> or <code class="docutils literal"><span class="pre">Open</span> <span class="pre">THRotator</span></code> doesn’t appears from title bar<a class="headerlink" href="#show-throtator-window-or-open-throtator-doesn-t-appears-from-title-bar" title="Permalink to this headline">¶</a></h2>
+<p>Make sure that <code class="docutils literal"><span class="pre">d3d8.dll</span></code> or <code class="docutils literal"><span class="pre">d3d9.dll</span></code> has been copied to the appropriate location.
+If it doesn’t work correctly even after copy, make sure that the appropriate file has been copied.
+For example, <code class="docutils literal"><span class="pre">d3d9.dll</span></code> doesn’t work on games run on Direct3D 8. Follow instruction described in <a class="reference internal" href="install.html"><span class="doc">Install</span></a> carefully.</p>
+</div>
+<div class="section" id="pixels-are-not-smooth-in-windowed-mode-when-the-resolution-is-960720-or-1280960">
+<h2>Pixels are not smooth in windowed mode when the resolution is 960×720 or 1280×960<a class="headerlink" href="#pixels-are-not-smooth-in-windowed-mode-when-the-resolution-is-960720-or-1280960" title="Permalink to this headline">¶</a></h2>
+<p>Make sure that <code class="docutils literal"><span class="pre">d3d8.dll</span></code> or <code class="docutils literal"><span class="pre">d3d9.dll</span></code> has been copied to the appropriate location.
+If it doesn’t work correctly even after copy, make sure that the appropriate file has been copied.
+For example, <code class="docutils literal"><span class="pre">d3d9.dll</span></code> doesn’t work on games run on Direct3D 8. Follow instruction described in <a class="reference internal" href="install.html"><span class="doc">Install</span></a> carefully.</p>
+</div>
+<div class="section" id="hud-elements-are-not-rearranged-for-vertically-long-screen">
+<h2>HUD elements are not rearranged for vertically-long screen<a class="headerlink" href="#hud-elements-are-not-rearranged-for-vertically-long-screen" title="Permalink to this headline">¶</a></h2>
+<p>Make sure that config file correctly corresponds to the product.
 Also, make sure that the destination is correct.
 Since Double Spoiler (Th125), destination directory is confusing.
-Follow instruction described in <a class="reference internal" href="install.html"><span class="doc">Install</span></a> carefully.</li>
-</ul>
-</li>
-</ul>
+Follow instruction described in <a class="reference internal" href="install.html"><span class="doc">Install</span></a> carefully.</p>
+</div>
+<div class="section" id="scores-bombs-and-other-hud-elements-are-not-shown">
+<h2>Scores, bombs and other HUD elements are not shown<a class="headerlink" href="#scores-bombs-and-other-hud-elements-are-not-shown" title="Permalink to this headline">¶</a></h2>
+<p>Make sure that config file correctly corresponds to the product.
+Also, make sure that the destination is correct.
+Since Double Spoiler (Th125), destination directory is confusing.
+Follow instruction described in <a class="reference internal" href="install.html"><span class="doc">Install</span></a> carefully.</p>
+</div>
+<div class="section" id="misalignment-in-touhou-9-5-12-5-12-8-and-14-3">
+<h2>Misalignment in Touhou 9.5, 12.5, 12.8, and 14.3<a class="headerlink" href="#misalignment-in-touhou-9-5-12-5-12-8-and-14-3" title="Permalink to this headline">¶</a></h2>
+<p>Make sure that config file correctly corresponds to the product.
+Also, make sure that the destination is correct.
+Since Double Spoiler (Th125), destination directory is confusing.
+Follow instruction described in <a class="reference internal" href="install.html"><span class="doc">Install</span></a> carefully.</p>
+</div>
+<div class="section" id="player-s-inputs-are-not-accepted-or-the-game-terminates-after-customization-window-is-opened">
+<h2>Player’s inputs are not accepted or the game terminates after customization window is opened<a class="headerlink" href="#player-s-inputs-are-not-accepted-or-the-game-terminates-after-customization-window-is-opened" title="Permalink to this headline">¶</a></h2>
+<p>Try the following steps:</p>
+<ol class="arabic simple">
+<li>Open <code class="docutils literal"><span class="pre">throt.ini</span></code> with a text editor</li>
+<li>Add a line <code class="docutils literal"><span class="pre">UseModalEditor=true</span></code> to the end of file</li>
+<li>Re-launch the game</li>
+</ol>
+<p>Although these steps force the game to suspend while customization window is open,
+they provide a workaround for this issue.</p>
+</div>
 </div>
 
 

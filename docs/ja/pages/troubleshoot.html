@@ -93,7 +93,16 @@
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="install.html">インストール方法</a></li>
 <li class="toctree-l1"><a class="reference internal" href="usage.html">使い方</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">トラブルシューティング</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">トラブルシューティング</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#alt"><code class="docutils literal"><span class="pre">Alt+左右キー</span></code> を押しても画面が回転しない</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#throtator-throtator">タイトルバーから <code class="docutils literal"><span class="pre">THRotatorを表示</span></code> または <code class="docutils literal"><span class="pre">THRotatorを開く</span></code> が出てこない</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id2">ウィンドウモードの解像度に960×720または1280×960を指定したときに表示がなめらかにならない</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id3">縦画面用のレイアウトになるべきところで縦画面用のレイアウトにならない</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id4">スコアや残機などの情報が表示されない</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id5">縦画面用のレイアウトがずれている</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id6">編集画面を開くと、ゲームが入力を受け付けなくなったり、急に終了したりする</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="development.html">開発</a></li>
 <li class="toctree-l1"><a class="reference internal" href="uninstall.html">アンインストール方法</a></li>
 <li class="toctree-l1"><a class="reference internal" href="releasenotes.html">リリースノート</a></li>
@@ -162,23 +171,49 @@
             
   <div class="section" id="id1">
 <h1>トラブルシューティング<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h1>
-<ul class="simple">
-<li><code class="docutils literal"><span class="pre">Alt+左右キー</span></code> を押しても画面が回転しない</li>
-<li>ウィンドウモードでタイトルバーを右クリックしても <code class="docutils literal"><span class="pre">THRotatorを表示</span></code> または <code class="docutils literal"><span class="pre">THRotatorを開く</span></code> がない</li>
-<li>ウィンドウモードの解像度に960×720または1280×960を指定したときに表示がなめらかにならない<ul>
-<li><code class="docutils literal"><span class="pre">d3d8.dll</span></code> または <code class="docutils literal"><span class="pre">d3d9.dll</span></code> がコピーされているかどうかをご確認ください。
+<div class="section" id="alt">
+<h2><code class="docutils literal"><span class="pre">Alt+左右キー</span></code> を押しても画面が回転しない<a class="headerlink" href="#alt" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal"><span class="pre">d3d8.dll</span></code> または <code class="docutils literal"><span class="pre">d3d9.dll</span></code> がコピーされているかどうかをご確認ください。
 コピーしても動かない場合はDirect3D 8版の作品に <code class="docutils literal"><span class="pre">d3d9.dll</span></code> をコピーしたり、その逆をしていないかご確認ください。
-もう一度 <a class="reference internal" href="install.html"><span class="doc">インストール方法</span></a> を確認して、画面を回転したい作品が、Direct3D 8版とDirect3D 9版のどちらを必要とするのかを確かめてください。</li>
-</ul>
-</li>
-<li>縦画面用のレイアウトになるべきところで縦画面用のレイアウトにならない</li>
-<li>スコアや残機などの情報が表示されない</li>
-<li>東方文花帖、妖精大戦争、ダブルスポイラーで縦画面用のレイアウトがずれている<ul>
-<li>作品に対応した設定ファイルをコピーしてあるかどうかをご確認ください。 また、コピー先に間違いがないかをご確認ください。
-ダブルスポイラー以降の作品はコピー先を間違えやすいと思いますが、 <a class="reference internal" href="install.html"><span class="doc">インストール方法</span></a> をもう一度確認してみてください。</li>
-</ul>
-</li>
-</ul>
+もう一度 <a class="reference internal" href="install.html"><span class="doc">インストール方法</span></a> を確認して、画面を回転したい作品が、Direct3D 8版とDirect3D 9版のどちらを必要とするのかを確かめてください。</p>
+</div>
+<div class="section" id="throtator-throtator">
+<h2>タイトルバーから <code class="docutils literal"><span class="pre">THRotatorを表示</span></code> または <code class="docutils literal"><span class="pre">THRotatorを開く</span></code> が出てこない<a class="headerlink" href="#throtator-throtator" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal"><span class="pre">d3d8.dll</span></code> または <code class="docutils literal"><span class="pre">d3d9.dll</span></code> がコピーされているかどうかをご確認ください。
+コピーしても動かない場合はDirect3D 8版の作品に <code class="docutils literal"><span class="pre">d3d9.dll</span></code> をコピーしたり、その逆をしていないかご確認ください。
+もう一度 <a class="reference internal" href="install.html"><span class="doc">インストール方法</span></a> を確認して、画面を回転したい作品が、Direct3D 8版とDirect3D 9版のどちらを必要とするのかを確かめてください。</p>
+</div>
+<div class="section" id="id2">
+<h2>ウィンドウモードの解像度に960×720または1280×960を指定したときに表示がなめらかにならない<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal"><span class="pre">d3d8.dll</span></code> または <code class="docutils literal"><span class="pre">d3d9.dll</span></code> がコピーされているかどうかをご確認ください。
+コピーしても動かない場合はDirect3D 8版の作品に <code class="docutils literal"><span class="pre">d3d9.dll</span></code> をコピーしたり、その逆をしていないかご確認ください。
+もう一度 <a class="reference internal" href="install.html"><span class="doc">インストール方法</span></a> を確認して、画面を回転したい作品が、Direct3D 8版とDirect3D 9版のどちらを必要とするのかを確かめてください。</p>
+</div>
+<div class="section" id="id3">
+<h2>縦画面用のレイアウトになるべきところで縦画面用のレイアウトにならない<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h2>
+<p>作品に対応した設定ファイルをコピーしてあるかどうかをご確認ください。 また、コピー先に間違いがないかをご確認ください。
+ダブルスポイラー以降の作品はコピー先を間違えやすいと思いますが、 <a class="reference internal" href="install.html"><span class="doc">インストール方法</span></a> をもう一度確認してみてください。</p>
+</div>
+<div class="section" id="id4">
+<h2>スコアや残機などの情報が表示されない<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h2>
+<p>作品に対応した設定ファイルをコピーしてあるかどうかをご確認ください。 また、コピー先に間違いがないかをご確認ください。
+ダブルスポイラー以降の作品はコピー先を間違えやすいと思いますが、 <a class="reference internal" href="install.html"><span class="doc">インストール方法</span></a> をもう一度確認してみてください。</p>
+</div>
+<div class="section" id="id5">
+<h2>縦画面用のレイアウトがずれている<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h2>
+<p>作品に対応した設定ファイルをコピーしてあるかどうかをご確認ください。 また、コピー先に間違いがないかをご確認ください。
+ダブルスポイラー以降の作品はコピー先を間違えやすいと思いますが、 <a class="reference internal" href="install.html"><span class="doc">インストール方法</span></a> をもう一度確認してみてください。</p>
+</div>
+<div class="section" id="id6">
+<h2>編集画面を開くと、ゲームが入力を受け付けなくなったり、急に終了したりする<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h2>
+<p>次の手順をお試しください。</p>
+<ol class="arabic simple">
+<li><code class="docutils literal"><span class="pre">throt.ini</span></code> をテキストエディタで開いてください</li>
+<li><code class="docutils literal"><span class="pre">UseModalEditor=true</span></code> と記述して保存してください</li>
+<li>再度ゲームを起動してください。</li>
+</ol>
+<p>この設定を行うと、編集画面が開いている最中はゲームは停止するものの、不具合を回避することができます。</p>
+</div>
 </div>
 
 
