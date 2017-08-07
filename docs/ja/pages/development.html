@@ -222,17 +222,17 @@ GitHubから直接ソースコードをダウンロードすることができ�
 <h3>Boost C++ Libraries のインストール<a class="headerlink" href="#boost-c-libraries" title="Permalink to this headline">¶</a></h3>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last"><code class="docutils literal"><span class="pre">filesystem</span></code> モジュールがビルド済みの場合は不要です。</p>
+<p class="last"><code class="docutils literal"><span class="pre">filesystem</span></code> と <code class="docutils literal"><span class="pre">iostreams</span></code> モジュールがビルド済みの場合は不要です。</p>
 </div>
 <p><a class="reference external" href="http://www.boost.org/">Boost C++ Libraries</a> の <strong>Current Release</strong> から最新版をダウンロードし、
 適当なディレクトリに解凍します(例えば、 <code class="docutils literal"><span class="pre">C:\boost\</span></code> など)。</p>
-<p>次に、boostの <code class="docutils literal"><span class="pre">filesystem</span></code> モジュールをビルドします。</p>
+<p>次に、boostの <code class="docutils literal"><span class="pre">filesystem</span></code> と <code class="docutils literal"><span class="pre">iostreams</span></code> モジュールをビルドします。</p>
 <ol class="arabic simple">
 <li>使っているOSが64 bitの場合は、 <code class="docutils literal"><span class="pre">スタートメニュー</span></code> → <code class="docutils literal"><span class="pre">Visual</span> <span class="pre">Studio</span> <span class="pre">20XX</span></code> → <code class="docutils literal"><span class="pre">VS20XX</span> <span class="pre">x64</span> <span class="pre">Native</span> <span class="pre">Tools</span> <span class="pre">コマンドプロンプト</span></code> 、
 32 bitの場合は、 <code class="docutils literal"><span class="pre">VS20XX</span> <span class="pre">x86</span> <span class="pre">Native</span> <span class="pre">Tools</span> <span class="pre">コマンドプロンプト</span></code> を開きます。</li>
 <li>開いたコマンドプロンプトで、解凍したboostの、 <code class="docutils literal"><span class="pre">bootstrap.bat</span></code> のあるフォルダへ移動します。</li>
 <li><code class="docutils literal"><span class="pre">bootstrap.bat</span></code> を実行します。</li>
-<li><code class="docutils literal"><span class="pre">b2.exe</span></code> が出来上がるので、そのあとに <code class="docutils literal"><span class="pre">b2</span> <span class="pre">--with-filesystem</span> <span class="pre">runtime-link=shared,static</span></code> を実行します。</li>
+<li><code class="docutils literal"><span class="pre">b2.exe</span></code> が出来上がるので、そのあとに <code class="docutils literal"><span class="pre">b2</span> <span class="pre">--with-filesystem</span> <span class="pre">--with-iostreams</span> <span class="pre">runtime-link=shared,static</span></code> を実行します。</li>
 </ol>
 </div>
 <div class="section" id="cmake">

@@ -43,18 +43,18 @@ Visual Studio 2015以降の場合、Visual C++がデフォルトでインスト�
 Boost C++ Libraries のインストール
 -----------------------------------------
 
-.. note:: ``filesystem`` モジュールがビルド済みの場合は不要です。
+.. note:: ``filesystem`` と ``iostreams`` モジュールがビルド済みの場合は不要です。
 
 `Boost C++ Libraries <http://www.boost.org/>`_ の **Current Release** から最新版をダウンロードし、
 適当なディレクトリに解凍します(例えば、 ``C:\boost\`` など)。
 
-次に、boostの ``filesystem`` モジュールをビルドします。
+次に、boostの ``filesystem`` と ``iostreams`` モジュールをビルドします。
 
 1. 使っているOSが64 bitの場合は、 ``スタートメニュー`` → ``Visual Studio 20XX`` → ``VS20XX x64 Native Tools コマンドプロンプト`` 、
    32 bitの場合は、 ``VS20XX x86 Native Tools コマンドプロンプト`` を開きます。
 2. 開いたコマンドプロンプトで、解凍したboostの、 ``bootstrap.bat`` のあるフォルダへ移動します。
 3. ``bootstrap.bat`` を実行します。
-4. ``b2.exe`` が出来上がるので、そのあとに ``b2 --with-filesystem runtime-link=shared,static`` を実行します。
+4. ``b2.exe`` が出来上がるので、そのあとに ``b2 --with-filesystem --with-iostreams runtime-link=shared,static`` を実行します。
 
 CMake のインストール
 ------------------------

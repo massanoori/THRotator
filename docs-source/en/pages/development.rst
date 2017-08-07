@@ -42,18 +42,18 @@ Edit the installation option so that Visual C++ is installed.
 Install Boost C++ Libraries
 -----------------------------------------
 
-.. note:: If you have a built ``filesystem`` module, skip this step.
+.. note:: If you have built ``filesystem`` and ``iostreams`` modules, skip this step.
 
 Access to `Boost C++ Libraries <http://www.boost.org/>`_ and download the latest release from **Current Release**.
 Then extract ZIP archive to some location (for example ``C:\boost\``).
 
-Next, build ``filesystem`` module by following the steps given below.
+Next, build ``filesystem`` and ``iostreams`` modules by following the steps given below.
 
 1. If your system is x64-based, ``Start Menu`` → ``Visual Studio 20XX`` → ``VS20XX x64 Native Tools Command Prompts``.
    If your system is x86-based, launch ``VS20XX x86 Native Tools Command Prompts``.
 2. On the opened command prompt, change directory to the location where extracted ``bootstrap.bat`` exists.
 3. Run ``bootstrap.bat``.
-4. ``b2.exe`` will be generated, then run ``b2 --with-filesystem runtime-link=shared,static``.
+4. ``b2.exe`` will be generated, then run ``b2 --with-filesystem --with-iostreams runtime-link=shared,static``.
 
 Install CMake
 ------------------------
