@@ -42,7 +42,7 @@
 
 .. image:: ../images/custom_ja.png
 
-.. note:: Direct3D 9版はこのウィンドウを表示中でもゲームが進行しますが、Direct3D 8版はこの画面が出ている間はゲームが停止します。
+.. note:: 東方妖々夢では、不具合回避のためこの画面が出ている間ゲームが停止します。
 
 .. _usage_state_detection:
 

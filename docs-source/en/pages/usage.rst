@@ -45,8 +45,7 @@ The customization window looks like as follows:
 
 .. note::
 
-   On Direct3D 9 version, the game proceeds as usual while this window is shown.
-   On Direct3D 8 version, the game is suspended while this window is shown.
+   Due to some issues on Touhou 7, the game is suspended while this window is shown.
 
 .. _usage_state_detection:
 
