@@ -528,11 +528,7 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 	, m_bHUDRearrangeForced(false)
 	, m_deviceResetRevision(0)
 	, m_bModalEditorPreferred(false)
-#ifdef TOUHOU_ON_D3D8
-	, m_bNeedModalEditor(true)
-#else
 	, m_bNeedModalEditor(false)
-#endif
 	, m_modalEditorWindowPosX(0)
 	, m_modalEditorWindowPosY(0)
 	, m_bInitialized(false)
