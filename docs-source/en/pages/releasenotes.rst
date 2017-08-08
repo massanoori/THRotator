@@ -30,7 +30,10 @@ Bug fixes
 - Fix fixed window resolusion to 640x480 from Th11 to Th13 in windowed mode.
 - Fix that some implemented methods of D3D interfaces return unexpected values.
 - Fix the issue Touhou 7 does not accept any player's inputs
-  when `DX8 to DX9 converter <http://enbdev.com/download_convertor_dx8todx9.htm>`_ and ``d3d9.dll`` of THRotator are installed at the same time. 
+  when `DX8 to DX9 converter <http://enbdev.com/download_convertor_dx8todx9.htm>`_ and ``d3d9.dll`` of THRotator are installed at the same time.
+- Fix the issue threshould input by user was compared with wrong count of setting viewports on Touhou 6 and 7.
+
+  - THRotator converts the threshold to the correct one on Touhou 6 and 7 while reading ``throt.ini`` in the old format.
 
 Others
 ---------------
