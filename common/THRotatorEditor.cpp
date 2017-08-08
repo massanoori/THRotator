@@ -209,7 +209,8 @@ struct THRotatorSetting
 
 	static void Load(const boost::filesystem::path& filename,
 		const boost::filesystem::path& exeFilenameNoExt,
-		THRotatorSetting& outSetting);
+		THRotatorSetting& outSetting,
+		THRotatorFormatVersion& importedFormatVersion);
 
 	static bool Save(const boost::filesystem::path& filename,
 		const boost::filesystem::path& exeFilenameNoExt,
@@ -365,7 +366,10 @@ void THRotatorSetting::LoadFormatVer2(const boost::property_tree::basic_ptree<st
 	outSetting.rectTransfers = std::move(newRectTransfers);
 }
 
-void THRotatorSetting::Load(const boost::filesystem::path& filename, const boost::filesystem::path& exeFilenameNoExt, THRotatorSetting& outSetting)
+void THRotatorSetting::Load(const boost::filesystem::path& filename,
+	const boost::filesystem::path& exeFilenameNoExt,
+	THRotatorSetting& outSetting,
+	THRotatorFormatVersion& importedFormatVersion)
 {
 	namespace proptree = boost::property_tree;
 
@@ -396,10 +400,12 @@ void THRotatorSetting::Load(const boost::filesystem::path& filename, const boost
 	{
 	case THRotatorFormatVersion::Version_1:
 		THRotatorSetting::LoadFormatVer1(tree, ConvertFromUtf8ToSjis(appName), outSetting);
+		importedFormatVersion = formatVersion;
 		break;
 
 	case THRotatorFormatVersion::Version_2:
 		THRotatorSetting::LoadFormatVer2(tree, appName, outSetting);
+		importedFormatVersion = formatVersion;
 		break;
 
 	default:
@@ -1510,7 +1516,8 @@ bool THRotatorEditorContext::SaveSettings() const
 void THRotatorEditorContext::LoadSettings()
 {
 	THRotatorSetting setting;
-	THRotatorSetting::Load(m_iniPath, m_exeFilenameNoExt, setting);
+	THRotatorFormatVersion formatVersion;
+	THRotatorSetting::Load(m_iniPath, m_exeFilenameNoExt, setting, formatVersion);
 
 	m_judgeThreshold = setting.judgeThreshold;
 	m_mainScreenTopLeft = setting.mainScreenTopLeft;
@@ -1523,6 +1530,18 @@ void THRotatorEditorContext::LoadSettings()
 	m_bModalEditorPreferred = setting.bModalEditorPreferred;
 
 	m_editedRectTransfers = std::move(setting.rectTransfers);
+
+	if (formatVersion == THRotatorFormatVersion::Version_1)
+	{
+		double touhouIndex = ExtractTouhouIndex(m_exeFilenameNoExt.generic_wstring());
+		if (6.0 <= touhouIndex && touhouIndex < 7.5)
+		{
+			// format version 1で作成された.iniは、
+			// 紅魔郷と妖々夢では、閾値との比較が実際のビューポート設定回数より1回少ない値と行われる条件で作成されたもの。
+			// ここで値を1だけ増やして、実際のビューポート設定回数と正常に比較できるようにする。
+			m_judgeThreshold++;
+		}
+	}
 }
 
 // メッセージキューの中で同一のメッセージがポストされていないかチェックし、なければ(ユニークなら)true、そうでなければfalse
