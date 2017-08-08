@@ -161,7 +161,7 @@ private:
 	int m_judgeCount, m_judgeCountPrev;
 	bool m_bVisible;
 	boost::filesystem::path m_iniPath;
-	std::string m_appName; // マルチバイト文字列で.iniの入出力するため、std::string
+	boost::filesystem::path m_exeFilenameNoExt;
 	bool m_bVerticallyLongWindow;
 	RotationAngle m_rotationAngle;
 	std::vector<RectTransferData> m_editedRectTransfers, m_currentRectTransfers;

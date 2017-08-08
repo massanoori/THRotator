@@ -43,8 +43,6 @@ static const int UTF8_BOM[3] =
 	0xEF, 0xBB, 0xBF,
 };
 
-typedef std::basic_string<TCHAR> std_tstring;
-
 // Tがenumなら、その内部の型を、そうでなければTを、RawTypeOfEnum<T>::typeで取得できる
 template <typename T, typename IsEnum = std::is_enum<T>::type>
 struct RawTypeOfEnum
@@ -209,21 +207,31 @@ struct THRotatorSetting
 		mainScreenSize.cy = 448;
 	}
 
-	static void Load(const std::string& filename, const std::string& appName, THRotatorSetting& outSetting);
-	static bool Save(const std::string& filename, const std::string& appName, const THRotatorSetting& inSetting);
+	static void Load(const boost::filesystem::path& filename,
+		const boost::filesystem::path& exeFilenameNoExt,
+		THRotatorSetting& outSetting);
+
+	static bool Save(const boost::filesystem::path& filename,
+		const boost::filesystem::path& exeFilenameNoExt,
+		const THRotatorSetting& inSetting);
 
 	static void LoadFormatVer1(const boost::property_tree::basic_ptree<std::string, std::string>& tree,
-		const std::string& appName,
+		const std::string& appNameSjis,
 		THRotatorSetting& outSetting);
 
 	static void LoadFormatVer2(const boost::property_tree::basic_ptree<std::string, std::string>& tree,
-		const std::string& appName,
+		const std::string& appNameUtf8,
 		THRotatorSetting& outSetting);
+
+	static std::string GenerateIniAppName(const boost::filesystem::path& exeFilenameNoExt)
+	{
+		return ConvertFromUnicodeToUtf8(std::wstring(L"THRotator_") + exeFilenameNoExt.generic_wstring());
+	}
 };
 
 #define READ_INI_PARAM(destination, name) \
 	do { \
-		auto rawValue = tree.get_optional<RawTypeOfEnum<decltype(destination)>::type>(appNameUtf8 + "." + name); \
+		auto rawValue = tree.get_optional<RawTypeOfEnum<decltype(destination)>::type>(appName + "." + name); \
 		if (rawValue) (destination) = static_cast<decltype(destination)>(*rawValue); \
 	} while(false)
 
@@ -236,11 +244,10 @@ struct THRotatorSetting
 	} while(false)
 
 void THRotatorSetting::LoadFormatVer1(const boost::property_tree::basic_ptree<std::string, std::string>& tree,
-	const std::string& appName,
+	const std::string& appNameSjis,
 	THRotatorSetting& outSetting)
 {
-	// Ver. 1ではShift JISで保存されるため、ShiftJISの文字列をUTF-8として扱う
-	const auto& appNameUtf8 = appName;
+	const std::string& appName = appNameSjis;
 
 	READ_INI_PARAM(outSetting.judgeThreshold, "JC");
 	READ_INI_PARAM(outSetting.mainScreenTopLeft.x, "PL");
@@ -298,10 +305,10 @@ void THRotatorSetting::LoadFormatVer1(const boost::property_tree::basic_ptree<st
 }
 
 void THRotatorSetting::LoadFormatVer2(const boost::property_tree::basic_ptree<std::string, std::string>& tree,
-	const std::string& appName,
+	const std::string& appNameUtf8,
 	THRotatorSetting& outSetting)
 {
-	auto appNameUtf8 = ConvertFromSjisToUtf8(appName);
+	const std::string& appName = appNameUtf8;
 
 	READ_INI_PARAM(outSetting.judgeThreshold, "JudgeThreshold");
 	READ_INI_PARAM(outSetting.mainScreenTopLeft.x, "MainScreenLeft");
@@ -358,7 +365,7 @@ void THRotatorSetting::LoadFormatVer2(const boost::property_tree::basic_ptree<st
 	outSetting.rectTransfers = std::move(newRectTransfers);
 }
 
-void THRotatorSetting::Load(const std::string& filename, const std::string& appName, THRotatorSetting& outSetting)
+void THRotatorSetting::Load(const boost::filesystem::path& filename, const boost::filesystem::path& exeFilenameNoExt, THRotatorSetting& outSetting)
 {
 	namespace proptree = boost::property_tree;
 
@@ -381,14 +388,14 @@ void THRotatorSetting::Load(const std::string& filename, const std::string& appN
 		return;
 	}
 
-	auto appNameUtf8 = ConvertFromSjisToUtf8(appName); // READ_INI_PARAMの中で参照
+	auto appName = GenerateIniAppName(exeFilenameNoExt); // READ_INI_PARAMの中で参照
 	THRotatorFormatVersion formatVersion = THRotatorFormatVersion::Version_1;
 	READ_INI_PARAM(formatVersion, "FormatVersion");
 	
 	switch (formatVersion)
 	{
 	case THRotatorFormatVersion::Version_1:
-		THRotatorSetting::LoadFormatVer1(tree, appName, outSetting);
+		THRotatorSetting::LoadFormatVer1(tree, ConvertFromUtf8ToSjis(appName), outSetting);
 		break;
 
 	case THRotatorFormatVersion::Version_2:
@@ -403,12 +410,12 @@ void THRotatorSetting::Load(const std::string& filename, const std::string& appN
 #undef READ_INDEXED_INI_PARAM
 #undef READ_INI_PARAM
 
-bool THRotatorSetting::Save(const std::string& filename, const std::string& appName, const THRotatorSetting& inSetting)
+bool THRotatorSetting::Save(const boost::filesystem::path& filename, const boost::filesystem::path& exeFilenameNoExt, const THRotatorSetting& inSetting)
 {
 	namespace proptree = boost::property_tree;
 	proptree::basic_ptree<std::string, std::string> tree;
 
-	auto appNameUtf8 = ConvertFromSjisToUtf8(appName);
+	auto appNameUtf8 = GenerateIniAppName(exeFilenameNoExt);
 
 #define WRITE_INI_PARAM(name, value) tree.add(appNameUtf8 + "." + name, static_cast<RawTypeOfEnum<decltype(value)>::type>(value))
 #define WRITE_INDEXED_INI_PARAM(name, index, value) \
@@ -441,7 +448,7 @@ bool THRotatorSetting::Save(const std::string& filename, const std::string& appN
 #ifdef _UNICODE
 		const auto& nameToSave = ConvertFromUnicodeToUtf8(rectData.name);
 #else
-		const auto* nameToSave = ConvertFromSjisToUtf8(rectData.name);
+		const auto& nameToSave = ConvertFromSjisToUtf8(rectData.name);
 #endif
 
 		WRITE_INDEXED_INI_PARAM("RectName", rectIndex, nameToSave);
@@ -479,17 +486,21 @@ bool THRotatorSetting::Save(const std::string& filename, const std::string& appN
 	return true;
 }
 
-double ExtractTouhouIndex(const std_tstring& exeFilename)
+double ExtractTouhouIndex(const std::wstring& exeFilenameNoExt)
 {
-	double touhouIndex = 0.0;
-	if (exeFilename.compare(_T("東方紅魔郷")) == 0)
+	if (exeFilenameNoExt.compare(L"東方紅魔郷") == 0)
 	{
-		touhouIndex = 6.0;
+		return 6.0;
 	}
-	else
+
+	double touhouIndex = 0.0;
+
+	WCHAR dummy[128];
+
+	int numFilledFields = swscanf_s(exeFilenameNoExt.c_str(), L"th%lf%s", &touhouIndex, dummy, _countof(dummy));
+	if (numFilledFields < 1)
 	{
-		TCHAR dummy[128];
-		_stscanf_s(exeFilename.c_str(), _T("th%lf%s"), &touhouIndex, dummy, _countof(dummy));
+		return 0.0;
 	}
 
 	while (touhouIndex > 90.0)
@@ -567,22 +578,22 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 
 	static MessageHook messageHook;
 
-	TCHAR fname[MAX_PATH];
-	GetModuleFileName(NULL, fname, MAX_PATH);
-	*_tcsrchr(fname, '.') = '\0';
-	boost::filesystem::path pth(fname);
+	TCHAR exePathRaw[MAX_PATH];
+	GetModuleFileName(NULL, exePathRaw, MAX_PATH);
+	*_tcsrchr(exePathRaw, '.') = '\0';
+	boost::filesystem::path exePath(exePathRaw);
 
-	m_appName = std::string("THRotator_") + pth.filename().generic_string();
-	TCHAR path[MAX_PATH];
+	m_exeFilenameNoExt = exePath.filename();
+	TCHAR iniSavePathRaw[MAX_PATH];
 	size_t retSize;
-	errno_t en = _tgetenv_s(&retSize, path, _T("APPDATA"));
+	errno_t resultOfGetEnv = _tgetenv_s(&retSize, iniSavePathRaw, _T("APPDATA"));
 
-	double touhouIndex = ExtractTouhouIndex(pth.filename().generic_string<std_tstring>());
+	double touhouIndex = ExtractTouhouIndex(m_exeFilenameNoExt.generic_wstring());
 
 	// ダブルスポイラー(12.5)以降からexeファイルと同じ場所に保存されなくなる
-	if (touhouIndex > 12.3 && en == 0 && retSize > 0)
+	if (touhouIndex > 12.3 && resultOfGetEnv == 0 && retSize > 0)
 	{
-		m_workingDir = boost::filesystem::path(path) / _T("ShanghaiAlice") / pth.filename();
+		m_workingDir = boost::filesystem::path(iniSavePathRaw) / _T("ShanghaiAlice") / m_exeFilenameNoExt;
 		boost::filesystem::create_directory(m_workingDir);
 	}
 	else
@@ -837,7 +848,7 @@ BOOL CALLBACK THRotatorEditorContext::MainDialogProc(HWND hWnd, UINT msg, WPARAM
 		SetDlgItemInt(hWnd, IDC_YOFFSET, pContext->m_yOffset, TRUE);
 
 		{
-			std_tstring versionUiString(_T("Version: "));
+			std::basic_string<TCHAR> versionUiString(_T("Version: "));
 			versionUiString += THROTATOR_VERSION_STRING;
 			SetDlgItemText(hWnd, IDC_VERSION, versionUiString.c_str());
 		}
@@ -1493,13 +1504,13 @@ bool THRotatorEditorContext::SaveSettings() const
 	settings.rectTransfers = m_currentRectTransfers;
 	settings.bModalEditorPreferred = m_bModalEditorPreferred;
 
-	return THRotatorSetting::Save(m_iniPath.generic_string(), m_appName, settings);
+	return THRotatorSetting::Save(m_iniPath, m_exeFilenameNoExt, settings);
 }
 
 void THRotatorEditorContext::LoadSettings()
 {
 	THRotatorSetting setting;
-	THRotatorSetting::Load(m_iniPath.generic_string(), m_appName, setting);
+	THRotatorSetting::Load(m_iniPath, m_exeFilenameNoExt, setting);
 
 	m_judgeThreshold = setting.judgeThreshold;
 	m_mainScreenTopLeft = setting.mainScreenTopLeft;
