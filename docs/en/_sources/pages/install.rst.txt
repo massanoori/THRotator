@@ -33,7 +33,7 @@ If you would like to install THRotator to one of the following or later products
 - Double Dealing Character (Th14, tested on demo version)
 - Impossible Spell Card (Th143)
 - Legacy of Lunatic Kingdom (Th15, tested on demo version)
-- (Hidden Star in Four Seasons)
+- Hidden Star in Four Seasons (Th16)
 - Uwabami Breakers (alcostg)
 
 Copy DLL file

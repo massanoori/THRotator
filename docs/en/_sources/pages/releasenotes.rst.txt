@@ -6,7 +6,7 @@ Release notes
 1.3.0
 =======================
 
-Released on August XX, 2017.
+Released on August 12, 2017.
 
 New features
 ---------------
