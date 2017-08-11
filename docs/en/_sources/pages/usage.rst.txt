@@ -32,7 +32,7 @@ If you would like to use THRotator on a newer Touhou Project game or a game othe
 on which this detection methodology doesn't work,
 use this feature or manipulate on the cutomization window, as described in :ref:`usage_ui_force_vertical`.
 
-.. note:: This config is not saved to ``throt.ini`` due to its strong effect.
+.. note:: This config is not saved due to its large effect.
 
 
 Customization window
@@ -59,7 +59,7 @@ THRotator exploits this fact to automatically switch to an HUD arrangement for v
 By clicking ``Count SetViewport()`` button, you can measure the number of times of setting viewport.
 If number of times of setting viewport is more than the threshold, HUD elements are arranged for vertically-long screen.
 
-If THRotator fails to read ``throt.ini``, the threshold is set to 999 by default to prevent unintentional switching.
+If THRotator fails to read configuration file, the threshold is set to 999 by default to prevent unintentional switching.
 
 If you would like to use THRotator on a newer Touhou Project game or a game other than Touhou Project
 on which this detection methodology doesn't work,
@@ -139,7 +139,7 @@ If you would like to use THRotator on a newer Touhou Project game or a game othe
 on which this detection methodology doesn't work,
 manipulate on this checkbox or follow :ref:`usage_force_vertical`.
 
-.. note:: This config is not saved to ``throt.ini`` due to its strong effect.
+.. note:: This config is not saved due to its large effect.
 
 
 8. Other rectangles
@@ -180,7 +180,7 @@ Resetting to the parameters when ``Apply`` was pressed last time.
 ---------------
 
 Applying input parameters to actual rendering.
-When successful, config file ``throt.ini`` is saved.
+When successful, configuration file is saved.
 
 
 Best practices

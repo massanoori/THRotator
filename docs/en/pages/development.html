@@ -221,17 +221,17 @@ Edit the installation option so that Visual C++ is installed.</p>
 <h3>Install Boost C++ Libraries<a class="headerlink" href="#install-boost-c-libraries" title="Permalink to this headline">¶</a></h3>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">If you have built <code class="docutils literal"><span class="pre">filesystem</span></code> and <code class="docutils literal"><span class="pre">iostreams</span></code> modules, skip this step.</p>
+<p class="last">If you have built <code class="docutils literal"><span class="pre">filesystem</span></code> modules, skip this step.</p>
 </div>
 <p>Access to <a class="reference external" href="http://www.boost.org/">Boost C++ Libraries</a> and download the latest release from <strong>Current Release</strong>.
 Then extract ZIP archive to some location (for example <code class="docutils literal"><span class="pre">C:\boost\</span></code>).</p>
-<p>Next, build <code class="docutils literal"><span class="pre">filesystem</span></code> and <code class="docutils literal"><span class="pre">iostreams</span></code> modules by following the steps given below.</p>
+<p>Next, build <code class="docutils literal"><span class="pre">filesystem</span></code> modules by following the steps given below.</p>
 <ol class="arabic simple">
 <li>If your system is x64-based, <code class="docutils literal"><span class="pre">Start</span> <span class="pre">Menu</span></code> → <code class="docutils literal"><span class="pre">Visual</span> <span class="pre">Studio</span> <span class="pre">20XX</span></code> → <code class="docutils literal"><span class="pre">VS20XX</span> <span class="pre">x64</span> <span class="pre">Native</span> <span class="pre">Tools</span> <span class="pre">Command</span> <span class="pre">Prompts</span></code>.
 If your system is x86-based, launch <code class="docutils literal"><span class="pre">VS20XX</span> <span class="pre">x86</span> <span class="pre">Native</span> <span class="pre">Tools</span> <span class="pre">Command</span> <span class="pre">Prompts</span></code>.</li>
 <li>On the opened command prompt, change directory to the location where extracted <code class="docutils literal"><span class="pre">bootstrap.bat</span></code> exists.</li>
 <li>Run <code class="docutils literal"><span class="pre">bootstrap.bat</span></code>.</li>
-<li><code class="docutils literal"><span class="pre">b2.exe</span></code> will be generated, then run <code class="docutils literal"><span class="pre">b2</span> <span class="pre">--with-filesystem</span> <span class="pre">--with-iostreams</span> <span class="pre">runtime-link=shared,static</span></code>.</li>
+<li><code class="docutils literal"><span class="pre">b2.exe</span></code> will be generated, then run <code class="docutils literal"><span class="pre">b2</span> <span class="pre">--with-filesystem</span> <span class="pre">runtime-link=shared,static</span></code>.</li>
 </ol>
 </div>
 <div class="section" id="install-cmake">

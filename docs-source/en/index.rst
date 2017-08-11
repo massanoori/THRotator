@@ -64,7 +64,7 @@ THRotator is under GPL v3.
 
 `Source code (GitHub) <https://github.com/massanoori/THRotator>`_
 
-But .ini files are in the public domain.
+But configuration files are in the public domain.
 
 If you would like to build THRotator from source code or to add your own mods,
 see :doc:`pages/development`.

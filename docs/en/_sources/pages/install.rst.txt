@@ -46,9 +46,7 @@ Windows may ask you to input an administrator's name and password to copy the DL
 Copy config file
 =========================
 
-Copy config file corresponding to product number ``throt_<product number>.ini`` to the following directory,
-and rename it to ``throt.ini`` in the destination directory.
-Product number of Uwabami Breakers is ``alcostg``.
+Copy config file corresponding to the game ``<filename of executable>.throtator`` to the following directory.
 
 For Th06, Th07, Th08, Th09, Th095, Th10, Th11, Th12, and alcostg
   Where the game is installed.

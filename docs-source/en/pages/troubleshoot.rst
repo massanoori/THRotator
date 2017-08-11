@@ -58,8 +58,8 @@ Player's inputs are not accepted or the game terminates after customization wind
 
 Try the following steps:
 
-1. Open ``throt.ini`` with a text editor
-2. Add a line ``UseModalEditor=true`` to the end of file
+1. Open configuration file with a text editor
+2. Replace the line of ``"use_modal_editor": false`` with ``"use_modal_editor": true``.
 3. Re-launch the game
 
 Although these steps force the game to suspend while customization window is open,

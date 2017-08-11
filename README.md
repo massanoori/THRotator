@@ -9,7 +9,7 @@ THRotator works on D3D8-based works (Th06-95) and D3D9-based works (Th10 and lat
 License
 =====
 
-.ini files
+Configuration files
 -----
 
 Public domain.

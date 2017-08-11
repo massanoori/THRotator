@@ -190,16 +190,16 @@
 <div class="section" id="id3">
 <h3>新機能<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>東方天空璋用のthrot.iniを追加しました。</li>
+<li>東方天空璋用の設定ファイルを追加しました。</li>
 <li>縦用レイアウトの強制ができるようになりました。</li>
 <li>UIの国際化を行いました (現在は英語と日本語)。</li>
 <li>マニュアル生成をSphinxで行うようにしました。</li>
 <li>試験的にDirect3D 9 Exをサポートしました。東方プロジェクト以外でも動作するゲームが増えたかもしれません。</li>
 <li>東方妖々夢以外のDirect3D 8で動作する作品で、編集画面を開いている間もゲームが進行するようになり、変更の反映を確認しやすくしました。</li>
-<li><code class="docutils literal"><span class="pre">throt.ini</span></code> のフォーマットを更新しました。<ul>
-<li>これまで文字コードはShiftJISでしたが、今回よりUTF-8です。</li>
-<li>キーの名前をわかりやすくすることで、直接編集しやすくなりました。</li>
-<li>古いフォーマットの <code class="docutils literal"><span class="pre">throt.ini</span></code> をTHRotatorで読むことは可能ですが、THRotatorは古いフォーマットで <code class="docutils literal"><span class="pre">throt.ini</span></code> を保存することはありません。</li>
+<li>設定ファイルの仕様を変更しました。<ul>
+<li>これまでインストール時にファイル名を変えなければならなかったり、新しい作品に対応するときにファイルを直接編集する必要があったり面倒でした。</li>
+<li>新しい仕様では、配布したファイル名のまま使用でき、新しい作品に対応するときには既存の作品のファイル名を変更することで、流用が可能です。</li>
+<li>これまでの <code class="docutils literal"><span class="pre">throt.ini</span></code> を読み込むことは可能です。次回の保存で、新しい設定ファイルの仕様に変換されます。</li>
 </ul>
 </li>
 </ul>
@@ -211,7 +211,7 @@
 <li>D3Dのインタフェースを実装した関数が、D3Dの仕様とは異なる値を返していたのを修正しました。</li>
 <li><a class="reference external" href="http://enbdev.com/download_convertor_dx8todx9.htm">DX8 to DX9 converter</a> とTHRotatorの <code class="docutils literal"><span class="pre">d3d9.dll</span></code> を東方妖々夢に対して併用すると、プレイヤーが操作できなくなる現象を修正しました。</li>
 <li>東方紅魔郷と東方妖々夢で、ビューポート設定回数の閾値が、誤ったビューポート設定回数と比較されていたのを修正しました。<ul>
-<li>東方紅魔郷と東方妖々夢で古いフォーマットの <code class="docutils literal"><span class="pre">throt.ini</span></code> をTHRotatorで読むと、閾値が正常な判定を行える値に自動で修正されます。</li>
+<li>東方紅魔郷と東方妖々夢で古いフォーマットの設定ファイルをTHRotatorで読むと、閾値が正常な判定を行える値に自動で修正されます。</li>
 </ul>
 </li>
 </ul>
