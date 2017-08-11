@@ -4,6 +4,7 @@
 #include <boost/filesystem.hpp>
 #include <tchar.h>
 #include <cstdint>
+#include <string>
 
 #ifdef TOUHOU_ON_D3D8
 #include <d3d8.h>

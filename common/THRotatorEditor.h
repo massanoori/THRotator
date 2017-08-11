@@ -2,40 +2,7 @@
 
 #pragma once
 
-enum RotationAngle : std::uint32_t
-{
-	Rotation_0 = 0,
-	Rotation_90 = 1,
-	Rotation_180 = 2,
-	Rotation_270 = 3,
-
-	Rotation_Num,
-};
-
-struct RectTransferData
-{
-	POINT sourcePosition;
-	SIZE sourceSize;
-
-	POINT destPosition;
-	SIZE destSize;
-
-	RotationAngle rotation;
-	std::basic_string<TCHAR> name;
-
-	RectTransferData()
-		: rotation(Rotation_0)
-	{
-		sourcePosition.x = 0;
-		sourcePosition.y = 0;
-		sourceSize.cx = 0;
-		sourceSize.cy = 0;
-		destPosition.x = 0;
-		destPosition.y = 0;
-		destSize.cx = 0;
-		destSize.cy = 0;
-	}
-};
+#include "THRotatorSettings.h"
 
 inline bool IsZeroSize(const SIZE& size)
 {
