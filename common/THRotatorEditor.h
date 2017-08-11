@@ -160,8 +160,7 @@ private:
 	int m_judgeThreshold;
 	int m_judgeCount, m_judgeCountPrev;
 	bool m_bVisible;
-	boost::filesystem::path m_iniPath;
-	boost::filesystem::path m_exeFilenameNoExt;
+	boost::filesystem::path m_exeFilename;
 	bool m_bVerticallyLongWindow;
 	RotationAngle m_rotationAngle;
 	std::vector<RectTransferData> m_editedRectTransfers, m_currentRectTransfers;
