@@ -9,6 +9,7 @@
 #include <sstream>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
+#include <boost/property_tree/json_parser.hpp>
 #include <boost/iostreams/categories.hpp> // input_filter_tag
 #include <boost/iostreams/operations.hpp> // get, WOULD_BLOCK
 #include <boost/iostreams/filtering_stream.hpp>
@@ -44,17 +45,17 @@ static const int UTF8_BOM[3] =
 };
 
 // Tがenumなら、その内部の型を、そうでなければTを、RawTypeOfEnum<T>::typeで取得できる
-template <typename T, typename IsEnum = std::is_enum<T>::type>
+template <typename T, typename IsEnum = typename std::is_enum<typename std::remove_reference<T>::type>::type>
 struct RawTypeOfEnum
 {
-	typedef T type;
+	typedef typename std::remove_reference<T>::type type;
 };
 
 // Tがenumの時の特殊化
 template <typename T>
 struct RawTypeOfEnum<T, std::true_type>
 {
-	typedef typename std::underlying_type<T>::type type;
+	typedef typename std::underlying_type<typename std::remove_reference<T>::type>::type type;
 };
 
 std::wstring ConvertFromSjisToUnicode(const std::string& from)
@@ -216,19 +217,62 @@ struct THRotatorSetting
 		const boost::filesystem::path& exeFilename,
 		const THRotatorSetting& inSetting);
 
-	static void LoadFormatVer1(const boost::property_tree::basic_ptree<std::string, std::string>& tree,
-		const std::string& appNameSjis,
+	static void LoadIniFormat(const boost::filesystem::path& processWorkingDir,
+		const boost::filesystem::path& exeFilename,
 		THRotatorSetting& outSetting);
 
-	static void LoadFormatVer2(const boost::property_tree::basic_ptree<std::string, std::string>& tree,
-		const std::string& appNameUtf8,
-		THRotatorSetting& outSetting);
+	static void LoadJsonFormat(const boost::filesystem::path& processWorkingDir,
+		const boost::filesystem::path& exeFilename,
+		THRotatorSetting& outSetting,
+		THRotatorFormatVersion& importedFormatVersion);
 
 	static std::string GenerateIniAppName(const boost::filesystem::path& exeFilename)
 	{
-		return ConvertFromUnicodeToUtf8(std::wstring(L"THRotator_") + exeFilename.stem().generic_wstring());
+		return ConvertFromUnicodeToSjis(std::wstring(L"THRotator_") + exeFilename.stem().generic_wstring());
+	}
+
+	static boost::filesystem::path CreateIniFilePath(const boost::filesystem::path& processWorkingDir)
+	{
+		return processWorkingDir / L"throt.ini";
+	}
+
+	static boost::filesystem::path CreateJsonFilePath(const boost::filesystem::path& processWorkingDir,
+		const boost::filesystem::path& exeFilename)
+	{
+		auto jsonPath = processWorkingDir / exeFilename;
+		jsonPath += L".throtator";
+		return jsonPath;
 	}
 };
+
+void THRotatorSetting::LoadIniFormat(const boost::filesystem::path& processWorkingDir,
+	const boost::filesystem::path& exeFilename,
+	THRotatorSetting& outSetting)
+{
+	namespace proptree = boost::property_tree;
+
+	auto filename = CreateIniFilePath(processWorkingDir);
+
+	proptree::basic_ptree<std::string, std::string> tree;
+	try
+	{
+		boost::iostreams::filtering_istream inStream;
+		inStream.push(InputFilerIgnoringBOM());
+		inStream.push(boost::iostreams::file_descriptor_source(filename));
+		proptree::read_ini(inStream, tree);
+	}
+	catch (const std::ios::failure&)
+	{
+		// デフォルト値を用いる
+		return;
+	}
+	catch (const proptree::ini_parser_error&)
+	{
+		// デフォルト値を用いる
+		return;
+	}
+
+	auto appName = GenerateIniAppName(exeFilename); // READ_INI_PARAMの中で参照
 
 #define READ_INI_PARAM(destination, name) \
 	do { \
@@ -243,12 +287,6 @@ struct THRotatorSetting
 		ss << (index); \
 		READ_INI_PARAM(destination, ss.str()); \
 	} while(false)
-
-void THRotatorSetting::LoadFormatVer1(const boost::property_tree::basic_ptree<std::string, std::string>& tree,
-	const std::string& appNameSjis,
-	THRotatorSetting& outSetting)
-{
-	const std::string& appName = appNameSjis;
 
 	READ_INI_PARAM(outSetting.judgeThreshold, "JC");
 	READ_INI_PARAM(outSetting.mainScreenTopLeft.x, "PL");
@@ -303,77 +341,19 @@ void THRotatorSetting::LoadFormatVer1(const boost::property_tree::basic_ptree<st
 
 		READ_INDEXED_INI_PARAM(bHasNext, "ORHas", rectIndex);
 	}
+
+#undef READ_INDEXED_INI_PARAM
+#undef READ_INI_PARAM
 }
 
-void THRotatorSetting::LoadFormatVer2(const boost::property_tree::basic_ptree<std::string, std::string>& tree,
-	const std::string& appNameUtf8,
-	THRotatorSetting& outSetting)
-{
-	const std::string& appName = appNameUtf8;
-
-	READ_INI_PARAM(outSetting.judgeThreshold, "JudgeThreshold");
-	READ_INI_PARAM(outSetting.mainScreenTopLeft.x, "MainScreenLeft");
-	READ_INI_PARAM(outSetting.mainScreenTopLeft.y, "MainScreenTop");
-	READ_INI_PARAM(outSetting.mainScreenSize.cx, "MainScreenWidth");
-	READ_INI_PARAM(outSetting.mainScreenSize.cy, "MainScreenHeight");
-	READ_INI_PARAM(outSetting.yOffset, "YOffset");
-	READ_INI_PARAM(outSetting.bVisible, "WindowVisible");
-	READ_INI_PARAM(outSetting.bVerticallyLongWindow, "VerticallyLongWindow");
-	READ_INI_PARAM(outSetting.bModalEditorPreferred, "UseModalEditor");
-	READ_INI_PARAM(outSetting.rotationAngle, "RotationAngle");
-	READ_INI_PARAM(outSetting.filterType, "FilterType");
-
-	outSetting.rectTransfers.clear();
-
-	int numRectTransfers = -1;
-	READ_INI_PARAM(numRectTransfers, "NumRectTransfers");
-
-	if (numRectTransfers < 0)
-	{
-		return;
-	}
-
-	std::vector<RectTransferData> newRectTransfers;
-	newRectTransfers.reserve(numRectTransfers);
-	for (int rectIndex = 0; rectIndex < numRectTransfers; rectIndex++)
-	{
-		RectTransferData rectData;
-
-		std::string rectName;
-		READ_INDEXED_INI_PARAM(rectName, "RectName", rectIndex);
-
-#ifdef _UNICODE
-		rectData.name = ConvertFromUtf8ToUnicode(rectName);
-#else
-		rectData.name = ConvertFromUtf8ToSjis(rectName);
-#endif
-
-		READ_INDEXED_INI_PARAM(rectData.sourcePosition.x, "SourceLeft", rectIndex);
-		READ_INDEXED_INI_PARAM(rectData.sourcePosition.y, "SourceTop", rectIndex);
-		READ_INDEXED_INI_PARAM(rectData.sourceSize.cx, "SourceWidth", rectIndex);
-		READ_INDEXED_INI_PARAM(rectData.sourceSize.cy, "SourceHeight", rectIndex);
-
-		READ_INDEXED_INI_PARAM(rectData.destPosition.x, "DestinationLeft", rectIndex);
-		READ_INDEXED_INI_PARAM(rectData.destPosition.y, "DestinationTop", rectIndex);
-		READ_INDEXED_INI_PARAM(rectData.destSize.cx, "DestinationWidth", rectIndex);
-		READ_INDEXED_INI_PARAM(rectData.destSize.cy, "DestinationHeight", rectIndex);
-
-		READ_INDEXED_INI_PARAM(rectData.rotation, "RectRotation", rectIndex);
-
-		newRectTransfers.push_back(rectData);
-	}
-
-	outSetting.rectTransfers = std::move(newRectTransfers);
-}
-
-void THRotatorSetting::Load(const boost::filesystem::path& processWorkingDir,
+void THRotatorSetting::LoadJsonFormat(const boost::filesystem::path& processWorkingDir,
 	const boost::filesystem::path& exeFilename,
 	THRotatorSetting& outSetting,
 	THRotatorFormatVersion& importedFormatVersion)
 {
-	namespace proptree = boost::property_tree;
+	auto filename = CreateJsonFilePath(processWorkingDir, exeFilename);
 
-	auto filename = processWorkingDir / L"throt.ini";
+	namespace proptree = boost::property_tree;
 
 	proptree::basic_ptree<std::string, std::string> tree;
 	try
@@ -381,12 +361,7 @@ void THRotatorSetting::Load(const boost::filesystem::path& processWorkingDir,
 		boost::iostreams::filtering_istream inStream;
 		inStream.push(InputFilerIgnoringBOM());
 		inStream.push(boost::iostreams::file_descriptor_source(filename));
-		proptree::read_ini(inStream, tree);
-	}
-	catch (const std::ios::failure&)
-	{
-		// デフォルト値を用いる
-		return;
+		proptree::read_json(inStream, tree);
 	}
 	catch (const proptree::ini_parser_error&)
 	{
@@ -394,62 +369,109 @@ void THRotatorSetting::Load(const boost::filesystem::path& processWorkingDir,
 		return;
 	}
 
-	auto appName = GenerateIniAppName(exeFilename); // READ_INI_PARAMの中で参照
-	THRotatorFormatVersion formatVersion = THRotatorFormatVersion::Version_1;
-	READ_INI_PARAM(formatVersion, "FormatVersion");
-	
-	switch (formatVersion)
+#define READ_JSON_PARAM(parent, destination, name) \
+	do { \
+		auto rawValue = parent.get_optional<RawTypeOfEnum<decltype(destination)>::type>(name); \
+		if (rawValue) (destination) = static_cast<std::remove_reference<decltype(destination)>::type>(*rawValue); \
+	} while(false)
+
+	READ_JSON_PARAM(tree, outSetting.judgeThreshold, "judge_threshold");
+	READ_JSON_PARAM(tree, outSetting.mainScreenTopLeft.x, "main_screen_left");
+	READ_JSON_PARAM(tree, outSetting.mainScreenTopLeft.y, "main_screen_top");
+	READ_JSON_PARAM(tree, outSetting.mainScreenSize.cx, "main_screen_width");
+	READ_JSON_PARAM(tree, outSetting.mainScreenSize.cy, "main_screen_height");
+	READ_JSON_PARAM(tree, outSetting.yOffset, "y_offset");
+	READ_JSON_PARAM(tree, outSetting.bVisible, "window_visible");
+	READ_JSON_PARAM(tree, outSetting.bVerticallyLongWindow, "vertical_window");
+	READ_JSON_PARAM(tree, outSetting.bModalEditorPreferred, "use_modal_editor");
+	READ_JSON_PARAM(tree, outSetting.rotationAngle, "rotation_angle");
+	READ_JSON_PARAM(tree, outSetting.filterType, "fileter_type");
+	READ_JSON_PARAM(tree, importedFormatVersion, "format_version");
+
+	const auto& loadedRectTransfersOptional = tree.get_child_optional("rects");
+	if (!loadedRectTransfersOptional)
 	{
-	case THRotatorFormatVersion::Version_1:
-		THRotatorSetting::LoadFormatVer1(tree, ConvertFromUtf8ToSjis(appName), outSetting);
-		importedFormatVersion = formatVersion;
-		break;
-
-	case THRotatorFormatVersion::Version_2:
-		THRotatorSetting::LoadFormatVer2(tree, appName, outSetting);
-		importedFormatVersion = formatVersion;
-		break;
-
-	default:
-		break;
+		// 矩形転送なし
+		return;
 	}
+
+	const auto& loadedRectTransfers = *loadedRectTransfersOptional;
+
+	std::vector<RectTransferData> newRectTransfers;
+	newRectTransfers.reserve(loadedRectTransfers.size());
+
+	for (const auto& loadedRectTransfer : loadedRectTransfers)
+	{
+		const auto& rectTransferNode = loadedRectTransfer.second;
+
+		RectTransferData rectData;
+		std::string rectName;
+		READ_JSON_PARAM(rectTransferNode, rectName, "rect_name");
+
+#ifdef _UNICODE
+		rectData.name = ConvertFromUtf8ToUnicode(rectName);
+#else
+		rectData.name = ConvertFromUtf8ToSjis(rectName);
+#endif
+
+		READ_JSON_PARAM(rectTransferNode, rectData.sourcePosition.x, "source_left");
+		READ_JSON_PARAM(rectTransferNode, rectData.sourcePosition.y, "source_top");
+		READ_JSON_PARAM(rectTransferNode, rectData.sourceSize.cx, "source_width");
+		READ_JSON_PARAM(rectTransferNode, rectData.sourceSize.cy, "source_height");
+
+		READ_JSON_PARAM(rectTransferNode, rectData.destPosition.x, "destination_left");
+		READ_JSON_PARAM(rectTransferNode, rectData.destPosition.y, "destination_top");
+		READ_JSON_PARAM(rectTransferNode, rectData.destSize.cx, "destination_width");
+		READ_JSON_PARAM(rectTransferNode, rectData.destSize.cy, "destination_height");
+
+		READ_JSON_PARAM(rectTransferNode, rectData.rotation, "rect_rotation");
+
+		newRectTransfers.push_back(rectData);
+	}
+	
+	outSetting.rectTransfers = std::move(newRectTransfers);
+
+#undef READ_JSON_PARAM
 }
 
-#undef READ_INDEXED_INI_PARAM
-#undef READ_INI_PARAM
+void THRotatorSetting::Load(const boost::filesystem::path& processWorkingDir,
+	const boost::filesystem::path& exeFilename,
+	THRotatorSetting& outSetting,
+	THRotatorFormatVersion& importedFormatVersion)
+{
+	try
+	{
+		THRotatorSetting::LoadJsonFormat(processWorkingDir, exeFilename, outSetting, importedFormatVersion);
+	}
+	catch (const std::ios::failure&)
+	{
+		THRotatorSetting::LoadIniFormat(processWorkingDir, exeFilename, outSetting);
+		importedFormatVersion = THRotatorFormatVersion::Version_1;
+	}
+}
 
 bool THRotatorSetting::Save(const boost::filesystem::path& processWorkingDir, const boost::filesystem::path& exeFilename, const THRotatorSetting& inSetting)
 {
 	namespace proptree = boost::property_tree;
 	proptree::basic_ptree<std::string, std::string> tree;
 
-	auto appNameUtf8 = GenerateIniAppName(exeFilename);
+#define WRITE_JSON_PARAM(parent, name, value) parent.add(name, static_cast<RawTypeOfEnum<decltype(value)>::type>(value))
 
-#define WRITE_INI_PARAM(name, value) tree.add(appNameUtf8 + "." + name, static_cast<RawTypeOfEnum<decltype(value)>::type>(value))
-#define WRITE_INDEXED_INI_PARAM(name, index, value) \
-	do { \
-		std::ostringstream ss(std::ios::ate); \
-		ss.str(name); \
-		ss << (index); \
-		WRITE_INI_PARAM(ss.str(), value); \
-	} while(false)
+	WRITE_JSON_PARAM(tree, "format_version", THRotatorFormatVersion::Latest);
+	WRITE_JSON_PARAM(tree, "judge_threshold", inSetting.judgeThreshold);
+	WRITE_JSON_PARAM(tree, "main_screen_left", inSetting.mainScreenTopLeft.x);
+	WRITE_JSON_PARAM(tree, "main_screen_top", inSetting.mainScreenTopLeft.y);
+	WRITE_JSON_PARAM(tree, "main_screen_width", inSetting.mainScreenSize.cx);
+	WRITE_JSON_PARAM(tree, "main_screen_height", inSetting.mainScreenSize.cy);
+	WRITE_JSON_PARAM(tree, "y_offset", inSetting.yOffset);
+	WRITE_JSON_PARAM(tree, "window_visible", inSetting.bVisible);
+	WRITE_JSON_PARAM(tree, "vertical_window", inSetting.bVerticallyLongWindow);
+	WRITE_JSON_PARAM(tree, "fileter_type", inSetting.filterType);
+	WRITE_JSON_PARAM(tree, "rotation_angle", inSetting.rotationAngle);
+	WRITE_JSON_PARAM(tree, "NumRectTransfers", inSetting.rectTransfers.size());
+	WRITE_JSON_PARAM(tree, "use_modal_editor", inSetting.bModalEditorPreferred);
 
-	WRITE_INI_PARAM("FormatVersion", THRotatorFormatVersion::Latest);
-	WRITE_INI_PARAM("JudgeThreshold", inSetting.judgeThreshold);
-	WRITE_INI_PARAM("MainScreenLeft", inSetting.mainScreenTopLeft.x);
-	WRITE_INI_PARAM("MainScreenTop", inSetting.mainScreenTopLeft.y);
-	WRITE_INI_PARAM("MainScreenWidth", inSetting.mainScreenSize.cx);
-	WRITE_INI_PARAM("MainScreenHeight", inSetting.mainScreenSize.cy);
-	WRITE_INI_PARAM("YOffset", inSetting.yOffset);
-	WRITE_INI_PARAM("WindowVisible", inSetting.bVisible);
-	WRITE_INI_PARAM("VerticallyLongWindow", inSetting.bVerticallyLongWindow);
-	WRITE_INI_PARAM("FilterType", inSetting.filterType);
-	WRITE_INI_PARAM("RotationAngle", inSetting.rotationAngle);
-	WRITE_INI_PARAM("NumRectTransfers", inSetting.rectTransfers.size());
-	WRITE_INI_PARAM("UseModalEditor", inSetting.bModalEditorPreferred);
-
-	int rectIndex = 0;
-	std::ostringstream ss(std::ios::ate);
+	proptree::basic_ptree<std::string, std::string> rectTransfersNode;
 
 	for (const auto& rectData : inSetting.rectTransfers)
 	{
@@ -459,26 +481,31 @@ bool THRotatorSetting::Save(const boost::filesystem::path& processWorkingDir, co
 		const auto& nameToSave = ConvertFromSjisToUtf8(rectData.name);
 #endif
 
-		WRITE_INDEXED_INI_PARAM("RectName", rectIndex, nameToSave);
+		proptree::basic_ptree<std::string, std::string> rectTransferNode;
 
-		WRITE_INDEXED_INI_PARAM("SourceLeft", rectIndex, rectData.sourcePosition.x);
-		WRITE_INDEXED_INI_PARAM("SourceTop", rectIndex, rectData.sourcePosition.y);
-		WRITE_INDEXED_INI_PARAM("SourceWidth", rectIndex, rectData.sourceSize.cx);
-		WRITE_INDEXED_INI_PARAM("SourceHeight", rectIndex, rectData.sourceSize.cy);
+		WRITE_JSON_PARAM(rectTransferNode, "rect_name", nameToSave);
 
-		WRITE_INDEXED_INI_PARAM("DestinationLeft", rectIndex, rectData.destPosition.x);
-		WRITE_INDEXED_INI_PARAM("DestinationTop", rectIndex, rectData.destPosition.y);
-		WRITE_INDEXED_INI_PARAM("DestinationWidth", rectIndex, rectData.destSize.cx);
-		WRITE_INDEXED_INI_PARAM("DestinationHeight", rectIndex, rectData.destSize.cy);
+		WRITE_JSON_PARAM(rectTransferNode, "source_left", rectData.sourcePosition.x);
+		WRITE_JSON_PARAM(rectTransferNode, "source_top", rectData.sourcePosition.y);
+		WRITE_JSON_PARAM(rectTransferNode, "source_width", rectData.sourceSize.cx);
+		WRITE_JSON_PARAM(rectTransferNode, "source_height", rectData.sourceSize.cy);
 
-		WRITE_INDEXED_INI_PARAM("RectRotation", rectIndex, rectData.rotation);
+		WRITE_JSON_PARAM(rectTransferNode, "destination_left", rectData.destPosition.x);
+		WRITE_JSON_PARAM(rectTransferNode, "destination_top", rectData.destPosition.y);
+		WRITE_JSON_PARAM(rectTransferNode, "destination_width", rectData.destSize.cx);
+		WRITE_JSON_PARAM(rectTransferNode, "destination_height", rectData.destSize.cy);
 
-		rectIndex++;
+		WRITE_JSON_PARAM(rectTransferNode, "rect_rotation", rectData.rotation);
+
+		rectTransfersNode.push_back(std::make_pair("", rectTransferNode));
 	}
+
+	tree.add_child("rects", rectTransfersNode);
+
 #undef WRITE_INDEXED_INI_PARAM
 #undef WRITE_INI_PARAM
 
-	auto filename = processWorkingDir / L"throt.ini";
+	auto filename = CreateJsonFilePath(processWorkingDir, exeFilename);
 
 	try
 	{
@@ -486,7 +513,7 @@ bool THRotatorSetting::Save(const boost::filesystem::path& processWorkingDir, co
 		outStream.push(OutputFilterWithBOM());
 		outStream.push(boost::iostreams::file_descriptor_sink(filename));
 
-		proptree::write_ini(outStream, tree);
+		proptree::write_json(outStream, tree);
 	}
 	catch (const std::ios::failure&)
 	{
