@@ -3,11 +3,11 @@
 
 インストール方法、使い方は下記ページを参照してください。
 
-* オンラインマニュアル(日本語): TBW
+* オンラインマニュアル(日本語): https://massanoori.github.io/THRotator/ja/
 
 To install and use THRotator, visit the following URI.
 
-* Online manual (English): TBW
+* Online manual (English): https://massanoori.github.io/THRotator/en/
 
 
 Source code: https://github.com/massanoori/THRotator
