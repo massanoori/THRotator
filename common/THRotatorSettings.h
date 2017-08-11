@@ -75,7 +75,7 @@ struct THRotatorSetting
 		mainScreenSize.cy = 448;
 	}
 
-	static void Load(const boost::filesystem::path& processWorkingDir,
+	static bool Load(const boost::filesystem::path& processWorkingDir,
 		const boost::filesystem::path& exeFilename,
 		THRotatorSetting& outSetting,
 		THRotatorFormatVersion& importedFormatVersion);

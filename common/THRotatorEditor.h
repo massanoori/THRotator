@@ -100,7 +100,7 @@ private:
 
 	bool SaveSettings() const;
 
-	void LoadSettings();
+	bool LoadSettings();
 
 	void SetVerticallyLongWindow(bool bVerticallyLongWindow);
 

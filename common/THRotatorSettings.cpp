@@ -439,7 +439,7 @@ boost::filesystem::path THRotatorSetting::CreateJsonFilePath(const boost::filesy
 	return jsonPath;
 }
 
-void THRotatorSetting::Load(const boost::filesystem::path& processWorkingDir,
+bool THRotatorSetting::Load(const boost::filesystem::path& processWorkingDir,
 	const boost::filesystem::path& exeFilename,
 	THRotatorSetting& outSetting,
 	THRotatorFormatVersion& importedFormatVersion)
@@ -448,11 +448,18 @@ void THRotatorSetting::Load(const boost::filesystem::path& processWorkingDir,
 	{
 		THRotatorSetting::LoadJsonFormat(processWorkingDir, exeFilename, outSetting, importedFormatVersion);
 	}
+	catch (const std::invalid_argument&)
+	{
+		// パースエラー
+		return false;
+	}
 	catch (const std::ios::failure&)
 	{
 		THRotatorSetting::LoadIniFormat(processWorkingDir, exeFilename, outSetting);
 		importedFormatVersion = THRotatorFormatVersion::Version_1;
 	}
+
+	return true;
 }
 
 bool THRotatorSetting::Save(const boost::filesystem::path& processWorkingDir, const boost::filesystem::path& exeFilename, const THRotatorSetting& inSetting)

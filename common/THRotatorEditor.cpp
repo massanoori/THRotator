@@ -150,7 +150,11 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 		m_bNeedModalEditor = true;
 	}
 
-	LoadSettings();
+	if (!LoadSettings())
+	{
+		auto loadFailureMessage = LoadTHRotatorString(g_hModule, IDS_SETTING_FILE_LOAD_FAILED);
+		SetNewErrorMessage(std::move(loadFailureMessage));
+	}
 
 	m_bNeedModalEditor = m_bNeedModalEditor || m_bModalEditorPreferred;
 
@@ -1048,11 +1052,13 @@ bool THRotatorEditorContext::SaveSettings() const
 	return THRotatorSetting::Save(m_workingDir, m_exeFilename, settings);
 }
 
-void THRotatorEditorContext::LoadSettings()
+bool THRotatorEditorContext::LoadSettings()
 {
 	THRotatorSetting setting;
 	THRotatorFormatVersion formatVersion;
-	THRotatorSetting::Load(m_workingDir, m_exeFilename, setting, formatVersion);
+	bool bLoadSuccess = THRotatorSetting::Load(m_workingDir, m_exeFilename, setting, formatVersion);
+
+	// 失敗しても、デフォルト値で埋める
 
 	m_judgeThreshold = setting.judgeThreshold;
 	m_mainScreenTopLeft = setting.mainScreenTopLeft;
@@ -1066,6 +1072,11 @@ void THRotatorEditorContext::LoadSettings()
 
 	m_editedRectTransfers = std::move(setting.rectTransfers);
 
+	if (!bLoadSuccess)
+	{
+		return false;
+	}
+
 	if (formatVersion == THRotatorFormatVersion::Version_1)
 	{
 		double touhouIndex = ExtractTouhouIndex(m_exeFilename);
@@ -1077,6 +1088,8 @@ void THRotatorEditorContext::LoadSettings()
 			m_judgeThreshold++;
 		}
 	}
+
+	return true;
 }
 
 // メッセージキューの中で同一のメッセージがポストされていないかチェックし、なければ(ユニークなら)true、そうでなければfalse
