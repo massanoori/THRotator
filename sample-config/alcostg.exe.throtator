@@ -1,0 +1,113 @@
+{
+  "NumRectTransfers": 8,
+  "fileter_type": "linear",
+  "format_version": 2,
+  "judge_threshold": 10,
+  "main_screen_height": 448,
+  "main_screen_left": 126,
+  "main_screen_top": 16,
+  "main_screen_width": 440,
+  "rects": [
+    {
+      "destination_height": 496,
+      "destination_left": 390,
+      "destination_top": 80,
+      "destination_width": 64,
+      "rect_name": "Beer",
+      "rect_rotation": 0,
+      "source_height": 496,
+      "source_left": 546,
+      "source_top": 144,
+      "source_width": 64
+    },
+    {
+      "destination_height": 32,
+      "destination_left": 272,
+      "destination_top": 0,
+      "destination_width": 112,
+      "rect_name": "大呑みチャンピオン",
+      "rect_rotation": 0,
+      "source_height": 32,
+      "source_left": 520,
+      "source_top": 80,
+      "source_width": 112
+    },
+    {
+      "destination_height": 32,
+      "destination_left": 0,
+      "destination_top": 0,
+      "destination_width": 112,
+      "rect_name": "本日のお会計総額",
+      "rect_rotation": 0,
+      "source_height": 32,
+      "source_left": 520,
+      "source_top": 112,
+      "source_width": 112
+    },
+    {
+      "destination_height": 32,
+      "destination_left": 136,
+      "destination_top": 0,
+      "destination_width": 112,
+      "rect_name": "コンボ",
+      "rect_rotation": 0,
+      "source_height": 32,
+      "source_left": 520,
+      "source_top": 32,
+      "source_width": 112
+    },
+    {
+      "destination_height": 84,
+      "destination_left": -4,
+      "destination_top": 501,
+      "destination_width": 398,
+      "rect_name": "時間",
+      "rect_rotation": 3,
+      "source_height": 464,
+      "source_left": 44,
+      "source_top": 8,
+      "source_width": 84
+    },
+    {
+      "destination_height": 8,
+      "destination_left": 390,
+      "destination_top": 406,
+      "destination_width": 64,
+      "rect_name": "Hider",
+      "rect_rotation": 0,
+      "source_height": 1,
+      "source_left": 546,
+      "source_top": 464,
+      "source_width": 64
+    },
+    {
+      "destination_height": 12,
+      "destination_left": 390,
+      "destination_top": 574,
+      "destination_width": 50,
+      "rect_name": "FPS",
+      "rect_rotation": 0,
+      "source_height": 12,
+      "source_left": 590,
+      "source_top": 468,
+      "source_width": 50
+    },
+    {
+      "destination_height": 16,
+      "destination_left": 390,
+      "destination_top": 64,
+      "destination_width": 64,
+      "rect_name": "Hider2",
+      "rect_rotation": 0,
+      "source_height": 1,
+      "source_left": 546,
+      "source_top": 464,
+      "source_width": 64
+    }
+  ],
+  "rotation_angle": 0,
+  "use_modal_editor": false,
+  "vertical_window": false,
+  "window_visible": false,
+  "y_offset": -16
+}
