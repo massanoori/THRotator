@@ -46,7 +46,7 @@ Windows may ask you to input an administrator's name and password to copy the DL
 Copy config file
 =========================
 
-Copy config file corresponding to the game ``<filename of executable>.throtator`` to the following directory.
+Copy config file corresponding to the game ``sample-config/<filename of executable>.throtator`` to the following directory.
 
 For Th06, Th07, Th08, Th09, Th095, Th10, Th11, Th12, and alcostg
   Where the game is installed.
