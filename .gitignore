@@ -43,3 +43,5 @@ RelWithDebInfo/
 _build/
 
 !.gitignore
+
+!/nlohmann-json

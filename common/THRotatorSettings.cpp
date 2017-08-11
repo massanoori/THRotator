@@ -4,22 +4,14 @@
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/iostreams/categories.hpp> // input_filter_tag
-#include <boost/iostreams/operations.hpp> // get, WOULD_BLOCK
-#include <boost/iostreams/filtering_stream.hpp>
-#include <boost/iostreams/device/file_descriptor.hpp>
+
+#include <json.hpp>
 
 #include "THRotatorSettings.h"
 #include "EncodingUtils.h"
 
 namespace
 {
-
-const int UTF8_BOM[3] =
-{
-	0xEF, 0xBB, 0xBF,
-};
 
 // Tがenumなら、その内部の型を、そうでなければTを、RawTypeOfEnum<T>::typeで取得できる
 template <typename T, typename IsEnum = typename std::is_enum<typename std::remove_reference<T>::type>::type>
@@ -35,77 +27,209 @@ struct RawTypeOfEnum<T, std::true_type>
 	typedef typename std::underlying_type<typename std::remove_reference<T>::type>::type type;
 };
 
-struct InputFilerIgnoringBOM
+template <typename T>
+struct JsonConvHelper
 {
-	typedef char char_type;
-	typedef boost::iostreams::input_filter_tag category;
 
-	bool bBOMRead;
-	std::list<int> residualsOfBOMSkip;
+};
 
-	InputFilerIgnoringBOM() : bBOMRead(false)
+template <>
+struct JsonConvHelper<int>
+{
+	static bool IsValidType(const nlohmann::json& j)
 	{
+		return j.is_number_integer();
 	}
 
-	template<typename Source>
-	int get(Source& src)
+	static int ConvertFromJson(const nlohmann::json& j)
 	{
-		if (!bBOMRead)
-		{
-			int readBOM[3];
+		assert(IsValidType(j));
+		int i = j;
+		return i;
+	}
 
-			readBOM[0] = boost::iostreams::get(src);
-			readBOM[1] = boost::iostreams::get(src);
-			readBOM[2] = boost::iostreams::get(src);
-
-			if (readBOM[0] != UTF8_BOM[0] ||
-				readBOM[1] != UTF8_BOM[1] ||
-				readBOM[2] != UTF8_BOM[2])
-			{
-				residualsOfBOMSkip.push_back(readBOM[0]);
-				residualsOfBOMSkip.push_back(readBOM[1]);
-				residualsOfBOMSkip.push_back(readBOM[2]);
-			}
-
-			bBOMRead = true;
-		}
-
-		if (!residualsOfBOMSkip.empty())
-		{
-			int residual = residualsOfBOMSkip.front();
-			residualsOfBOMSkip.pop_front();
-			return residual;
-		}
-
-		return boost::iostreams::get(src);
+	static nlohmann::json ConvertToJson(int x)
+	{
+		return nlohmann::json(x);
 	}
 };
 
-struct OutputFilterWithBOM
+template <>
+struct JsonConvHelper<long>
 {
-	typedef char char_type;
-	typedef boost::iostreams::output_filter_tag category;
-
-	bool bBOMWritten;
-
-	OutputFilterWithBOM() : bBOMWritten(false)
+	static bool IsValidType(const nlohmann::json& j)
 	{
+		return j.is_number_integer();
 	}
 
-	template <typename Sink>
-	bool put(Sink& sink, char_type c)
+	static long ConvertFromJson(const nlohmann::json& j)
 	{
-		if (!bBOMWritten)
-		{
-			boost::iostreams::put(sink, UTF8_BOM[0]);
-			boost::iostreams::put(sink, UTF8_BOM[1]);
-			boost::iostreams::put(sink, UTF8_BOM[2]);
+		assert(IsValidType(j));
+		int i = j;
+		return i;
+	}
 
-			bBOMWritten = true;
+	static nlohmann::json ConvertToJson(long x)
+	{
+		return nlohmann::json(x);
+	}
+};
+
+template <>
+struct JsonConvHelper<unsigned int>
+{
+	static bool IsValidType(const nlohmann::json& j)
+	{
+		return j.is_number_integer();
+	}
+
+	static unsigned int ConvertFromJson(const nlohmann::json& j)
+	{
+		assert(IsValidType(j));
+		unsigned int i = j;
+		return i;
+	}
+
+	static nlohmann::json ConvertToJson(unsigned int x)
+	{
+		return nlohmann::json(x);
+	}
+};
+
+template <>
+struct JsonConvHelper<RotationAngle>
+{
+	static bool IsValidType(const nlohmann::json& j)
+	{
+		return j.is_number_integer();
+	}
+
+	static RotationAngle ConvertFromJson(const nlohmann::json& j)
+	{
+		assert(IsValidType(j));
+		typename std::underlying_type<RotationAngle>::type i = j;
+		return static_cast<RotationAngle>(i);
+	}
+
+	static nlohmann::json ConvertToJson(RotationAngle x)
+	{
+		return nlohmann::json(static_cast<std::underlying_type<RotationAngle>::type>(x));
+	}
+};
+
+template <>
+struct JsonConvHelper<THRotatorFormatVersion>
+{
+	static bool IsValidType(const nlohmann::json& j)
+	{
+		return j.is_number_integer();
+	}
+
+	static THRotatorFormatVersion ConvertFromJson(const nlohmann::json& j)
+	{
+		assert(IsValidType(j));
+		typename std::underlying_type<THRotatorFormatVersion>::type i = j;
+		return static_cast<THRotatorFormatVersion>(i);
+	}
+
+	static nlohmann::json ConvertToJson(THRotatorFormatVersion x)
+	{
+		return nlohmann::json(static_cast<std::underlying_type<THRotatorFormatVersion>::type>(x));
+	}
+};
+
+template <>
+struct JsonConvHelper<bool>
+{
+	static bool IsValidType(const nlohmann::json& j)
+	{
+		return j.is_boolean();
+	}
+
+	static bool ConvertFromJson(const nlohmann::json& j)
+	{
+		assert(IsValidType(j));
+		bool b = j;
+		return b;
+	}
+
+	static nlohmann::json ConvertToJson(bool x)
+	{
+		return nlohmann::json(x);
+	}
+};
+
+template <>
+struct JsonConvHelper<D3DTEXTUREFILTERTYPE>
+{
+	static bool IsValidType(const nlohmann::json& j)
+	{
+		if (!j.is_string())
+		{
+			return false;
 		}
 
-		return boost::iostreams::put(sink, c);
+		std::string value = j;
+		return value == "linear" || value == "none";
 	}
+
+	static D3DTEXTUREFILTERTYPE ConvertFromJson(const nlohmann::json& j)
+	{
+		assert(IsValidType(j));
+		std::string value = j;
+
+		if (value == "linear")
+		{
+			return D3DTEXF_LINEAR;
+		}
+		else
+		{
+			return D3DTEXF_NONE;
+		}
+	}
+
+	static nlohmann::json ConvertToJson(D3DTEXTUREFILTERTYPE x)
+	{
+		switch (x)
+		{
+		case D3DTEXF_NONE:
+			return nlohmann::json("none");
+
+		case D3DTEXF_LINEAR:
+			return nlohmann::json("linear");
+
+		default:
+			break;
+		}
+
+		return nlohmann::json("linear");
+	}
+};
+
+template <>
+struct JsonConvHelper<std::string>
+{
+	static bool IsValidType(const nlohmann::json& j)
+	{
+		return j.is_string();
+	}
+
+	static std::string ConvertFromJson(const nlohmann::json& j)
+	{
+		assert(IsValidType(j));
+		std::string s = j;
+		return s;
+	}
+
+	static nlohmann::json ConvertToJson(const std::string& x)
+	{
+		return nlohmann::json(x);
+	}
+};
+
+template <typename T>
+struct JsonConv : public JsonConvHelper<typename std::remove_const<typename std::remove_reference<T>::type>::type>
+{
 };
 
 }
@@ -121,10 +245,7 @@ void THRotatorSetting::LoadIniFormat(const boost::filesystem::path& processWorki
 	proptree::basic_ptree<std::string, std::string> tree;
 	try
 	{
-		boost::iostreams::filtering_istream inStream;
-		inStream.push(InputFilerIgnoringBOM());
-		inStream.push(boost::iostreams::file_descriptor_source(filename));
-		proptree::read_ini(inStream, tree);
+		proptree::read_ini(filename.generic_string(), tree);
 	}
 	catch (const std::ios::failure&)
 	{
@@ -218,17 +339,22 @@ void THRotatorSetting::LoadJsonFormat(const boost::filesystem::path& processWork
 {
 	auto filename = CreateJsonFilePath(processWorkingDir, exeFilename);
 
-	namespace proptree = boost::property_tree;
+	std::ifstream ifs;
+	ifs.open(filename.generic_wstring());
 
-	proptree::basic_ptree<std::string, std::string> tree;
+	// json.hppでは、ifstreamの例外ビットを設定することができない
+	if (ifs.fail() || ifs.bad())
+	{
+		throw std::ios::failure("");
+	}
+
+	nlohmann::json loadedJson;
+
 	try
 	{
-		boost::iostreams::filtering_istream inStream;
-		inStream.push(InputFilerIgnoringBOM());
-		inStream.push(boost::iostreams::file_descriptor_source(filename));
-		proptree::read_json(inStream, tree);
+		ifs >> loadedJson;
 	}
-	catch (const proptree::ini_parser_error&)
+	catch (const nlohmann::json::parse_error&)
 	{
 		// デフォルト値を用いる
 		return;
@@ -236,42 +362,42 @@ void THRotatorSetting::LoadJsonFormat(const boost::filesystem::path& processWork
 
 #define READ_JSON_PARAM(parent, destination, name) \
 	do { \
-		auto rawValue = parent.get_optional<RawTypeOfEnum<decltype(destination)>::type>(name); \
-		if (rawValue) (destination) = static_cast<std::remove_reference<decltype(destination)>::type>(*rawValue); \
+		auto foundItr = parent.find(name); \
+		if (foundItr != parent.end() && JsonConv<typename std::remove_reference<decltype(destination)>::type>::IsValidType(*foundItr)) \
+		{ \
+			(destination) = JsonConv<typename std::remove_reference<decltype(destination)>::type>::ConvertFromJson(*foundItr); \
+		} \
 	} while(false)
 
-	READ_JSON_PARAM(tree, outSetting.judgeThreshold, "judge_threshold");
-	READ_JSON_PARAM(tree, outSetting.mainScreenTopLeft.x, "main_screen_left");
-	READ_JSON_PARAM(tree, outSetting.mainScreenTopLeft.y, "main_screen_top");
-	READ_JSON_PARAM(tree, outSetting.mainScreenSize.cx, "main_screen_width");
-	READ_JSON_PARAM(tree, outSetting.mainScreenSize.cy, "main_screen_height");
-	READ_JSON_PARAM(tree, outSetting.yOffset, "y_offset");
-	READ_JSON_PARAM(tree, outSetting.bVisible, "window_visible");
-	READ_JSON_PARAM(tree, outSetting.bVerticallyLongWindow, "vertical_window");
-	READ_JSON_PARAM(tree, outSetting.bModalEditorPreferred, "use_modal_editor");
-	READ_JSON_PARAM(tree, outSetting.rotationAngle, "rotation_angle");
-	READ_JSON_PARAM(tree, outSetting.filterType, "fileter_type");
-	READ_JSON_PARAM(tree, importedFormatVersion, "format_version");
+	READ_JSON_PARAM(loadedJson, outSetting.judgeThreshold, "judge_threshold");
+	READ_JSON_PARAM(loadedJson, outSetting.mainScreenTopLeft.x, "main_screen_left");
+	READ_JSON_PARAM(loadedJson, outSetting.mainScreenTopLeft.y, "main_screen_top");
+	READ_JSON_PARAM(loadedJson, outSetting.mainScreenSize.cx, "main_screen_width");
+	READ_JSON_PARAM(loadedJson, outSetting.mainScreenSize.cy, "main_screen_height");
+	READ_JSON_PARAM(loadedJson, outSetting.yOffset, "y_offset");
+	READ_JSON_PARAM(loadedJson, outSetting.bVisible, "window_visible");
+	READ_JSON_PARAM(loadedJson, outSetting.bVerticallyLongWindow, "vertical_window");
+	READ_JSON_PARAM(loadedJson, outSetting.bModalEditorPreferred, "use_modal_editor");
+	READ_JSON_PARAM(loadedJson, outSetting.rotationAngle, "rotation_angle");
+	READ_JSON_PARAM(loadedJson, outSetting.filterType, "fileter_type");
+	READ_JSON_PARAM(loadedJson, importedFormatVersion, "format_version");
 
-	const auto& loadedRectTransfersOptional = tree.get_child_optional("rects");
-	if (!loadedRectTransfersOptional)
+	auto rectsItr = loadedJson.find("rects");
+	if (rectsItr == loadedJson.end() && rectsItr->is_array())
 	{
-		// 矩形転送なし
-		return;
+		outSetting.rectTransfers.clear();
 	}
 
-	const auto& loadedRectTransfers = *loadedRectTransfersOptional;
+	auto rectsObject = *rectsItr;
 
 	std::vector<RectTransferData> newRectTransfers;
-	newRectTransfers.reserve(loadedRectTransfers.size());
+	newRectTransfers.reserve(rectsObject.size());
 
-	for (const auto& loadedRectTransfer : loadedRectTransfers)
+	for (const auto& rectObject : rectsObject)
 	{
-		const auto& rectTransferNode = loadedRectTransfer.second;
-
 		RectTransferData rectData;
 		std::string rectName;
-		READ_JSON_PARAM(rectTransferNode, rectName, "rect_name");
+		READ_JSON_PARAM(rectObject, rectName, "rect_name");
 
 #ifdef _UNICODE
 		rectData.name = ConvertFromUtf8ToUnicode(rectName);
@@ -279,17 +405,17 @@ void THRotatorSetting::LoadJsonFormat(const boost::filesystem::path& processWork
 		rectData.name = ConvertFromUtf8ToSjis(rectName);
 #endif
 
-		READ_JSON_PARAM(rectTransferNode, rectData.sourcePosition.x, "source_left");
-		READ_JSON_PARAM(rectTransferNode, rectData.sourcePosition.y, "source_top");
-		READ_JSON_PARAM(rectTransferNode, rectData.sourceSize.cx, "source_width");
-		READ_JSON_PARAM(rectTransferNode, rectData.sourceSize.cy, "source_height");
+		READ_JSON_PARAM(rectObject, rectData.sourcePosition.x, "source_left");
+		READ_JSON_PARAM(rectObject, rectData.sourcePosition.y, "source_top");
+		READ_JSON_PARAM(rectObject, rectData.sourceSize.cx, "source_width");
+		READ_JSON_PARAM(rectObject, rectData.sourceSize.cy, "source_height");
 
-		READ_JSON_PARAM(rectTransferNode, rectData.destPosition.x, "destination_left");
-		READ_JSON_PARAM(rectTransferNode, rectData.destPosition.y, "destination_top");
-		READ_JSON_PARAM(rectTransferNode, rectData.destSize.cx, "destination_width");
-		READ_JSON_PARAM(rectTransferNode, rectData.destSize.cy, "destination_height");
+		READ_JSON_PARAM(rectObject, rectData.destPosition.x, "destination_left");
+		READ_JSON_PARAM(rectObject, rectData.destPosition.y, "destination_top");
+		READ_JSON_PARAM(rectObject, rectData.destSize.cx, "destination_width");
+		READ_JSON_PARAM(rectObject, rectData.destSize.cy, "destination_height");
 
-		READ_JSON_PARAM(rectTransferNode, rectData.rotation, "rect_rotation");
+		READ_JSON_PARAM(rectObject, rectData.rotation, "rect_rotation");
 
 		newRectTransfers.push_back(rectData);
 	}
@@ -334,73 +460,66 @@ void THRotatorSetting::Load(const boost::filesystem::path& processWorkingDir,
 
 bool THRotatorSetting::Save(const boost::filesystem::path& processWorkingDir, const boost::filesystem::path& exeFilename, const THRotatorSetting& inSetting)
 {
-	namespace proptree = boost::property_tree;
-	proptree::basic_ptree<std::string, std::string> tree;
+	nlohmann::json objectToWrite;
 
-#define WRITE_JSON_PARAM(parent, name, value) parent.add(name, static_cast<RawTypeOfEnum<decltype(value)>::type>(value))
+#define WRITE_JSON_PARAM(parent, name, value) parent[name] = JsonConv<decltype(value)>::ConvertToJson(value)
 
-	WRITE_JSON_PARAM(tree, "format_version", THRotatorFormatVersion::Latest);
-	WRITE_JSON_PARAM(tree, "judge_threshold", inSetting.judgeThreshold);
-	WRITE_JSON_PARAM(tree, "main_screen_left", inSetting.mainScreenTopLeft.x);
-	WRITE_JSON_PARAM(tree, "main_screen_top", inSetting.mainScreenTopLeft.y);
-	WRITE_JSON_PARAM(tree, "main_screen_width", inSetting.mainScreenSize.cx);
-	WRITE_JSON_PARAM(tree, "main_screen_height", inSetting.mainScreenSize.cy);
-	WRITE_JSON_PARAM(tree, "y_offset", inSetting.yOffset);
-	WRITE_JSON_PARAM(tree, "window_visible", inSetting.bVisible);
-	WRITE_JSON_PARAM(tree, "vertical_window", inSetting.bVerticallyLongWindow);
-	WRITE_JSON_PARAM(tree, "fileter_type", inSetting.filterType);
-	WRITE_JSON_PARAM(tree, "rotation_angle", inSetting.rotationAngle);
-	WRITE_JSON_PARAM(tree, "NumRectTransfers", inSetting.rectTransfers.size());
-	WRITE_JSON_PARAM(tree, "use_modal_editor", inSetting.bModalEditorPreferred);
+	WRITE_JSON_PARAM(objectToWrite, "format_version", THRotatorFormatVersion::Latest);
+	WRITE_JSON_PARAM(objectToWrite, "judge_threshold", inSetting.judgeThreshold);
+	WRITE_JSON_PARAM(objectToWrite, "main_screen_left", inSetting.mainScreenTopLeft.x);
+	WRITE_JSON_PARAM(objectToWrite, "main_screen_top", inSetting.mainScreenTopLeft.y);
+	WRITE_JSON_PARAM(objectToWrite, "main_screen_width", inSetting.mainScreenSize.cx);
+	WRITE_JSON_PARAM(objectToWrite, "main_screen_height", inSetting.mainScreenSize.cy);
+	WRITE_JSON_PARAM(objectToWrite, "y_offset", inSetting.yOffset);
+	WRITE_JSON_PARAM(objectToWrite, "window_visible", inSetting.bVisible);
+	WRITE_JSON_PARAM(objectToWrite, "vertical_window", inSetting.bVerticallyLongWindow);
+	WRITE_JSON_PARAM(objectToWrite, "fileter_type", inSetting.filterType);
+	WRITE_JSON_PARAM(objectToWrite, "rotation_angle", inSetting.rotationAngle);
+	WRITE_JSON_PARAM(objectToWrite, "NumRectTransfers", inSetting.rectTransfers.size());
+	WRITE_JSON_PARAM(objectToWrite, "use_modal_editor", inSetting.bModalEditorPreferred);
 
-	proptree::basic_ptree<std::string, std::string> rectTransfersNode;
+	nlohmann::json rectsArray;
 
 	for (const auto& rectData : inSetting.rectTransfers)
 	{
+		nlohmann::json rectObject;
+
 #ifdef _UNICODE
 		const auto& nameToSave = ConvertFromUnicodeToUtf8(rectData.name);
 #else
 		const auto& nameToSave = ConvertFromSjisToUtf8(rectData.name);
 #endif
 
-		proptree::basic_ptree<std::string, std::string> rectTransferNode;
+		WRITE_JSON_PARAM(rectObject, "rect_name", nameToSave);
 
-		WRITE_JSON_PARAM(rectTransferNode, "rect_name", nameToSave);
+		WRITE_JSON_PARAM(rectObject, "source_left", rectData.sourcePosition.x);
+		WRITE_JSON_PARAM(rectObject, "source_top", rectData.sourcePosition.y);
+		WRITE_JSON_PARAM(rectObject, "source_width", rectData.sourceSize.cx);
+		WRITE_JSON_PARAM(rectObject, "source_height", rectData.sourceSize.cy);
 
-		WRITE_JSON_PARAM(rectTransferNode, "source_left", rectData.sourcePosition.x);
-		WRITE_JSON_PARAM(rectTransferNode, "source_top", rectData.sourcePosition.y);
-		WRITE_JSON_PARAM(rectTransferNode, "source_width", rectData.sourceSize.cx);
-		WRITE_JSON_PARAM(rectTransferNode, "source_height", rectData.sourceSize.cy);
+		WRITE_JSON_PARAM(rectObject, "destination_left", rectData.destPosition.x);
+		WRITE_JSON_PARAM(rectObject, "destination_top", rectData.destPosition.y);
+		WRITE_JSON_PARAM(rectObject, "destination_width", rectData.destSize.cx);
+		WRITE_JSON_PARAM(rectObject, "destination_height", rectData.destSize.cy);
 
-		WRITE_JSON_PARAM(rectTransferNode, "destination_left", rectData.destPosition.x);
-		WRITE_JSON_PARAM(rectTransferNode, "destination_top", rectData.destPosition.y);
-		WRITE_JSON_PARAM(rectTransferNode, "destination_width", rectData.destSize.cx);
-		WRITE_JSON_PARAM(rectTransferNode, "destination_height", rectData.destSize.cy);
+		WRITE_JSON_PARAM(rectObject, "rect_rotation", rectData.rotation);
 
-		WRITE_JSON_PARAM(rectTransferNode, "rect_rotation", rectData.rotation);
-
-		rectTransfersNode.push_back(std::make_pair("", rectTransferNode));
+		rectsArray.push_back(rectObject);
 	}
 
-	tree.add_child("rects", rectTransfersNode);
+	objectToWrite["rects"] = rectsArray;
 
-#undef WRITE_INDEXED_INI_PARAM
 #undef WRITE_INI_PARAM
 
 	auto filename = CreateJsonFilePath(processWorkingDir, exeFilename);
+	std::ofstream ofs(filename.generic_wstring());
 
-	try
-	{
-		boost::iostreams::filtering_ostream outStream;
-		outStream.push(OutputFilterWithBOM());
-		outStream.push(boost::iostreams::file_descriptor_sink(filename));
-
-		proptree::write_json(outStream, tree);
-	}
-	catch (const std::ios::failure&)
+	if (ofs.fail() || ofs.bad())
 	{
 		return false;
 	}
+
+	ofs << objectToWrite.dump(2);
 
 	return true;
 }

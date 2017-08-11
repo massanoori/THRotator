@@ -9,4 +9,5 @@ include(../common/ConfigureTHRotator.cmake)
 target_include_directories(d3d9
 	PRIVATE "d3dx/include/"
 	PRIVATE "../common/"
-	PRIVATE ${BOOST_INCLUDE_DIR})
+	PRIVATE ${BOOST_INCLUDE_DIR}
+	PRIVATE "../nlohmann-json/src/")

@@ -10,7 +10,8 @@ include(../common/ConfigureTHRotator.cmake)
 target_include_directories(d3d8
 	PRIVATE "d3d8/include/"
 	PRIVATE "../common/"
-	PRIVATE ${BOOST_INCLUDE_DIR})
+	PRIVATE ${BOOST_INCLUDE_DIR}
+	PRIVATE "../nlohmann-json/src/")
 
 target_compile_definitions(d3d8
 	PRIVATE TOUHOU_ON_D3D8=1)
