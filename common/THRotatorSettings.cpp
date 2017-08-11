@@ -5,6 +5,11 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
 
+// Windows.hで定義されるmin、maxマクロをundefし、
+// 外部ライブラリが使う、std名前空間以下のmin, max関数が使えなくなるのを防ぐ
+#undef min
+#undef max
+
 #include <json.hpp>
 
 #include "THRotatorSettings.h"
@@ -350,15 +355,7 @@ void THRotatorSetting::LoadJsonFormat(const boost::filesystem::path& processWork
 
 	nlohmann::json loadedJson;
 
-	try
-	{
-		ifs >> loadedJson;
-	}
-	catch (const nlohmann::json::parse_error&)
-	{
-		// デフォルト値を用いる
-		return;
-	}
+	ifs >> loadedJson;
 
 #define READ_JSON_PARAM(parent, destination, name) \
 	do { \
