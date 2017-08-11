@@ -1,0 +1,89 @@
+{
+  "NumRectTransfers": 6,
+  "fileter_type": "linear",
+  "format_version": 2,
+  "judge_threshold": 10,
+  "main_screen_height": 448,
+  "main_screen_left": 32,
+  "main_screen_top": 16,
+  "main_screen_width": 384,
+  "rects": [
+    {
+      "destination_height": 20,
+      "destination_left": 256,
+      "destination_top": 0,
+      "destination_width": 128,
+      "rect_name": "スコア",
+      "rect_rotation": 0,
+      "source_height": 20,
+      "source_left": 496,
+      "source_top": 72,
+      "source_width": 128
+    },
+    {
+      "destination_height": 20,
+      "destination_left": 0,
+      "destination_top": 0,
+      "destination_width": 128,
+      "rect_name": "ハイスコア",
+      "rect_rotation": 0,
+      "source_height": 20,
+      "source_left": 496,
+      "source_top": 48,
+      "source_width": 128
+    },
+    {
+      "destination_height": 20,
+      "destination_left": 156,
+      "destination_top": 0,
+      "destination_width": 72,
+      "rect_name": "難易度",
+      "rect_rotation": 0,
+      "source_height": 20,
+      "source_left": 492,
+      "source_top": 22,
+      "source_width": 72
+    },
+    {
+      "destination_height": 16,
+      "destination_left": 0,
+      "destination_top": 484,
+      "destination_width": 192,
+      "rect_name": "Power",
+      "rect_rotation": 0,
+      "source_height": 16,
+      "source_left": 432,
+      "source_top": 130,
+      "source_width": 192
+    },
+    {
+      "destination_height": 16,
+      "destination_left": 192,
+      "destination_top": 484,
+      "destination_width": 192,
+      "rect_name": "Player",
+      "rect_rotation": 0,
+      "source_height": 16,
+      "source_left": 432,
+      "source_top": 106,
+      "source_width": 192
+    },
+    {
+      "destination_height": 12,
+      "destination_left": 0,
+      "destination_top": 500,
+      "destination_width": 384,
+      "rect_name": "FPS",
+      "rect_rotation": 0,
+      "source_height": 12,
+      "source_left": 256,
+      "source_top": 468,
+      "source_width": 384
+    }
+  ],
+  "rotation_angle": 0,
+  "use_modal_editor": false,
+  "vertical_window": false,
+  "window_visible": false,
+  "y_offset": -11
+}

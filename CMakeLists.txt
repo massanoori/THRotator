@@ -33,6 +33,6 @@ add_subdirectory(d3d9)
 add_subdirectory(d3d8)
 add_subdirectory(localization_en-US)
 
-install(DIRECTORY sample_ini DESTINATION .)
+install(DIRECTORY sample-config DESTINATION .)
 install(FILES MANUAL.txt DESTINATION .)
 

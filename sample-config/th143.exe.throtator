@@ -1,0 +1,41 @@
+{
+  "NumRectTransfers": 2,
+  "fileter_type": "linear",
+  "format_version": 2,
+  "judge_threshold": 19,
+  "main_screen_height": 448,
+  "main_screen_left": 128,
+  "main_screen_top": 16,
+  "main_screen_width": 384,
+  "rects": [
+    {
+      "destination_height": 52,
+      "destination_left": 172,
+      "destination_top": 0,
+      "destination_width": 48,
+      "rect_name": "装備アイテム",
+      "rect_rotation": 0,
+      "source_height": 140,
+      "source_left": 512,
+      "source_top": 322,
+      "source_width": 128
+    },
+    {
+      "destination_height": 9,
+      "destination_left": 336,
+      "destination_top": 503,
+      "destination_width": 48,
+      "rect_name": "FPS",
+      "rect_rotation": 0,
+      "source_height": 12,
+      "source_left": 586,
+      "source_top": 468,
+      "source_width": 64
+    }
+  ],
+  "rotation_angle": 0,
+  "use_modal_editor": false,
+  "vertical_window": false,
+  "window_visible": false,
+  "y_offset": 21
+}

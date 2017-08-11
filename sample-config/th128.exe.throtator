@@ -1,0 +1,101 @@
+{
+  "NumRectTransfers": 7,
+  "fileter_type": "linear",
+  "format_version": 2,
+  "judge_threshold": 14,
+  "main_screen_height": 448,
+  "main_screen_left": 120,
+  "main_screen_top": 16,
+  "main_screen_width": 400,
+  "rects": [
+    {
+      "destination_height": 48,
+      "destination_left": 0,
+      "destination_top": 485,
+      "destination_width": 100,
+      "rect_name": "やる気",
+      "rect_rotation": 0,
+      "source_height": 48,
+      "source_left": 524,
+      "source_top": 48,
+      "source_width": 100
+    },
+    {
+      "destination_height": 20,
+      "destination_left": 100,
+      "destination_top": 485,
+      "destination_width": 100,
+      "rect_name": "パーフリ文字",
+      "rect_rotation": 0,
+      "source_height": 20,
+      "source_left": 516,
+      "source_top": 144,
+      "source_width": 120
+    },
+    {
+      "destination_height": 28,
+      "destination_left": 100,
+      "destination_top": 505,
+      "destination_width": 100,
+      "rect_name": "パーフリ数値",
+      "rect_rotation": 0,
+      "source_height": 28,
+      "source_left": 524,
+      "source_top": 164,
+      "source_width": 100
+    },
+    {
+      "destination_height": 48,
+      "destination_left": 200,
+      "destination_top": 485,
+      "destination_width": 100,
+      "rect_name": "面積",
+      "rect_rotation": 0,
+      "source_height": 48,
+      "source_left": 524,
+      "source_top": 336,
+      "source_width": 100
+    },
+    {
+      "destination_height": 48,
+      "destination_left": 300,
+      "destination_top": 485,
+      "destination_width": 100,
+      "rect_name": "LEVEL",
+      "rect_rotation": 0,
+      "source_height": 48,
+      "source_left": 524,
+      "source_top": 384,
+      "source_width": 100
+    },
+    {
+      "destination_height": 12,
+      "destination_left": 346,
+      "destination_top": 521,
+      "destination_width": 54,
+      "rect_name": "FPS",
+      "rect_rotation": 0,
+      "source_height": 12,
+      "source_left": 586,
+      "source_top": 468,
+      "source_width": 54
+    },
+    {
+      "destination_height": 12,
+      "destination_left": 152,
+      "destination_top": 0,
+      "destination_width": 96,
+      "rect_name": "難易度",
+      "rect_rotation": 0,
+      "source_height": 12,
+      "source_left": 528,
+      "source_top": 18,
+      "source_width": 96
+    }
+  ],
+  "rotation_angle": 0,
+  "use_modal_editor": false,
+  "vertical_window": false,
+  "window_visible": false,
+  "y_offset": -24
+}

@@ -1,0 +1,101 @@
+{
+  "NumRectTransfers": 7,
+  "fileter_type": "linear",
+  "format_version": 2,
+  "judge_threshold": 12,
+  "main_screen_height": 448,
+  "main_screen_left": 32,
+  "main_screen_top": 16,
+  "main_screen_width": 384,
+  "rects": [
+    {
+      "destination_height": 16,
+      "destination_left": 256,
+      "destination_top": 0,
+      "destination_width": 128,
+      "rect_name": "スコア",
+      "rect_rotation": 0,
+      "source_height": 16,
+      "source_left": 504,
+      "source_top": 72,
+      "source_width": 128
+    },
+    {
+      "destination_height": 16,
+      "destination_left": 0,
+      "destination_top": 0,
+      "destination_width": 128,
+      "rect_name": "ハイスコア",
+      "rect_rotation": 0,
+      "source_height": 16,
+      "source_left": 504,
+      "source_top": 48,
+      "source_width": 128
+    },
+    {
+      "destination_height": 16,
+      "destination_left": 128,
+      "destination_top": 0,
+      "destination_width": 128,
+      "rect_name": "難易度",
+      "rect_rotation": 0,
+      "source_height": 16,
+      "source_left": 464,
+      "source_top": 24,
+      "source_width": 128
+    },
+    {
+      "destination_height": 28,
+      "destination_left": 256,
+      "destination_top": 484,
+      "destination_width": 128,
+      "rect_name": "Graze",
+      "rect_rotation": 0,
+      "source_height": 28,
+      "source_left": 520,
+      "source_top": 148,
+      "source_width": 128
+    },
+    {
+      "destination_height": 28,
+      "destination_left": 0,
+      "destination_top": 484,
+      "destination_width": 128,
+      "rect_name": "Power",
+      "rect_rotation": 0,
+      "source_height": 28,
+      "source_left": 512,
+      "source_top": 124,
+      "source_width": 128
+    },
+    {
+      "destination_height": 28,
+      "destination_left": 128,
+      "destination_top": 484,
+      "destination_width": 128,
+      "rect_name": "Player",
+      "rect_rotation": 0,
+      "source_height": 28,
+      "source_left": 512,
+      "source_top": 100,
+      "source_width": 128
+    },
+    {
+      "destination_height": 17,
+      "destination_left": 330,
+      "destination_top": 495,
+      "destination_width": 54,
+      "rect_name": "FPS",
+      "rect_rotation": 0,
+      "source_height": 17,
+      "source_left": 586,
+      "source_top": 464,
+      "source_width": 54
+    }
+  ],
+  "rotation_angle": 0,
+  "use_modal_editor": false,
+  "vertical_window": false,
+  "window_visible": false,
+  "y_offset": -12
+}

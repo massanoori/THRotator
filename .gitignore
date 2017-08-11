@@ -28,8 +28,8 @@
 !*.rcconfig
 !*.bat
 
-# Sample .ini files
-!/sample_ini/*.ini
+# Sample config files
+!/sample-config/*.throtator
 
 !*.txt
 !*.md
