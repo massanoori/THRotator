@@ -11,3 +11,5 @@
 #else
 #include <d3d9.h>
 #endif
+
+#include <fmt/format.h>

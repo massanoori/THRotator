@@ -10,10 +10,9 @@
 
 #include "THRotatorSettings.h"
 #include "THRotatorEditor.h"
+#include "StringResource.h"
 #include "resource.h"
 #include "EncodingUtils.h"
-
-#include <fmt/format.h>
 
 #pragma comment(lib, "comctl32.lib")
 
@@ -58,26 +57,6 @@ boost::filesystem::path CreateTHRotatorLogFilePath(const boost::filesystem::path
 	return workingDir / L"throtLog.txt";
 }
 
-}
-
-std::wstring LoadTHRotatorString(HINSTANCE hModule, UINT nID)
-{
-	LPWSTR temp;
-	auto bufferLength = LoadStringW(hModule, nID, reinterpret_cast<LPWSTR>(&temp), 0);
-
-	if (bufferLength == 0)
-	{
-		return std::basic_string<TCHAR>();
-	}
-	else
-	{
-#ifdef _UNICODE
-		return std::wstring(temp, bufferLength);
-#else
-		std::wstring unicodeStr(temp, bufferLength);
-		return ConvertFromUnicodeToSjis(unicodeStr);
-#endif
-	}
 }
 
 THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
@@ -148,6 +127,7 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 		m_workingDir = boost::filesystem::current_path();
 	}
 
+	LogMessage(L"Initializing THRotatorEditorContext");
 	LogMessage(fmt::format(L"Working directory: {0}", m_workingDir.generic_wstring()));
 	LogMessage(fmt::format(L"Executable filename: {0}", exePath.generic_wstring()));
 
@@ -160,7 +140,12 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 	if (!LoadSettings())
 	{
 		auto loadFailureMessage = LoadTHRotatorString(g_hModule, IDS_SETTING_FILE_LOAD_FAILED);
+
+#ifdef _UNICODE
 		SetNewErrorMessage(std::move(loadFailureMessage));
+#else
+		SetNewErrorMessage(ConvertFromUnicodeToSjis(loadFailureMessage));
+#endif
 	}
 
 	m_bNeedModalEditor = m_bNeedModalEditor || m_bModalEditorPreferred;
@@ -331,6 +316,8 @@ THRotatorEditorContext::~THRotatorEditorContext()
 		m_originalTouhouClientSize.cx + (windowRect.right - windowRect.left) - (clientRect.right - clientRect.left),
 		m_originalTouhouClientSize.cy + (windowRect.bottom - windowRect.top) - (clientRect.bottom - clientRect.top),
 		TRUE);
+
+	LogMessage(L"Destructing THRotatorEditorContext");
 }
 
 void THRotatorEditorContext::SetEditorWindowVisibility(bool bVisible)
@@ -1058,14 +1045,29 @@ bool THRotatorEditorContext::SaveSettings() const
 	settings.rectTransfers = m_currentRectTransfers;
 	settings.bModalEditorPreferred = m_bModalEditorPreferred;
 
-	return THRotatorSetting::Save(m_workingDir, m_exeFilename, settings);
+	std::list<std::wstring> messagesWhileSaving;
+	bool bSaveSuccess = THRotatorSetting::Save(m_workingDir, m_exeFilename, settings, messagesWhileSaving);
+
+	for (const auto& message : messagesWhileSaving)
+	{
+		LogMessage(message);
+	}
+
+	return bSaveSuccess;
 }
 
 bool THRotatorEditorContext::LoadSettings()
 {
 	THRotatorSetting setting;
 	THRotatorFormatVersion formatVersion;
-	bool bLoadSuccess = THRotatorSetting::Load(m_workingDir, m_exeFilename, setting, formatVersion);
+
+	std::list<std::wstring> messagesWhileLoading;
+	bool bLoadSuccess = THRotatorSetting::Load(m_workingDir, m_exeFilename, setting, formatVersion, messagesWhileLoading);
+
+	for (const auto& message : messagesWhileLoading)
+	{
+		LogMessage(message);
+	}
 
 	// 失敗しても、デフォルト値で埋める
 
@@ -1083,6 +1085,7 @@ bool THRotatorEditorContext::LoadSettings()
 
 	if (!bLoadSuccess)
 	{
+		LogMessage(L"Failed to load");
 		return false;
 	}
 
@@ -1203,7 +1206,11 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 						if (!context->SaveSettings())
 						{
 							auto saveFailureMessage = LoadTHRotatorString(g_hModule, IDS_SETTING_FILE_SAVE_FAILED);
-							context->SetNewErrorMessage(saveFailureMessage.c_str());
+#ifdef _UNICODE
+							context->SetNewErrorMessage(std::move(saveFailureMessage));
+#else
+							context->SetNewErrorMessage(ConvertFromUnicodeToSjis(saveFailureMessage));
+#endif
 							break;
 						}
 					}
@@ -1273,12 +1280,25 @@ void THRotatorEditorContext::UpdateWindowResolution(int requestedWidth, int requ
 	MoveWindow(m_hTouhouWin, rcWindow.left, rcWindow.top,
 		(rcWindow.right - rcWindow.left) - (rcClient.right - rcClient.left) + newWidth,
 		(rcWindow.bottom - rcWindow.top) - (rcClient.bottom - rcClient.top) + newHeight, TRUE);
+
+	LogMessage(fmt::format(L"Updating window client size to {0}x{1}", newWidth, newHeight));
 }
 
 void THRotatorEditorContext::LogMessage(const std::wstring& message) const
 {
 	auto filename = CreateTHRotatorLogFilePath(m_workingDir).generic_wstring();
-	std::ofstream ofs(filename, std::ios::app);
+	std::ofstream ofs;
+
+	static bool bFirstLog = true;
+	if (bFirstLog)
+	{
+		ofs.open(filename);
+		bFirstLog = false;
+	}
+	else
+	{
+		ofs.open(filename, std::ios::app);
+	}
 
 	auto now = std::time(nullptr);
 	tm localNow;

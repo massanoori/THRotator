@@ -241,11 +241,13 @@ struct JsonConv : public JsonConvHelper<typename std::remove_const<typename std:
 
 void THRotatorSetting::LoadIniFormat(const boost::filesystem::path& processWorkingDir,
 	const boost::filesystem::path& exeFilename,
-	THRotatorSetting& outSetting)
+	THRotatorSetting& outSetting,
+	std::list<std::wstring>& outMessages)
 {
 	namespace proptree = boost::property_tree;
 
 	auto filename = CreateIniFilePath(processWorkingDir);
+	outMessages.push_back(fmt::format(L"Loading {0}", filename.generic_wstring()));
 
 	proptree::basic_ptree<std::string, std::string> tree;
 	try
@@ -254,12 +256,12 @@ void THRotatorSetting::LoadIniFormat(const boost::filesystem::path& processWorki
 	}
 	catch (const std::ios::failure&)
 	{
-		// デフォルト値を用いる
+		outMessages.push_back(fmt::format(L"Failed to load {0}", filename.generic_wstring()));
 		return;
 	}
 	catch (const proptree::ini_parser_error&)
 	{
-		// デフォルト値を用いる
+		outMessages.push_back(fmt::format(L"Ini parse error", filename.generic_wstring()));
 		return;
 	}
 
@@ -340,9 +342,12 @@ void THRotatorSetting::LoadIniFormat(const boost::filesystem::path& processWorki
 void THRotatorSetting::LoadJsonFormat(const boost::filesystem::path& processWorkingDir,
 	const boost::filesystem::path& exeFilename,
 	THRotatorSetting& outSetting,
-	THRotatorFormatVersion& importedFormatVersion)
+	THRotatorFormatVersion& importedFormatVersion,
+	std::list<std::wstring>& outMessages)
 {
 	auto filename = CreateJsonFilePath(processWorkingDir, exeFilename);
+
+	outMessages.push_back(fmt::format(L"Loading {0}", filename.generic_wstring()));
 
 	std::ifstream ifs;
 	ifs.open(filename.generic_wstring());
@@ -350,6 +355,7 @@ void THRotatorSetting::LoadJsonFormat(const boost::filesystem::path& processWork
 	// json.hppでは、ifstreamの例外ビットを設定することができない
 	if (ifs.fail() || ifs.bad())
 	{
+		outMessages.push_back(fmt::format(L"Failed to load {0}", filename.generic_wstring()));
 		throw std::ios::failure("");
 	}
 
@@ -442,27 +448,32 @@ boost::filesystem::path THRotatorSetting::CreateJsonFilePath(const boost::filesy
 bool THRotatorSetting::Load(const boost::filesystem::path& processWorkingDir,
 	const boost::filesystem::path& exeFilename,
 	THRotatorSetting& outSetting,
-	THRotatorFormatVersion& importedFormatVersion)
+	THRotatorFormatVersion& importedFormatVersion,
+	std::list<std::wstring>& outMessages)
 {
 	try
 	{
-		THRotatorSetting::LoadJsonFormat(processWorkingDir, exeFilename, outSetting, importedFormatVersion);
+		THRotatorSetting::LoadJsonFormat(processWorkingDir, exeFilename, outSetting, importedFormatVersion, outMessages);
 	}
 	catch (const std::invalid_argument&)
 	{
-		// パースエラー
+		outMessages.push_back(L"Json parse error");
 		return false;
 	}
 	catch (const std::ios::failure&)
 	{
-		THRotatorSetting::LoadIniFormat(processWorkingDir, exeFilename, outSetting);
+		outMessages.push_back(L"Falling back to legacy format v1 loading");
+		THRotatorSetting::LoadIniFormat(processWorkingDir, exeFilename, outSetting, outMessages);
 		importedFormatVersion = THRotatorFormatVersion::Version_1;
 	}
 
 	return true;
 }
 
-bool THRotatorSetting::Save(const boost::filesystem::path& processWorkingDir, const boost::filesystem::path& exeFilename, const THRotatorSetting& inSetting)
+bool THRotatorSetting::Save(const boost::filesystem::path& processWorkingDir,
+	const boost::filesystem::path& exeFilename,
+	const THRotatorSetting& inSetting,
+	std::list<std::wstring>& outMessages)
 {
 	nlohmann::json objectToWrite;
 
@@ -515,10 +526,12 @@ bool THRotatorSetting::Save(const boost::filesystem::path& processWorkingDir, co
 #undef WRITE_INI_PARAM
 
 	auto filename = CreateJsonFilePath(processWorkingDir, exeFilename);
+	outMessages.push_back(fmt::format(L"Saving to {0}", filename.generic_wstring()));
 	std::ofstream ofs(filename.generic_wstring());
 
 	if (ofs.fail() || ofs.bad())
 	{
+		outMessages.push_back(fmt::format(L"Failed to write to {0}", filename.generic_wstring()));
 		return false;
 	}
 
