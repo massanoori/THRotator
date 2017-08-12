@@ -6,15 +6,14 @@
 #include <map>
 #include <CommCtrl.h>
 #include <ShlObj.h>
-#include <sstream>
+#include <ctime>
 
 #include "THRotatorSettings.h"
 #include "THRotatorEditor.h"
 #include "resource.h"
-
-#ifndef _UNICODE
 #include "EncodingUtils.h"
-#endif
+
+#include <fmt/format.h>
 
 #pragma comment(lib, "comctl32.lib")
 
@@ -54,9 +53,14 @@ double ExtractTouhouIndex(const boost::filesystem::path& exeFilename)
 	return touhouIndex;
 }
 
+boost::filesystem::path CreateTHRotatorLogFilePath(const boost::filesystem::path& workingDir)
+{
+	return workingDir / L"throtLog.txt";
 }
 
-std::basic_string<TCHAR> LoadTHRotatorString(HINSTANCE hModule, UINT nID)
+}
+
+std::wstring LoadTHRotatorString(HINSTANCE hModule, UINT nID)
 {
 	LPWSTR temp;
 	auto bufferLength = LoadStringW(hModule, nID, reinterpret_cast<LPWSTR>(&temp), 0);
@@ -144,6 +148,9 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 		m_workingDir = boost::filesystem::current_path();
 	}
 
+	LogMessage(fmt::format(L"Working directory: {0}", m_workingDir.generic_wstring()));
+	LogMessage(fmt::format(L"Executable filename: {0}", exePath.generic_wstring()));
+
 	// 妖々夢の場合モーダルで開かないと、入力のフォーカスが奪われる
 	if (6.0 < touhouIndex && touhouIndex < 7.5)
 	{
@@ -193,6 +200,8 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 	}
 
 	m_bInitialized = true;
+
+	LogMessage(L"THRotatorEditorContext has been initialized");
 }
 
 std::shared_ptr<THRotatorEditorContext> THRotatorEditorContext::CreateOrGetEditorContext(HWND hTouhouWindow)
@@ -1086,6 +1095,8 @@ bool THRotatorEditorContext::LoadSettings()
 			// 紅魔郷と妖々夢では、閾値との比較が実際のビューポート設定回数より1回少ない値と行われる条件で作成されたもの。
 			// ここで値を1だけ増やして、実際のビューポート設定回数と正常に比較できるようにする。
 			m_judgeThreshold++;
+
+			LogMessage(L"Threshold has been converted");
 		}
 	}
 
@@ -1262,4 +1273,26 @@ void THRotatorEditorContext::UpdateWindowResolution(int requestedWidth, int requ
 	MoveWindow(m_hTouhouWin, rcWindow.left, rcWindow.top,
 		(rcWindow.right - rcWindow.left) - (rcClient.right - rcClient.left) + newWidth,
 		(rcWindow.bottom - rcWindow.top) - (rcClient.bottom - rcClient.top) + newHeight, TRUE);
+}
+
+void THRotatorEditorContext::LogMessage(const std::wstring& message) const
+{
+	auto filename = CreateTHRotatorLogFilePath(m_workingDir).generic_wstring();
+	std::ofstream ofs(filename, std::ios::app);
+
+	auto now = std::time(nullptr);
+	tm localNow;
+	if (localtime_s(&localNow, &now) != 0)
+	{
+		ofs << ConvertFromUnicodeToUtf8(message) << std::endl;
+		return;
+	}
+	
+	std::vector<char> timeStringBuffer(1);
+	while (std::strftime(timeStringBuffer.data(), timeStringBuffer.size(), "%F %T ", &localNow) == 0)
+	{
+		timeStringBuffer.resize(timeStringBuffer.size() * 2);
+	}
+
+	ofs << timeStringBuffer.data() << ConvertFromUnicodeToUtf8(message) << std::endl;
 }

@@ -1,3 +1,6 @@
 [submodule "json_hpp"]
 	path = nlohmann-json
 	url = https://github.com/nlohmann/json.git
+[submodule "fmtlib"]
+	path = fmtlib
+	url = https://github.com/fmtlib/fmt.git

@@ -44,4 +44,6 @@ _build/
 
 !.gitignore
 
+# Submodules
 !/nlohmann-json
+!/fmtlib
