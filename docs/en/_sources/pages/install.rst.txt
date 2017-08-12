@@ -14,7 +14,9 @@ The file named like ``THRotator_X_Y_Z.zip`` is what has to be downloaded.
 Determine which DLL is needed
 =============================
 
-If you would like to install THRotator to one of the following, the file to copy is ``d3d8/d3d8.dll``.
+First, determine the target game runs on Direct3D 8 or Direct3D 9.
+
+If the game is one of the following, the game is Direct3D 8-based.
 
 - the Embodiment of Scarlet Devil (Th06)
 - Perfect Cherry Blossom (Th07)
@@ -22,7 +24,7 @@ If you would like to install THRotator to one of the following, the file to copy
 - Phantasmagoria of Flower View (Th09)
 - Shoot the Bullet (Th095)
 
-If you would like to install THRotator to one of the following or later products, the file to copy is ``d3d9/d3d9.dll``.
+If the game is one of the following or later, the game is Direct3D 9-based.
 
 - Mountain of Faith (Th10)
 - Subterranean Animism (Th11)
@@ -35,6 +37,12 @@ If you would like to install THRotator to one of the following or later products
 - Legacy of Lunatic Kingdom (Th15, tested on demo version)
 - Hidden Star in Four Seasons (Th16)
 - Uwabami Breakers (alcostg)
+
+If the game is Direct3D 8-based and
+`DX8 to DX9 Converter <http://enbdev.com/download_convertor_dx8todx9.htm>`_ is not installed,
+you need to copy ``d3d8/d3d8.dll``.
+
+Otherwise, you need to copy ``d3d9/d3d9.dll``.
 
 Copy DLL file
 =========================

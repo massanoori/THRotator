@@ -179,8 +179,8 @@
 </div>
 <div class="section" id="dll">
 <h2>コピーするDLLファイルの確認<a class="headerlink" href="#dll" title="Permalink to this headline">¶</a></h2>
-<p>まず、インストール先に対して、どのファイルをコピーするかを確認します。</p>
-<p>インストール先の作品が下記のいずれかの場合、コピーするのは <code class="docutils literal"><span class="pre">d3d8/d3d8.dll</span></code> です。</p>
+<p>まず、インストール先の作品が、Direct3D 8で動作するのか、Direct3D 9で動作するのかをチェックします。</p>
+<p>インストール先の作品が下記のいずれかの場合、Direct3D 8で動作しています。</p>
 <ul class="simple">
 <li>東方紅魔郷</li>
 <li>東方妖々夢</li>
@@ -188,7 +188,7 @@
 <li>東方花映塚</li>
 <li>東方文花帖</li>
 </ul>
-<p>インストール先の作品が下記のいずれか、もしくはそれ以降にリリースされた作品の場合、コピーするのは <code class="docutils literal"><span class="pre">d3d9/d3d9.dll</span></code> です。</p>
+<p>インストール先の作品が下記のいずれか、もしくはそれ以降にリリースされた作品の場合、Direct3D 9で動作しています。</p>
 <ul class="simple">
 <li>東方風神録</li>
 <li>東方地霊殿</li>
@@ -202,6 +202,10 @@
 <li>東方天空璋</li>
 <li>黄昏酒場</li>
 </ul>
+<p>もしDirect3D 8で動作する作品で、
+<a class="reference external" href="http://enbdev.com/download_convertor_dx8todx9.htm">DX8 to DX9 Converter</a> を使っていなければ、
+コピーするファイルは <code class="docutils literal"><span class="pre">d3d8/d3d8.dll</span></code> です。</p>
+<p>それ以外でコピーするファイルは、 <code class="docutils literal"><span class="pre">d3d9/d3d9.dll</span></code> です。</p>
 </div>
 <div class="section" id="id2">
 <h2>DLLファイルのコピー<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
