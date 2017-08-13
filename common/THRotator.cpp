@@ -1962,6 +1962,23 @@ HRESULT THRotatorDirect3DDevice::InternalInit(UINT Adapter,
 	m_requestedWidth = d3dpp.BackBufferWidth;
 	m_requestedHeight = d3dpp.BackBufferHeight;
 
+	if (m_requestedWidth == 0 || m_requestedHeight == 0)
+	{
+		HWND hMainWindow = d3dpp.hDeviceWindow;
+		if (hMainWindow == nullptr)
+		{
+			hMainWindow = hFocusWindow;
+		}
+
+		assert(hMainWindow != nullptr);
+
+		RECT rectMainWindow;
+		GetClientRect(hMainWindow, &rectMainWindow);
+
+		m_requestedWidth = rectMainWindow.right - rectMainWindow.left;
+		m_requestedHeight = rectMainWindow.bottom - rectMainWindow.top;
+	}
+
 	m_pEditorContext = THRotatorEditorContext::CreateOrGetEditorContext(hFocusWindow);
 	if (!m_pEditorContext)
 	{
