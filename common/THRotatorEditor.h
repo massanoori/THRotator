@@ -69,8 +69,6 @@ public:
 	// また、D3Dのバックバッファ解像度もoutBackBufferWidth, outBackBufferHeightに返す。
 	void UpdateWindowResolution(int requestedWidth, int requestedHeight, UINT& outBackBufferWidth, UINT& outBackBufferHeight);
 
-	void LogMessage(const std::wstring& message) const;
-
 	~THRotatorEditorContext();
 
 private:

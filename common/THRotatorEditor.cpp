@@ -13,6 +13,7 @@
 #include "StringResource.h"
 #include "resource.h"
 #include "EncodingUtils.h"
+#include "THRotatorLog.h"
 
 #pragma comment(lib, "comctl32.lib")
 
@@ -128,9 +129,11 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 		m_workingDir = boost::filesystem::current_path();
 	}
 
-	LogMessage(L"Initializing THRotatorEditorContext");
-	LogMessage(fmt::format(L"Working directory: {0}", m_workingDir.generic_wstring()));
-	LogMessage(fmt::format(L"Executable filename: {0}", exePath.generic_wstring()));
+	SetTHRotatorLogPath(CreateTHRotatorLogFilePath(m_workingDir).generic_wstring());
+
+	OutputLogMessagef(LogSeverity::Info, L"Initializing THRotatorEditorContext");
+	OutputLogMessagef(LogSeverity::Info, L"Working directory: {0}", m_workingDir.generic_wstring());
+	OutputLogMessagef(LogSeverity::Info, L"Executable filename: {0}", exePath.generic_wstring());
 
 	// 妖々夢の場合モーダルで開かないと、入力のフォーカスが奪われる
 	if (6.0 < touhouIndex && touhouIndex < 7.5)
@@ -187,7 +190,7 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 
 	m_bInitialized = true;
 
-	LogMessage(L"THRotatorEditorContext has been initialized");
+	OutputLogMessagef(LogSeverity::Info, L"THRotatorEditorContext has been initialized");
 }
 
 std::shared_ptr<THRotatorEditorContext> THRotatorEditorContext::CreateOrGetEditorContext(HWND hTouhouWindow)
@@ -318,7 +321,7 @@ THRotatorEditorContext::~THRotatorEditorContext()
 		m_originalTouhouClientSize.cy + (windowRect.bottom - windowRect.top) - (clientRect.bottom - clientRect.top),
 		TRUE);
 
-	LogMessage(L"Destructing THRotatorEditorContext");
+	OutputLogMessagef(LogSeverity::Info, L"Destructing THRotatorEditorContext");
 }
 
 void THRotatorEditorContext::SetEditorWindowVisibility(bool bVisible)
@@ -1046,13 +1049,7 @@ bool THRotatorEditorContext::SaveSettings() const
 	settings.rectTransfers = m_currentRectTransfers;
 	settings.bModalEditorPreferred = m_bModalEditorPreferred;
 
-	std::list<std::wstring> messagesWhileSaving;
-	bool bSaveSuccess = THRotatorSetting::Save(m_workingDir, m_exeFilename, settings, messagesWhileSaving);
-
-	for (const auto& message : messagesWhileSaving)
-	{
-		LogMessage(message);
-	}
+	bool bSaveSuccess = THRotatorSetting::Save(m_workingDir, m_exeFilename, settings);
 
 	return bSaveSuccess;
 }
@@ -1062,13 +1059,7 @@ bool THRotatorEditorContext::LoadSettings()
 	THRotatorSetting setting;
 	THRotatorFormatVersion formatVersion;
 
-	std::list<std::wstring> messagesWhileLoading;
-	bool bLoadSuccess = THRotatorSetting::Load(m_workingDir, m_exeFilename, setting, formatVersion, messagesWhileLoading);
-
-	for (const auto& message : messagesWhileLoading)
-	{
-		LogMessage(message);
-	}
+	bool bLoadSuccess = THRotatorSetting::Load(m_workingDir, m_exeFilename, setting, formatVersion);
 
 	// 失敗しても、デフォルト値で埋める
 
@@ -1086,7 +1077,7 @@ bool THRotatorEditorContext::LoadSettings()
 
 	if (!bLoadSuccess)
 	{
-		LogMessage(L"Failed to load");
+		OutputLogMessagef(LogSeverity::Error, L"Failed to load");
 		return false;
 	}
 
@@ -1100,7 +1091,7 @@ bool THRotatorEditorContext::LoadSettings()
 			// ここで値を1だけ増やして、実際のビューポート設定回数と正常に比較できるようにする。
 			m_judgeThreshold++;
 
-			LogMessage(L"Threshold has been converted");
+			OutputLogMessagef(LogSeverity::Info, L"Threshold has been converted");
 		}
 	}
 
@@ -1297,38 +1288,5 @@ void THRotatorEditorContext::UpdateWindowResolution(int requestedWidth, int requ
 	m_modifiedTouhouClientSize.cx = rcModifiedClient.right - rcModifiedClient.left;
 	m_modifiedTouhouClientSize.cy = rcModifiedClient.bottom - rcModifiedClient.top;
 
-	LogMessage(fmt::format(L"Updating window client size to {0}x{1}", newWidth, newHeight));
-}
-
-void THRotatorEditorContext::LogMessage(const std::wstring& message) const
-{
-	auto filename = CreateTHRotatorLogFilePath(m_workingDir).generic_wstring();
-	std::ofstream ofs;
-
-	static bool bFirstLog = true;
-	if (bFirstLog)
-	{
-		ofs.open(filename);
-		bFirstLog = false;
-	}
-	else
-	{
-		ofs.open(filename, std::ios::app);
-	}
-
-	auto now = std::time(nullptr);
-	tm localNow;
-	if (localtime_s(&localNow, &now) != 0)
-	{
-		ofs << ConvertFromUnicodeToUtf8(message) << std::endl;
-		return;
-	}
-	
-	std::vector<char> timeStringBuffer(1);
-	while (std::strftime(timeStringBuffer.data(), timeStringBuffer.size(), "%F %T ", &localNow) == 0)
-	{
-		timeStringBuffer.resize(timeStringBuffer.size() * 2);
-	}
-
-	ofs << timeStringBuffer.data() << ConvertFromUnicodeToUtf8(message) << std::endl;
+	OutputLogMessagef(LogSeverity::Info, L"Updating window client size to {0}x{1}", newWidth, newHeight);
 }

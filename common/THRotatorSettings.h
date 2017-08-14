@@ -78,24 +78,20 @@ struct THRotatorSetting
 	static bool Load(const boost::filesystem::path& processWorkingDir,
 		const boost::filesystem::path& exeFilename,
 		THRotatorSetting& outSetting,
-		THRotatorFormatVersion& importedFormatVersion,
-		std::list<std::wstring>& outMessages);
+		THRotatorFormatVersion& importedFormatVersion);
 
 	static bool Save(const boost::filesystem::path& processWorkingDir,
 		const boost::filesystem::path& exeFilename,
-		const THRotatorSetting& inSetting,
-		std::list<std::wstring>& outMessages);
+		const THRotatorSetting& inSetting);
 
 	static void LoadIniFormat(const boost::filesystem::path& processWorkingDir,
 		const boost::filesystem::path& exeFilename,
-		THRotatorSetting& outSetting,
-		std::list<std::wstring>& outMessages);
+		THRotatorSetting& outSetting);
 
 	static void LoadJsonFormat(const boost::filesystem::path& processWorkingDir,
 		const boost::filesystem::path& exeFilename,
 		THRotatorSetting& outSetting,
-		THRotatorFormatVersion& importedFormatVersion,
-		std::list<std::wstring>& outMessages);
+		THRotatorFormatVersion& importedFormatVersion);
 
 	static std::string GenerateIniAppName(const boost::filesystem::path& exeFilename);
 
