@@ -71,6 +71,7 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 	, m_bInitialized(false)
 	, m_bScreenCaptureQueued(false)
 	, m_hEditorWin(nullptr)
+	, m_modifiedTouhouClientSize{ 0, 0 }
 {
 	m_errorMessageExpirationClock.QuadPart = 0;
 
@@ -1251,6 +1252,20 @@ void THRotatorEditorContext::SetVerticallyLongWindow(bool bVerticallyLongWindow)
 
 void THRotatorEditorContext::UpdateWindowResolution(int requestedWidth, int requestedHeight, UINT& outBackBufferWidth, UINT& outBackBufferHeight)
 {
+	RECT rcClient, rcWindow;
+	GetClientRect(m_hTouhouWin, &rcClient);
+	GetWindowRect(m_hTouhouWin, &rcWindow);
+
+	// ゲームアプリケーション側のウィンドウサイズ変更を検知、
+	// これを新しいオリジナルのクライアントサイズとする
+
+	if (rcClient.left + m_modifiedTouhouClientSize.cx != rcClient.right ||
+		rcClient.top + m_modifiedTouhouClientSize.cy != rcClient.bottom)
+	{
+		m_originalTouhouClientSize.cx = rcClient.right - rcClient.left;
+		m_originalTouhouClientSize.cy = rcClient.bottom - rcClient.top;
+	}
+
 	// 元のウィンドウの大きさを保ちつつ、アスペクト比も保持する
 
 	int newWidth = m_originalTouhouClientSize.cx;
@@ -1273,13 +1288,14 @@ void THRotatorEditorContext::UpdateWindowResolution(int requestedWidth, int requ
 	outBackBufferWidth = newWidth;
 	outBackBufferHeight = newHeight;
 
-	RECT rcClient, rcWindow;
-	GetClientRect(m_hTouhouWin, &rcClient);
-	GetWindowRect(m_hTouhouWin, &rcWindow);
-
 	MoveWindow(m_hTouhouWin, rcWindow.left, rcWindow.top,
 		(rcWindow.right - rcWindow.left) - (rcClient.right - rcClient.left) + newWidth,
 		(rcWindow.bottom - rcWindow.top) - (rcClient.bottom - rcClient.top) + newHeight, TRUE);
+
+	RECT rcModifiedClient;
+	GetClientRect(m_hTouhouWin, &rcModifiedClient);
+	m_modifiedTouhouClientSize.cx = rcModifiedClient.right - rcModifiedClient.left;
+	m_modifiedTouhouClientSize.cy = rcModifiedClient.bottom - rcModifiedClient.top;
 
 	LogMessage(fmt::format(L"Updating window client size to {0}x{1}", newWidth, newHeight));
 }
