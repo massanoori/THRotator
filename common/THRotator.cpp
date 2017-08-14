@@ -385,9 +385,9 @@ private:
 	HRESULT InternalInit(UINT Adapter, THRotatorDirect3D* pMyD3D, D3DDEVTYPE DeviceType, HWND hFocusWindow,
 		DWORD BehaviorFlags,
 #ifdef TOUHOU_ON_D3D8
-		const D3DPRESENT_PARAMETERS& d3dpp);
+		D3DPRESENT_PARAMETERS* pPresentationParameters);
 #else
-		const D3DPRESENT_PARAMETERS& d3dpp, bool bIsEx, D3DDISPLAYMODEEX* pModeEx);
+		D3DPRESENT_PARAMETERS* pPresentationParameters, bool bIsEx, D3DDISPLAYMODEEX* pModeEx);
 #endif
 
 public:
@@ -395,11 +395,11 @@ public:
 	virtual ~THRotatorDirect3DDevice();
 
 	HRESULT Init(UINT Adapter, THRotatorDirect3D* pMyD3D, D3DDEVTYPE DeviceType, HWND hFocusWindow,
-		DWORD BehaviorFlags, const D3DPRESENT_PARAMETERS& d3dpp);
+		DWORD BehaviorFlags, D3DPRESENT_PARAMETERS* pPresentationParameters);
 
 #ifndef TOUHOU_ON_D3D8
 	HRESULT InitEx(UINT Adapter, THRotatorDirect3D* pMyD3D, D3DDEVTYPE DeviceType, HWND hFocusWindow,
-		DWORD BehaviorFlags, const D3DPRESENT_PARAMETERS& d3dpp, D3DDISPLAYMODEEX* pModeEx);
+		DWORD BehaviorFlags, D3DPRESENT_PARAMETERS* pPresentationParameters, D3DDISPLAYMODEEX* pModeEx);
 #endif
 
 	HRESULT InitResources();
@@ -1840,7 +1840,7 @@ HRESULT WINAPI THRotatorDirect3D::CreateDevice(UINT Adapter,
 {
 	auto pRetDev = new THRotatorDirect3DDevice();
 	HRESULT ret = pRetDev->Init(Adapter, this, DeviceType, hFocusWindow, BehaviorFlags,
-		*pPresentationParameters);
+		pPresentationParameters);
 
 	if (FAILED(ret))
 	{
@@ -1863,7 +1863,7 @@ HRESULT THRotatorDirect3D::CreateDeviceEx(UINT Adapter,
 {
 	auto pRetDev = new THRotatorDirect3DDevice();
 	HRESULT ret = pRetDev->InitEx(Adapter, this, DeviceType, hFocusWindow, BehaviorFlags,
-		*pPresentationParameters, pFullscreenDisplayMode);
+		pPresentationParameters, pFullscreenDisplayMode);
 
 	if (FAILED(ret))
 	{
@@ -1914,20 +1914,21 @@ THRotatorDirect3DDevice::~THRotatorDirect3DDevice()
 }
 
 HRESULT THRotatorDirect3DDevice::Init(UINT Adapter, THRotatorDirect3D* pMyD3D, D3DDEVTYPE DeviceType, HWND hFocusWindow,
-	DWORD BehaviorFlags, const D3DPRESENT_PARAMETERS& d3dpp)
+	DWORD BehaviorFlags, D3DPRESENT_PARAMETERS* pPresentationParameters)
 {
 	return InternalInit(Adapter, pMyD3D, DeviceType, hFocusWindow, BehaviorFlags,
 #ifdef TOUHOU_ON_D3D8
-		d3dpp);
+		pPresentationParameters);
 #else
-		d3dpp, false, nullptr);
+		pPresentationParameters, false, nullptr);
 #endif
 }
 
 #ifndef TOUHOU_ON_D3D8
-HRESULT THRotatorDirect3DDevice::InitEx(UINT Adapter, THRotatorDirect3D * pMyD3D, D3DDEVTYPE DeviceType, HWND hFocusWindow, DWORD BehaviorFlags, const D3DPRESENT_PARAMETERS & d3dpp, D3DDISPLAYMODEEX * pModeEx)
+HRESULT THRotatorDirect3DDevice::InitEx(UINT Adapter, THRotatorDirect3D * pMyD3D, D3DDEVTYPE DeviceType, HWND hFocusWindow,
+	DWORD BehaviorFlags, D3DPRESENT_PARAMETERS* pPresentationParameters, D3DDISPLAYMODEEX* pModeEx)
 {
-	return InternalInit(Adapter, pMyD3D, DeviceType, hFocusWindow, BehaviorFlags, d3dpp, true, pModeEx);
+	return InternalInit(Adapter, pMyD3D, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, true, pModeEx);
 }
 #endif
 
@@ -1937,9 +1938,9 @@ HRESULT THRotatorDirect3DDevice::InternalInit(UINT Adapter,
 	HWND hFocusWindow,
 	DWORD BehaviorFlags,
 #ifdef TOUHOU_ON_D3D8
-	const D3DPRESENT_PARAMETERS& d3dpp)
+	D3DPRESENT_PARAMETERS* pPresentationParameters)
 #else
-	const D3DPRESENT_PARAMETERS& d3dpp,
+	D3DPRESENT_PARAMETERS* pPresentationParameters,
 	bool bIsEx,
 	D3DDISPLAYMODEEX* pModeEx)
 #endif
@@ -1957,14 +1958,14 @@ HRESULT THRotatorDirect3DDevice::InternalInit(UINT Adapter,
 	}
 #endif
 
-	m_d3dpp = d3dpp;
+	m_d3dpp = *pPresentationParameters;
 
-	m_requestedWidth = d3dpp.BackBufferWidth;
-	m_requestedHeight = d3dpp.BackBufferHeight;
+	m_requestedWidth = pPresentationParameters->BackBufferWidth;
+	m_requestedHeight = pPresentationParameters->BackBufferHeight;
 
 	if (m_requestedWidth == 0 || m_requestedHeight == 0)
 	{
-		HWND hMainWindow = d3dpp.hDeviceWindow;
+		HWND hMainWindow = pPresentationParameters->hDeviceWindow;
 		if (hMainWindow == nullptr)
 		{
 			hMainWindow = hFocusWindow;
@@ -1989,7 +1990,8 @@ HRESULT THRotatorDirect3DDevice::InternalInit(UINT Adapter,
 	m_pMyD3D = pMyD3D;
 	m_deviceType = DeviceType;
 
-	UpdateWindowResolution(d3dpp.BackBufferFormat, Adapter, d3dpp.Windowed, m_requestedWidth, m_requestedHeight,
+	UpdateWindowResolution(pPresentationParameters->BackBufferFormat, Adapter,
+		pPresentationParameters->Windowed, m_requestedWidth, m_requestedHeight,
 		m_d3dpp.BackBufferWidth, m_d3dpp.BackBufferHeight);
 
 	m_pEditorContext->LogMessage(fmt::format(L"Resolution requested: {0}x{1}, Modified resolution: {2}x{3}",
@@ -2053,6 +2055,11 @@ HRESULT THRotatorDirect3DDevice::InternalInit(UINT Adapter,
 		m_pEditorContext->LogMessage(L"Failed to initialize render resources");
 		return ret;
 	}
+
+	// CreateDevice() overwrites D3DPRESENT_PARAMETERS
+	*pPresentationParameters = m_d3dpp;
+	pPresentationParameters->BackBufferWidth = m_requestedWidth;
+	pPresentationParameters->BackBufferHeight = m_requestedHeight;
 
 	m_bInitialized = true;
 	return S_OK;
@@ -2792,7 +2799,19 @@ HRESULT THRotatorDirect3DDevice::InternalReset(
 	}
 
 	m_resetRevision = m_pEditorContext->GetResetRevision();
-	return InitResources();
+	ret = InitResources();
+
+	if (FAILED(ret))
+	{
+		return ret;
+	}
+
+	// Reset() overwrites D3DPRESENT_PARAMETERS
+	*pPresentationParameters = m_d3dpp;
+	pPresentationParameters->BackBufferWidth = m_requestedWidth;
+	pPresentationParameters->BackBufferHeight = m_requestedHeight;
+
+	return ret;
 }
 
 extern "C" {
