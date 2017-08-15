@@ -1,0 +1,23 @@
+version: '{build}'
+image: Visual Studio 2017
+configuration: Release
+platform: x86
+before_build:
+- cmd: >-
+    git submodule init
+
+    git submodule update
+
+    mkdir build-2017
+
+    cd build-2017
+
+
+    cmake ../ -DBOOST_INCLUDE_DIR=C:\Libraries\boost_1_64_0 -DBOOST_LIB_DIR=C:\Libraries\boost_1_64_0\lib32-msvc-14.1 -DCMAKE_INSTALL_PREFIX=../install-2017 -G "Visual Studio 15 2017"
+build:
+  project: build-2017\INSTALL.vcxproj
+  parallel: true
+  verbosity: minimal
+artifacts:
+- path: .\install-2017
+  name: THRotator-${APPVEYOR_REPO_COMMIT}
