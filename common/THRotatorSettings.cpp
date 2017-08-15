@@ -102,6 +102,13 @@ void from_json(const BasicJsonType& j, THRotatorFormatVersion& v)
 }
 
 template <typename BasicJsonType>
+void to_json(BasicJsonType& j, THRotatorFormatVersion v)
+{
+	using UnderlyingType = typename std::underlying_type<THRotatorFormatVersion>::type;
+	nlohmann::to_json(j, static_cast<UnderlyingType>(v));
+}
+
+template <typename BasicJsonType>
 void from_json(const BasicJsonType& j, D3DTEXTUREFILTERTYPE& filterType)
 {
 	std::string raw;
@@ -119,6 +126,21 @@ void from_json(const BasicJsonType& j, D3DTEXTUREFILTERTYPE& filterType)
 	else
 	{
 		filterType = D3DTEXF_LINEAR;
+	}
+}
+
+template <typename BasicJsonType>
+void to_json(BasicJsonType& j, D3DTEXTUREFILTERTYPE filterType)
+{
+	assert(filterType == D3DTEXF_LINEAR || filterType == D3DTEXF_NONE);
+
+	if (filterType == D3DTEXF_NONE)
+	{
+		nlohmann::to_json(j, "none");
+	}
+	else
+	{
+		nlohmann::to_json(j, "linear");
 	}
 }
 
@@ -150,6 +172,29 @@ void from_json(const BasicJsonType& j, RectTransferData& rectData)
 	ReadJsonObjectValue(j, "destination_height", rectData.destSize.cy);
 
 	ReadJsonObjectValue(j, "rect_rotation", rectData.rotation);
+}
+
+template <typename BasicJsonType>
+void to_json(BasicJsonType& j, const RectTransferData& rectData)
+{
+#ifdef _UNICODE
+	std::string rectName = ConvertFromUnicodeToUtf8(rectData.name);
+#else
+	std::string rectName = ConvertFromSjisToUtf8(rectData.name);
+#endif
+	j["rect_name"] = rectName;
+
+	j["source_left"] = rectData.sourcePosition.x;
+	j["source_top"] = rectData.sourcePosition.y;
+	j["source_width"] = rectData.sourceSize.cx;
+	j["source_height"] = rectData.sourceSize.cy;
+
+	j["destination_left"] = rectData.destPosition.x;
+	j["destination_top"] = rectData.destPosition.y;
+	j["destination_width"] = rectData.destSize.cx;
+	j["destination_height"] = rectData.destSize.cy;
+
+	j["rect_rotation"] = rectData.rotation;
 }
 
 template <typename BasicJsonType>
@@ -202,51 +247,6 @@ void from_json(const BasicJsonType& j, THRotatorSetting& setting)
 
 		currentRectIndex++;
 	}
-}
-
-template <typename BasicJsonType>
-void to_json(BasicJsonType& j, THRotatorFormatVersion v)
-{
-	using UnderlyingType = typename std::underlying_type<THRotatorFormatVersion>::type;
-	nlohmann::to_json(j, static_cast<UnderlyingType>(v));
-}
-
-template <typename BasicJsonType>
-void to_json(BasicJsonType& j, D3DTEXTUREFILTERTYPE filterType)
-{
-	assert(filterType == D3DTEXF_LINEAR || filterType == D3DTEXF_NONE);
-
-	if (filterType == D3DTEXF_NONE)
-	{
-		nlohmann::to_json(j, "none");
-	}
-	else
-	{
-		nlohmann::to_json(j, "linear");
-	}
-}
-
-template <typename BasicJsonType>
-void to_json(BasicJsonType& j, const RectTransferData& rectData)
-{
-#ifdef _UNICODE
-	std::string rectName = ConvertFromUnicodeToUtf8(rectData.name);
-#else
-	std::string rectName = ConvertFromSjisToUtf8(rectData.name);
-#endif
-	j["rect_name"] = rectName;
-
-	j["source_left"] = rectData.sourcePosition.x;
-	j["source_top"] = rectData.sourcePosition.y;
-	j["source_width"] = rectData.sourceSize.cx;
-	j["source_height"] = rectData.sourceSize.cy;
-
-	j["destination_left"] = rectData.destPosition.x;
-	j["destination_top"] = rectData.destPosition.y;
-	j["destination_width"] = rectData.destSize.cx;
-	j["destination_height"] = rectData.destSize.cy;
-
-	j["rect_rotation"] = rectData.rotation;
 }
 
 template <typename BasicJsonType>
