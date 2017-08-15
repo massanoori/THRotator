@@ -448,9 +448,9 @@ bool THRotatorSetting::Load(const boost::filesystem::path& processWorkingDir,
 	{
 		THRotatorSetting::LoadJsonFormat(processWorkingDir, exeFilename, outSetting, importedFormatVersion);
 	}
-	catch (const fmt::FormatError& e)
+	catch (const std::invalid_argument& e)
 	{
-		OutputLogMessagef(LogSeverity::Error, L"Json parse error ({0})", ConvertFromSjisToUnicode(e.what()));
+		OutputLogMessagef(LogSeverity::Error, L"Json parse failed ({0})", ConvertFromSjisToUnicode(e.what()));
 		return false;
 	}
 	catch (const std::ios::failure&)
