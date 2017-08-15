@@ -33,6 +33,19 @@ struct RawTypeOfEnum<T, std::true_type>
 	typedef typename std::underlying_type<typename std::remove_reference<T>::type>::type type;
 };
 
+template <typename T>
+void ReadJsonObjectValue(const nlohmann::json& j, const std::string& key, T& out)
+{
+	try
+	{
+		out = j.at(key);
+	}
+	catch (const std::domain_error& e)
+	{
+		throw std::domain_error(fmt::format("Failed to parse key '{0}' ({1})", key, e.what()));
+	}
+}
+
 }
 
 template <typename BasicJsonType>
@@ -97,6 +110,36 @@ void from_json(const BasicJsonType& j, D3DTEXTUREFILTERTYPE& filterType)
 }
 
 template <typename BasicJsonType>
+void from_json(const BasicJsonType& j, RectTransferData& rectData)
+{
+	if (!j.is_object())
+	{
+		throw std::domain_error(fmt::format("type must be object, but is {0}", j.type_name()));
+	}
+
+	std::string rectName;
+	ReadJsonObjectValue(j, "rect_name", rectName);
+
+#ifdef _UNICODE
+	rectData.name = ConvertFromUtf8ToUnicode(rectName);
+#else
+	rectData.name = ConvertFromUtf8ToSjis(rectName);
+#endif
+
+	ReadJsonObjectValue(j, "source_left", rectData.sourcePosition.x);
+	ReadJsonObjectValue(j, "source_top", rectData.sourcePosition.y);
+	ReadJsonObjectValue(j, "source_width", rectData.sourceSize.cx);
+	ReadJsonObjectValue(j, "source_height", rectData.sourceSize.cy);
+	
+	ReadJsonObjectValue(j, "destination_left", rectData.destPosition.x);
+	ReadJsonObjectValue(j, "destination_top", rectData.destPosition.y);
+	ReadJsonObjectValue(j, "destination_width", rectData.destSize.cx);
+	ReadJsonObjectValue(j, "destination_height", rectData.destSize.cy);
+
+	ReadJsonObjectValue(j, "rect_rotation", rectData.rotation);
+}
+
+template <typename BasicJsonType>
 void to_json(BasicJsonType& j, THRotatorFormatVersion v)
 {
 	using UnderlyingType = typename std::underlying_type<THRotatorFormatVersion>::type;
@@ -116,6 +159,29 @@ void to_json(BasicJsonType& j, D3DTEXTUREFILTERTYPE filterType)
 	{
 		nlohmann::to_json(j, "linear");
 	}
+}
+
+template <typename BasicJsonType>
+void to_json(BasicJsonType& j, const RectTransferData& rectData)
+{
+#ifdef _UNICODE
+	std::string rectName = ConvertFromUnicodeToUtf8(rectData.name);
+#else
+	std::string rectName = ConvertFromSjisToUtf8(rectData.name);
+#endif
+	j["rect_name"] = rectName;
+
+	j["source_left"] = rectData.sourcePosition.x;
+	j["source_top"] = rectData.sourcePosition.y;
+	j["source_width"] = rectData.sourceSize.cx;
+	j["source_height"] = rectData.sourceSize.cy;
+
+	j["destination_left"] = rectData.destPosition.x;
+	j["destination_top"] = rectData.destPosition.y;
+	j["destination_width"] = rectData.destSize.cx;
+	j["destination_height"] = rectData.destSize.cy;
+
+	j["rect_rotation"] = rectData.rotation;
 }
 
 void THRotatorSetting::LoadIniFormat(const boost::filesystem::path& processWorkingDir,
@@ -237,21 +303,13 @@ void THRotatorSetting::LoadJsonFormat(const boost::filesystem::path& processWork
 
 #define READ_JSON_PARAM(parent, destination, name) \
 	do { \
-		auto foundItr = parent.find(name); \
-		if (foundItr != parent.end()) \
+		try \
 		{ \
-			try \
-			{ \
-				(destination) = *foundItr; \
-			} \
-			catch (const std::domain_error& e) \
-			{ \
-				OutputLogMessagef(LogSeverity::Error, L"Failed to parse key '{0}' ({1})", name, e.what()); \
-			} \
+			ReadJsonObjectValue(parent, name, destination); \
 		} \
-		else \
+		catch (const std::logic_error& e) \
 		{ \
-			OutputLogMessagef(LogSeverity::Error, L"Key '{0}' not found", name); \
+			OutputLogMessage(LogSeverity::Error, ConvertFromSjisToUnicode(e.what())); \
 		} \
 	} while(false)
 
@@ -285,36 +343,20 @@ void THRotatorSetting::LoadJsonFormat(const boost::filesystem::path& processWork
 	std::vector<RectTransferData> newRectTransfers;
 	newRectTransfers.reserve(rectsObject.size());
 
+	int currentRectIndex = 0;
 	for (const auto& rectObject : rectsObject)
 	{
-		if (!rectObject.is_object())
+		try
 		{
-			continue;
+			RectTransferData rectData = rectObject;
+			newRectTransfers.push_back(rectData);
+		}
+		catch (const std::logic_error& e)
+		{
+			OutputLogMessagef(LogSeverity::Error, L"Failed to load 'rects[{0}]' ({1})", currentRectIndex, e.what());
 		}
 
-		RectTransferData rectData;
-		std::string rectName;
-		READ_JSON_PARAM(rectObject, rectName, "rect_name");
-
-#ifdef _UNICODE
-		rectData.name = ConvertFromUtf8ToUnicode(rectName);
-#else
-		rectData.name = ConvertFromUtf8ToSjis(rectName);
-#endif
-
-		READ_JSON_PARAM(rectObject, rectData.sourcePosition.x, "source_left");
-		READ_JSON_PARAM(rectObject, rectData.sourcePosition.y, "source_top");
-		READ_JSON_PARAM(rectObject, rectData.sourceSize.cx, "source_width");
-		READ_JSON_PARAM(rectObject, rectData.sourceSize.cy, "source_height");
-
-		READ_JSON_PARAM(rectObject, rectData.destPosition.x, "destination_left");
-		READ_JSON_PARAM(rectObject, rectData.destPosition.y, "destination_top");
-		READ_JSON_PARAM(rectObject, rectData.destSize.cx, "destination_width");
-		READ_JSON_PARAM(rectObject, rectData.destSize.cy, "destination_height");
-
-		READ_JSON_PARAM(rectObject, rectData.rotation, "rect_rotation");
-
-		newRectTransfers.push_back(rectData);
+		currentRectIndex++;
 	}
 
 	outSetting.rectTransfers = std::move(newRectTransfers);
@@ -388,28 +430,7 @@ bool THRotatorSetting::Save(const boost::filesystem::path& processWorkingDir,
 
 	for (const auto& rectData : inSetting.rectTransfers)
 	{
-		nlohmann::json rectObject;
-
-#ifdef _UNICODE
-		const auto& nameToSave = ConvertFromUnicodeToUtf8(rectData.name);
-#else
-		const auto& nameToSave = ConvertFromSjisToUtf8(rectData.name);
-#endif
-
-		WRITE_JSON_PARAM(rectObject, "rect_name", nameToSave);
-
-		WRITE_JSON_PARAM(rectObject, "source_left", rectData.sourcePosition.x);
-		WRITE_JSON_PARAM(rectObject, "source_top", rectData.sourcePosition.y);
-		WRITE_JSON_PARAM(rectObject, "source_width", rectData.sourceSize.cx);
-		WRITE_JSON_PARAM(rectObject, "source_height", rectData.sourceSize.cy);
-
-		WRITE_JSON_PARAM(rectObject, "destination_left", rectData.destPosition.x);
-		WRITE_JSON_PARAM(rectObject, "destination_top", rectData.destPosition.y);
-		WRITE_JSON_PARAM(rectObject, "destination_width", rectData.destSize.cx);
-		WRITE_JSON_PARAM(rectObject, "destination_height", rectData.destSize.cy);
-
-		WRITE_JSON_PARAM(rectObject, "rect_rotation", rectData.rotation);
-
+		nlohmann::json rectObject = rectData;
 		rectsArray.push_back(rectObject);
 	}
 
