@@ -46,6 +46,19 @@ void ReadJsonObjectValue(const nlohmann::json& j, const std::string& key, T& out
 	}
 }
 
+template <typename T>
+void ReadJsonObjectValueKeepOnFailure(const nlohmann::json& j, const std::string& key, T& out)
+{
+	try
+	{
+		ReadJsonObjectValue(j, key, out);
+	}
+	catch (const std::logic_error& e)
+	{
+		OutputLogMessage(LogSeverity::Error, ConvertFromSjisToUnicode(e.what()));
+	}
+}
+
 }
 
 template <typename BasicJsonType>
@@ -140,6 +153,58 @@ void from_json(const BasicJsonType& j, RectTransferData& rectData)
 }
 
 template <typename BasicJsonType>
+void from_json(const BasicJsonType& j, THRotatorSetting& setting)
+{
+	if (!j.is_object())
+	{
+		OutputLogMessagef(LogSeverity::Error, L"type must be object, but is {0}", j.type_name());
+		return;
+	}
+
+	// used for migration
+	THRotatorFormatVersion formatVersion;
+	ReadJsonObjectValueKeepOnFailure(j, "format_version", formatVersion);
+
+	ReadJsonObjectValueKeepOnFailure(j, "judge_threshold", setting.judgeThreshold);
+	ReadJsonObjectValueKeepOnFailure(j, "main_screen_left", setting.mainScreenTopLeft.x);
+	ReadJsonObjectValueKeepOnFailure(j, "main_screen_top", setting.mainScreenTopLeft.y);
+	ReadJsonObjectValueKeepOnFailure(j, "main_screen_width", setting.mainScreenSize.cx);
+	ReadJsonObjectValueKeepOnFailure(j, "main_screen_height", setting.mainScreenSize.cy);
+	ReadJsonObjectValueKeepOnFailure(j, "y_offset", setting.yOffset);
+	ReadJsonObjectValueKeepOnFailure(j, "window_visible", setting.bVisible);
+	ReadJsonObjectValueKeepOnFailure(j, "vertical_window", setting.bVerticallyLongWindow);
+	ReadJsonObjectValueKeepOnFailure(j, "use_modal_editor", setting.bModalEditorPreferred);
+	ReadJsonObjectValueKeepOnFailure(j, "rotation_angle", setting.rotationAngle);
+	ReadJsonObjectValueKeepOnFailure(j, "fileter_type", setting.filterType);
+
+	auto rectsItr = j.find("rects");
+	if (rectsItr == j.end() || !rectsItr->is_array())
+	{
+		setting.rectTransfers.clear();
+		return;
+	}
+
+	auto rectsObject = *rectsItr;
+
+	setting.rectTransfers.reserve(rectsObject.size());
+	int currentRectIndex = 0;
+	for (const auto& rectObject : rectsObject)
+	{
+		try
+		{
+			RectTransferData rectData = rectObject;
+			setting.rectTransfers.push_back(rectData);
+		}
+		catch (const std::logic_error& e)
+		{
+			OutputLogMessagef(LogSeverity::Error, L"Failed to load 'rects[{0}]' ({1})", currentRectIndex, e.what());
+		}
+
+		currentRectIndex++;
+	}
+}
+
+template <typename BasicJsonType>
 void to_json(BasicJsonType& j, THRotatorFormatVersion v)
 {
 	using UnderlyingType = typename std::underlying_type<THRotatorFormatVersion>::type;
@@ -182,6 +247,33 @@ void to_json(BasicJsonType& j, const RectTransferData& rectData)
 	j["destination_height"] = rectData.destSize.cy;
 
 	j["rect_rotation"] = rectData.rotation;
+}
+
+template <typename BasicJsonType>
+void to_json(BasicJsonType& j, const THRotatorSetting& setting)
+{
+	j["format_version"] = THRotatorFormatVersion::Latest;
+	j["judge_threshold"] = setting.judgeThreshold;
+	j["main_screen_left"] = setting.mainScreenTopLeft.x;
+	j["main_screen_top"] = setting.mainScreenTopLeft.y;
+	j["main_screen_width"] = setting.mainScreenSize.cx;
+	j["main_screen_height"] = setting.mainScreenSize.cy;
+	j["y_offset"] = setting.yOffset;
+	j["window_visible"] = setting.bVisible;
+	j["vertical_window"] = setting.bVerticallyLongWindow;
+	j["fileter_type"] = setting.filterType;
+	j["rotation_angle"] = setting.rotationAngle;
+	j["use_modal_editor"] = setting.bModalEditorPreferred;
+
+	nlohmann::json rectsArray(nlohmann::json::value_t::array);
+
+	for (const auto& rectData : setting.rectTransfers)
+	{
+		nlohmann::json rectObject = rectData;
+		rectsArray.push_back(rectObject);
+	}
+
+	j["rects"] = rectsArray;
 }
 
 void THRotatorSetting::LoadIniFormat(const boost::filesystem::path& processWorkingDir,
@@ -301,67 +393,9 @@ void THRotatorSetting::LoadJsonFormat(const boost::filesystem::path& processWork
 
 	ifs >> loadedJson;
 
-#define READ_JSON_PARAM(parent, destination, name) \
-	do { \
-		try \
-		{ \
-			ReadJsonObjectValue(parent, name, destination); \
-		} \
-		catch (const std::logic_error& e) \
-		{ \
-			OutputLogMessage(LogSeverity::Error, ConvertFromSjisToUnicode(e.what())); \
-		} \
-	} while(false)
+	ReadJsonObjectValueKeepOnFailure(loadedJson, "format_version", importedFormatVersion);
 
-	READ_JSON_PARAM(loadedJson, outSetting.judgeThreshold, "judge_threshold");
-	READ_JSON_PARAM(loadedJson, outSetting.mainScreenTopLeft.x, "main_screen_left");
-	READ_JSON_PARAM(loadedJson, outSetting.mainScreenTopLeft.y, "main_screen_top");
-	READ_JSON_PARAM(loadedJson, outSetting.mainScreenSize.cx, "main_screen_width");
-	READ_JSON_PARAM(loadedJson, outSetting.mainScreenSize.cy, "main_screen_height");
-	READ_JSON_PARAM(loadedJson, outSetting.yOffset, "y_offset");
-	READ_JSON_PARAM(loadedJson, outSetting.bVisible, "window_visible");
-	READ_JSON_PARAM(loadedJson, outSetting.bVerticallyLongWindow, "vertical_window");
-	READ_JSON_PARAM(loadedJson, outSetting.bModalEditorPreferred, "use_modal_editor");
-	READ_JSON_PARAM(loadedJson, outSetting.rotationAngle, "rotation_angle");
-	READ_JSON_PARAM(loadedJson, outSetting.filterType, "fileter_type");
-	READ_JSON_PARAM(loadedJson, importedFormatVersion, "format_version");
-
-	auto rectsItr = loadedJson.find("rects");
-	if (rectsItr == loadedJson.end() && rectsItr->is_array())
-	{
-		outSetting.rectTransfers.clear();
-	}
-
-	auto rectsObject = *rectsItr;
-
-	if (!rectsObject.is_array())
-	{
-		outSetting.rectTransfers.clear();
-		return;
-	}
-
-	std::vector<RectTransferData> newRectTransfers;
-	newRectTransfers.reserve(rectsObject.size());
-
-	int currentRectIndex = 0;
-	for (const auto& rectObject : rectsObject)
-	{
-		try
-		{
-			RectTransferData rectData = rectObject;
-			newRectTransfers.push_back(rectData);
-		}
-		catch (const std::logic_error& e)
-		{
-			OutputLogMessagef(LogSeverity::Error, L"Failed to load 'rects[{0}]' ({1})", currentRectIndex, e.what());
-		}
-
-		currentRectIndex++;
-	}
-
-	outSetting.rectTransfers = std::move(newRectTransfers);
-
-#undef READ_JSON_PARAM
+	outSetting = loadedJson;
 }
 
 std::string THRotatorSetting::GenerateIniAppName(const boost::filesystem::path& exeFilename)
@@ -409,34 +443,9 @@ bool THRotatorSetting::Save(const boost::filesystem::path& processWorkingDir,
 	const boost::filesystem::path& exeFilename,
 	const THRotatorSetting& inSetting)
 {
-	nlohmann::json objectToWrite;
+	nlohmann::json objectToWrite(nlohmann::json::value_t::object);
 
-#define WRITE_JSON_PARAM(parent, name, value) parent[name] = value
-
-	WRITE_JSON_PARAM(objectToWrite, "format_version", THRotatorFormatVersion::Latest);
-	WRITE_JSON_PARAM(objectToWrite, "judge_threshold", inSetting.judgeThreshold);
-	WRITE_JSON_PARAM(objectToWrite, "main_screen_left", inSetting.mainScreenTopLeft.x);
-	WRITE_JSON_PARAM(objectToWrite, "main_screen_top", inSetting.mainScreenTopLeft.y);
-	WRITE_JSON_PARAM(objectToWrite, "main_screen_width", inSetting.mainScreenSize.cx);
-	WRITE_JSON_PARAM(objectToWrite, "main_screen_height", inSetting.mainScreenSize.cy);
-	WRITE_JSON_PARAM(objectToWrite, "y_offset", inSetting.yOffset);
-	WRITE_JSON_PARAM(objectToWrite, "window_visible", inSetting.bVisible);
-	WRITE_JSON_PARAM(objectToWrite, "vertical_window", inSetting.bVerticallyLongWindow);
-	WRITE_JSON_PARAM(objectToWrite, "fileter_type", inSetting.filterType);
-	WRITE_JSON_PARAM(objectToWrite, "rotation_angle", inSetting.rotationAngle);
-	WRITE_JSON_PARAM(objectToWrite, "use_modal_editor", inSetting.bModalEditorPreferred);
-
-	nlohmann::json rectsArray(nlohmann::json::value_t::array);
-
-	for (const auto& rectData : inSetting.rectTransfers)
-	{
-		nlohmann::json rectObject = rectData;
-		rectsArray.push_back(rectObject);
-	}
-
-	objectToWrite["rects"] = rectsArray;
-
-#undef WRITE_INI_PARAM
+	objectToWrite = inSetting;
 
 	auto filename = CreateJsonFilePath(processWorkingDir, exeFilename);
 	OutputLogMessagef(LogSeverity::Info, L"Saving to {0}", filename.generic_wstring());
