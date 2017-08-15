@@ -484,7 +484,7 @@ bool THRotatorSetting::Save(const boost::filesystem::path& processWorkingDir,
 	WRITE_JSON_PARAM(objectToWrite, "rotation_angle", inSetting.rotationAngle);
 	WRITE_JSON_PARAM(objectToWrite, "use_modal_editor", inSetting.bModalEditorPreferred);
 
-	nlohmann::json rectsArray;
+	nlohmann::json rectsArray(nlohmann::json::value_t::array);
 
 	for (const auto& rectData : inSetting.rectTransfers)
 	{
