@@ -1,6 +1,8 @@
 THRotator
 =====
 
+[![Build status](https://ci.appveyor.com/api/projects/status/hh62maoopv602fm5?svg=true)](https://ci.appveyor.com/project/massanoori/throtator)
+
 THRotator allows screen rotation of Touhou Project.
 The user can customize the positions of HUD elements.
 
