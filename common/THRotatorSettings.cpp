@@ -33,211 +33,89 @@ struct RawTypeOfEnum<T, std::true_type>
 	typedef typename std::underlying_type<typename std::remove_reference<T>::type>::type type;
 };
 
-template <typename T>
-struct JsonConvHelper
+}
+
+template <typename BasicJsonType>
+void from_json(const BasicJsonType& j, RotationAngle& a)
 {
+	using UnderlyingType = typename std::underlying_type<RotationAngle>::type;
 
-};
+	UnderlyingType raw;
+	nlohmann::from_json(j, raw);
 
-template <>
-struct JsonConvHelper<int>
+	if (raw < 0 || raw >= Rotation_Num)
+	{
+		throw std::domain_error("rotation angle must be 0, 1, 2, or 3");
+	}
+
+	a = static_cast<RotationAngle>(raw);
+}
+
+template <typename BasicJsonType>
+void from_json(const BasicJsonType& j, THRotatorFormatVersion& v)
 {
-	static bool IsValidType(const nlohmann::json& j)
+	using UnderlyingType = typename std::underlying_type<THRotatorFormatVersion>::type;
+
+	auto minimalVersion = static_cast<UnderlyingType>(THRotatorFormatVersion::Version_2);
+	auto maximalVersion = static_cast<UnderlyingType>(THRotatorFormatVersion::Latest);
+
+	UnderlyingType raw;
+	nlohmann::from_json(j, raw);
+
+	if (raw < minimalVersion)
 	{
-		return j.is_number_integer();
+		throw std::domain_error(fmt::format("minimal accepted format version is {0}, but is {1}", minimalVersion, raw));
 	}
 
-	static int ConvertFromJson(const nlohmann::json& j)
+	if (raw > maximalVersion)
 	{
-		assert(IsValidType(j));
-		int i = j;
-		return i;
+		throw std::domain_error(fmt::format("latest format version is {0}, but is {1}", maximalVersion, raw));
 	}
 
-	static nlohmann::json ConvertToJson(int x)
-	{
-		return nlohmann::json(x);
-	}
-};
+	v = static_cast<THRotatorFormatVersion>(raw);
+}
 
-template <>
-struct JsonConvHelper<long>
+template <typename BasicJsonType>
+void from_json(const BasicJsonType& j, D3DTEXTUREFILTERTYPE& filterType)
 {
-	static bool IsValidType(const nlohmann::json& j)
+	std::string raw;
+	nlohmann::from_json(j, raw);
+
+	if (raw != "linear" && raw != "none")
 	{
-		return j.is_number_integer();
+		throw std::domain_error(fmt::format("filter type must be either 'linear' or 'none', but is {0}", raw));
 	}
 
-	static long ConvertFromJson(const nlohmann::json& j)
+	if (raw == "none")
 	{
-		assert(IsValidType(j));
-		int i = j;
-		return i;
+		filterType = D3DTEXF_NONE;
 	}
-
-	static nlohmann::json ConvertToJson(long x)
+	else
 	{
-		return nlohmann::json(x);
+		filterType = D3DTEXF_LINEAR;
 	}
-};
+}
 
-template <>
-struct JsonConvHelper<unsigned int>
+template <typename BasicJsonType>
+void to_json(BasicJsonType& j, THRotatorFormatVersion v)
 {
-	static bool IsValidType(const nlohmann::json& j)
-	{
-		return j.is_number_integer();
-	}
+	using UnderlyingType = typename std::underlying_type<THRotatorFormatVersion>::type;
+	nlohmann::to_json(j, static_cast<UnderlyingType>(v));
+}
 
-	static unsigned int ConvertFromJson(const nlohmann::json& j)
-	{
-		assert(IsValidType(j));
-		unsigned int i = j;
-		return i;
-	}
-
-	static nlohmann::json ConvertToJson(unsigned int x)
-	{
-		return nlohmann::json(x);
-	}
-};
-
-template <>
-struct JsonConvHelper<RotationAngle>
+template <typename BasicJsonType>
+void to_json(BasicJsonType& j, D3DTEXTUREFILTERTYPE filterType)
 {
-	static bool IsValidType(const nlohmann::json& j)
+	assert(filterType == D3DTEXF_LINEAR || filterType == D3DTEXF_NONE);
+
+	if (filterType == D3DTEXF_NONE)
 	{
-		return j.is_number_integer();
+		nlohmann::to_json(j, "none");
 	}
-
-	static RotationAngle ConvertFromJson(const nlohmann::json& j)
+	else
 	{
-		assert(IsValidType(j));
-		typename std::underlying_type<RotationAngle>::type i = j;
-		return static_cast<RotationAngle>(i);
+		nlohmann::to_json(j, "linear");
 	}
-
-	static nlohmann::json ConvertToJson(RotationAngle x)
-	{
-		return nlohmann::json(static_cast<std::underlying_type<RotationAngle>::type>(x));
-	}
-};
-
-template <>
-struct JsonConvHelper<THRotatorFormatVersion>
-{
-	static bool IsValidType(const nlohmann::json& j)
-	{
-		return j.is_number_integer();
-	}
-
-	static THRotatorFormatVersion ConvertFromJson(const nlohmann::json& j)
-	{
-		assert(IsValidType(j));
-		typename std::underlying_type<THRotatorFormatVersion>::type i = j;
-		return static_cast<THRotatorFormatVersion>(i);
-	}
-
-	static nlohmann::json ConvertToJson(THRotatorFormatVersion x)
-	{
-		return nlohmann::json(static_cast<std::underlying_type<THRotatorFormatVersion>::type>(x));
-	}
-};
-
-template <>
-struct JsonConvHelper<bool>
-{
-	static bool IsValidType(const nlohmann::json& j)
-	{
-		return j.is_boolean();
-	}
-
-	static bool ConvertFromJson(const nlohmann::json& j)
-	{
-		assert(IsValidType(j));
-		bool b = j;
-		return b;
-	}
-
-	static nlohmann::json ConvertToJson(bool x)
-	{
-		return nlohmann::json(x);
-	}
-};
-
-template <>
-struct JsonConvHelper<D3DTEXTUREFILTERTYPE>
-{
-	static bool IsValidType(const nlohmann::json& j)
-	{
-		if (!j.is_string())
-		{
-			return false;
-		}
-
-		std::string value = j;
-		return value == "linear" || value == "none";
-	}
-
-	static D3DTEXTUREFILTERTYPE ConvertFromJson(const nlohmann::json& j)
-	{
-		assert(IsValidType(j));
-		std::string value = j;
-
-		if (value == "linear")
-		{
-			return D3DTEXF_LINEAR;
-		}
-		else
-		{
-			return D3DTEXF_NONE;
-		}
-	}
-
-	static nlohmann::json ConvertToJson(D3DTEXTUREFILTERTYPE x)
-	{
-		switch (x)
-		{
-		case D3DTEXF_NONE:
-			return nlohmann::json("none");
-
-		case D3DTEXF_LINEAR:
-			return nlohmann::json("linear");
-
-		default:
-			break;
-		}
-
-		return nlohmann::json("linear");
-	}
-};
-
-template <>
-struct JsonConvHelper<std::string>
-{
-	static bool IsValidType(const nlohmann::json& j)
-	{
-		return j.is_string();
-	}
-
-	static std::string ConvertFromJson(const nlohmann::json& j)
-	{
-		assert(IsValidType(j));
-		std::string s = j;
-		return s;
-	}
-
-	static nlohmann::json ConvertToJson(const std::string& x)
-	{
-		return nlohmann::json(x);
-	}
-};
-
-template <typename T>
-struct JsonConv : public JsonConvHelper<typename std::remove_const<typename std::remove_reference<T>::type>::type>
-{
-};
-
 }
 
 void THRotatorSetting::LoadIniFormat(const boost::filesystem::path& processWorkingDir,
@@ -360,9 +238,20 @@ void THRotatorSetting::LoadJsonFormat(const boost::filesystem::path& processWork
 #define READ_JSON_PARAM(parent, destination, name) \
 	do { \
 		auto foundItr = parent.find(name); \
-		if (foundItr != parent.end() && JsonConv<typename std::remove_reference<decltype(destination)>::type>::IsValidType(*foundItr)) \
+		if (foundItr != parent.end()) \
 		{ \
-			(destination) = JsonConv<typename std::remove_reference<decltype(destination)>::type>::ConvertFromJson(*foundItr); \
+			try \
+			{ \
+				(destination) = *foundItr; \
+			} \
+			catch (const std::domain_error& e) \
+			{ \
+				OutputLogMessagef(LogSeverity::Error, L"Failed to parse key '{0}' ({1})", name, e.what()); \
+			} \
+		} \
+		else \
+		{ \
+			OutputLogMessagef(LogSeverity::Error, L"Key '{0}' not found", name); \
 		} \
 	} while(false)
 
@@ -387,11 +276,22 @@ void THRotatorSetting::LoadJsonFormat(const boost::filesystem::path& processWork
 
 	auto rectsObject = *rectsItr;
 
+	if (!rectsObject.is_array())
+	{
+		outSetting.rectTransfers.clear();
+		return;
+	}
+
 	std::vector<RectTransferData> newRectTransfers;
 	newRectTransfers.reserve(rectsObject.size());
 
 	for (const auto& rectObject : rectsObject)
 	{
+		if (!rectObject.is_object())
+		{
+			continue;
+		}
+
 		RectTransferData rectData;
 		std::string rectName;
 		READ_JSON_PARAM(rectObject, rectName, "rect_name");
@@ -469,7 +369,7 @@ bool THRotatorSetting::Save(const boost::filesystem::path& processWorkingDir,
 {
 	nlohmann::json objectToWrite;
 
-#define WRITE_JSON_PARAM(parent, name, value) parent[name] = JsonConv<decltype(value)>::ConvertToJson(value)
+#define WRITE_JSON_PARAM(parent, name, value) parent[name] = value
 
 	WRITE_JSON_PARAM(objectToWrite, "format_version", THRotatorFormatVersion::Latest);
 	WRITE_JSON_PARAM(objectToWrite, "judge_threshold", inSetting.judgeThreshold);
