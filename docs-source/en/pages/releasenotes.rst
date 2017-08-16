@@ -2,6 +2,24 @@
 Release notes
 ======================
 
+1.3.1
+=======================
+
+Released on August 16, 2017.
+
+New feature
+------------
+
+- Save logs to ``throtator-log.txt``
+
+Bug fixes
+------------
+
+- Fix unexpected screen rotation when clicking apply button after clicking a radio button of interpolation method.
+- Fix division by zero depending on the initialization method of Direct3D.
+- Fix unnecessary values in configuration files.
+- Fix null in configuration file when the number of other rectangles is zero.
+
 
 1.3.0
 =======================

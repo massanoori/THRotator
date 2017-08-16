@@ -21,7 +21,7 @@
 namespace
 {
 
-LPCTSTR THROTATOR_VERSION_STRING = _T("1.3.0");
+LPCTSTR THROTATOR_VERSION_STRING = _T("1.3.1");
 
 HHOOK ms_hHook;
 std::map<HWND, std::weak_ptr<THRotatorEditorContext>> ms_touhouWinToContext;

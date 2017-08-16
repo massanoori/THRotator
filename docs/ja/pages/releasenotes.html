@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>リリースノート &mdash; THRotator 1.3.0 documentation</title>
+  <title>リリースノート &mdash; THRotator 1.3.1 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="THRotator 1.3.0 documentation" href="../index.html"/>
+    <link rel="top" title="THRotator 1.3.1 documentation" href="../index.html"/>
         <link rel="prev" title="アンインストール方法" href="uninstall.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                1.3.0
+                1.3
               </div>
             
           
@@ -96,27 +96,32 @@
 <li class="toctree-l1"><a class="reference internal" href="development.html">開発</a></li>
 <li class="toctree-l1"><a class="reference internal" href="uninstall.html">アンインストール方法</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">リリースノート</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#id2">1.3.0</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#id2">1.3.1</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#id3">新機能</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#id4">バグ修正</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id5">その他</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#id6">1.2.2</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#id5">1.3.0</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id6">新機能</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#id7">バグ修正</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id8">その他</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#id8">1.2.1</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#id9">バグ修正</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id9">1.2.2</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id10">バグ修正</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#id10">1.2.0</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#id11">バグ修正</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id12">その他</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id11">1.2.1</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id12">バグ修正</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#id13">1.01</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#id14">1.00</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id13">1.2.0</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id14">バグ修正</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id15">その他</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id16">1.01</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id17">1.00</a></li>
 </ul>
 </li>
 </ul>
@@ -185,10 +190,29 @@
   <div class="section" id="id1">
 <h1>リリースノート<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="id2">
-<h2>1.3.0<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
-<p>リリース日: 2017/8/12</p>
+<h2>1.3.1<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
+<p>リリース日: 2017/8/16</p>
 <div class="section" id="id3">
 <h3>新機能<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">throtator-log.txt</span></code> にログ出力を行うようにしました。</li>
+</ul>
+</div>
+<div class="section" id="id4">
+<h3>バグ修正<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>拡大時の保管方法のラジオボタンをクリックし、適用ボタンを押すと画面が回転する現象を修正しました。</li>
+<li>Direct3Dの初期化方法によって、ゼロ除算が発生するのを修正しました。</li>
+<li>設定ファイルに不要な値が書き込まれるのを修正しました。</li>
+<li>その他領域の数が0個の時に、設定ファイルに <code class="docutils literal"><span class="pre">null</span></code> が保存されていたのを修正しました。</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id5">
+<h2>1.3.0<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h2>
+<p>リリース日: 2017/8/12</p>
+<div class="section" id="id6">
+<h3>新機能<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>東方天空璋用の設定ファイルを追加しました。</li>
 <li>縦用レイアウトの強制ができるようになりました。</li>
@@ -204,8 +228,8 @@
 </li>
 </ul>
 </div>
-<div class="section" id="id4">
-<h3>バグ修正<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id7">
+<h3>バグ修正<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>東方地霊殿から東方神霊廟において、ウィンドウモードで解像度が640x480に固定されてしまうのを修正しました。</li>
 <li>D3Dのインタフェースを実装した関数が、D3Dの仕様とは異なる値を返していたのを修正しました。</li>
@@ -216,30 +240,30 @@
 </li>
 </ul>
 </div>
-<div class="section" id="id5">
-<h3>その他<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id8">
+<h3>その他<a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>リファクタリングを大量に実施しました。</li>
 <li>複数のVisual Studioのバージョンをサポートするため、CMakeを導入しました。</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id6">
-<h2>1.2.2<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id9">
+<h2>1.2.2<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h2>
 <p>リリース日: 2017/5/28</p>
-<div class="section" id="id7">
-<h3>バグ修正<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id10">
+<h3>バグ修正<a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h3>
 <p>機能面での修正はありません</p>
 <ul class="simple">
 <li>バージョン番号が更新されていないのを修正しました。</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id8">
-<h2>1.2.1<a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id11">
+<h2>1.2.1<a class="headerlink" href="#id11" title="Permalink to this headline">¶</a></h2>
 <p>リリース日: 2017/5/28</p>
-<div class="section" id="id9">
-<h3>バグ修正<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id12">
+<h3>バグ修正<a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>ウィンドウモードにおいて、選択した解像度が、ディスプレイの解像度よりも大きい辺がある場合に画面が黒くなるのを修正しました。</li>
 <li>フルスクリーンモードにおいて、選択した解像度が、ディスプレイの解像度よりも大きい辺がある場合、画面の一部または全体が黒くなるのを修正しました。</li>
@@ -247,31 +271,31 @@
 </ul>
 </div>
 </div>
-<div class="section" id="id10">
-<h2>1.2.0<a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id13">
+<h2>1.2.0<a class="headerlink" href="#id13" title="Permalink to this headline">¶</a></h2>
 <p>リリース日: 2017/5/14</p>
-<div class="section" id="id11">
-<h3>バグ修正<a class="headerlink" href="#id11" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id14">
+<h3>バグ修正<a class="headerlink" href="#id14" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>東方紺珠伝で画面が黒くなる現象を修正しました。</li>
 <li>960x720、1280x960の解像度に対応しました。</li>
 </ul>
 </div>
-<div class="section" id="id12">
-<h3>その他<a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id15">
+<h3>その他<a class="headerlink" href="#id15" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>throt.iniのファイル入出力を高速化しました。</li>
 <li>バージョンの増え方を変更しました。 今後は <a class="reference external" href="http://semver.org/">Semantic Versioning 2.0</a> に従い増やしていきますが、 THRotatorはAPIを提供しないため、APIを設定ファイルなどのデータと置き換えて解釈してください。</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id13">
-<h2>1.01<a class="headerlink" href="#id13" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id16">
+<h2>1.01<a class="headerlink" href="#id16" title="Permalink to this headline">¶</a></h2>
 <p>リリース日: 2011/8/18</p>
 <p>アスペクト比固定拡大機能追加</p>
 </div>
-<div class="section" id="id14">
-<h2>1.00<a class="headerlink" href="#id14" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id17">
+<h2>1.00<a class="headerlink" href="#id17" title="Permalink to this headline">¶</a></h2>
 <p>リリース日: 2011/8/14</p>
 <p>初版</p>
 <p>2011/8/16に、東方神霊廟のデフォルトレイアウトを修正しました。</p>
@@ -320,7 +344,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'1.3.0',
+            VERSION:'1.3.1',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
