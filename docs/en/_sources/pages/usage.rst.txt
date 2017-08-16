@@ -122,7 +122,7 @@ If checked, this window appears immediately after the game is launched.
 
 This checkbox is unchecked by default.
 
-.. note:: This option is unavailable on Direct3D 8 version since main game window and customization window are not coexistent.
+.. note:: This checkbox is disabled on Touhou 7.
 
 .. _usage_ui_force_vertical:
 
