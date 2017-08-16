@@ -75,10 +75,10 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 
 	static MessageHook messageHook;
 
-	double touhouIndex = GetTouhouIndex();
+	double touhouSeriesNumber = GetTouhouSeriesNumber();
 
 	// 妖々夢の場合モーダルで開かないと、入力のフォーカスが奪われる
-	if (6.0 < touhouIndex && touhouIndex < 7.5)
+	if (6.0 < touhouSeriesNumber && touhouSeriesNumber < 7.5)
 	{
 		m_bNeedModalEditor = true;
 	}
@@ -1019,8 +1019,8 @@ bool THRotatorEditorContext::LoadSettings()
 
 	if (formatVersion == THRotatorFormatVersion::Version_1)
 	{
-		double touhouIndex = GetTouhouIndex();
-		if (6.0 <= touhouIndex && touhouIndex < 7.5)
+		double touhouSeriesNumber = GetTouhouSeriesNumber();
+		if (6.0 <= touhouSeriesNumber && touhouSeriesNumber < 7.5)
 		{
 			// format version 1で作成された.iniは、
 			// 紅魔郷と妖々夢では、閾値との比較が実際のビューポート設定回数より1回少ない値と行われる条件で作成されたもの。

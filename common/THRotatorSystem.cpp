@@ -8,7 +8,7 @@
 namespace
 {
 
-double ExtractTouhouIndex(const boost::filesystem::path& exeFilename)
+double ExtractTouhouSeriesNumber(const boost::filesystem::path& exeFilename)
 {
 	auto exeFilenameNoExt = exeFilename.stem().generic_wstring();
 
@@ -40,7 +40,7 @@ class TouhouProcessStats
 public:
 	boost::filesystem::path exeFilePath, exeFilename;
 	boost::filesystem::path playerDataDir;
-	double touhouIndex;
+	double touhouSeriesNumber;
 
 	static const TouhouProcessStats& Get()
 	{
@@ -72,14 +72,14 @@ private:
 		exeFilePath = exePathRaw.data();
 
 		exeFilename = exeFilePath.filename();
-		touhouIndex = ExtractTouhouIndex(exeFilename);
+		touhouSeriesNumber = ExtractTouhouSeriesNumber(exeFilename);
 
 		WCHAR iniSavePathRaw[MAX_PATH];
 		size_t retSize;
 		errno_t resultOfGetEnv = _wgetenv_s(&retSize, iniSavePathRaw, L"APPDATA");
 
 		// ダブルスポイラー(12.5)以降からexeファイルと同じ場所に保存されなくなる
-		if (touhouIndex > 12.3 && resultOfGetEnv == 0 && retSize > 0)
+		if (touhouSeriesNumber > 12.3 && resultOfGetEnv == 0 && retSize > 0)
 		{
 			playerDataDir = boost::filesystem::path(iniSavePathRaw) / _T("ShanghaiAlice") / exeFilename.stem();
 			boost::filesystem::create_directory(playerDataDir);
@@ -93,9 +93,9 @@ private:
 
 }
 
-double GetTouhouIndex()
+double GetTouhouSeriesNumber()
 {
-	return TouhouProcessStats::Get().touhouIndex;
+	return TouhouProcessStats::Get().touhouSeriesNumber;
 }
 
 boost::filesystem::path GetTouhouExecutableFilePath()
@@ -116,5 +116,5 @@ boost::filesystem::path GetTouhouPlayerDataDirectory()
 bool IsTouhouWithoutScreenCapture()
 {
 	// スクリーンキャプチャ機能がないのは紅魔郷
-	return TouhouProcessStats::Get().touhouIndex == 6.0;
+	return TouhouProcessStats::Get().touhouSeriesNumber == 6.0;
 }
