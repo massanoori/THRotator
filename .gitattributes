@@ -1,3 +1,4 @@
 ﻿
 docs/* linguist-documentation
 d3d8/d3d8/include/* linguist-vendored
+d3d9/d3dx/include/* linguist-vendored
