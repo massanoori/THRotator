@@ -12,7 +12,7 @@ bool bFirstLog = true;
 
 boost::filesystem::path CreateTHRotatorLogFilePath()
 {
-	return GetTouhouPlayerDataDirectory() / L"throtLog.txt";
+	return GetTouhouPlayerDataDirectory() / L"throtator-log.txt";
 }
 
 }
