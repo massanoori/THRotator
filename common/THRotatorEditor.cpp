@@ -10,6 +10,7 @@
 
 #include "THRotatorSettings.h"
 #include "THRotatorEditor.h"
+#include "THRotatorSystem.h"
 #include "StringResource.h"
 #include "resource.h"
 #include "EncodingUtils.h"
@@ -25,38 +26,6 @@ LPCTSTR THROTATOR_VERSION_STRING = _T("1.3.0");
 HHOOK ms_hHook;
 std::map<HWND, std::weak_ptr<THRotatorEditorContext>> ms_touhouWinToContext;
 UINT ms_switchVisibilityID = 12345u;
-
-double ExtractTouhouIndex(const boost::filesystem::path& exeFilename)
-{
-	auto exeFilenameNoExt = exeFilename.stem().generic_wstring();
-
-	if (exeFilenameNoExt.compare(L"東方紅魔郷") == 0)
-	{
-		return 6.0;
-	}
-
-	double touhouIndex = 0.0;
-
-	WCHAR dummy[128];
-
-	int numFilledFields = swscanf_s(exeFilenameNoExt.c_str(), L"th%lf%s", &touhouIndex, dummy, _countof(dummy));
-	if (numFilledFields < 1)
-	{
-		return 0.0;
-	}
-
-	while (touhouIndex > 90.0)
-	{
-		touhouIndex /= 10.0;
-	}
-
-	return touhouIndex;
-}
-
-boost::filesystem::path CreateTHRotatorLogFilePath(const boost::filesystem::path& workingDir)
-{
-	return workingDir / L"throtLog.txt";
-}
 
 }
 
@@ -106,40 +75,15 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 
 	static MessageHook messageHook;
 
-	TCHAR exePathRaw[MAX_PATH];
-	GetModuleFileName(NULL, exePathRaw, MAX_PATH);
-	boost::filesystem::path exePath(exePathRaw);
-
-	m_exeFilename = exePath.filename();
-
-	TCHAR iniSavePathRaw[MAX_PATH];
-	size_t retSize;
-	errno_t resultOfGetEnv = _tgetenv_s(&retSize, iniSavePathRaw, _T("APPDATA"));
-
-	double touhouIndex = ExtractTouhouIndex(m_exeFilename.generic_wstring());
-
-	// ダブルスポイラー(12.5)以降からexeファイルと同じ場所に保存されなくなる
-	if (touhouIndex > 12.3 && resultOfGetEnv == 0 && retSize > 0)
-	{
-		m_workingDir = boost::filesystem::path(iniSavePathRaw) / _T("ShanghaiAlice") / m_exeFilename.stem();
-		boost::filesystem::create_directory(m_workingDir);
-	}
-	else
-	{
-		m_workingDir = boost::filesystem::current_path();
-	}
-
-	SetTHRotatorLogPath(CreateTHRotatorLogFilePath(m_workingDir).generic_wstring());
-
-	OutputLogMessagef(LogSeverity::Info, L"Initializing THRotatorEditorContext");
-	OutputLogMessagef(LogSeverity::Info, L"Working directory: {0}", m_workingDir.generic_wstring());
-	OutputLogMessagef(LogSeverity::Info, L"Executable filename: {0}", exePath.generic_wstring());
+	double touhouIndex = GetTouhouIndex();
 
 	// 妖々夢の場合モーダルで開かないと、入力のフォーカスが奪われる
 	if (6.0 < touhouIndex && touhouIndex < 7.5)
 	{
 		m_bNeedModalEditor = true;
 	}
+
+	OutputLogMessagef(LogSeverity::Info, L"Initializing THRotatorEditorContext");
 
 	if (!LoadSettings())
 	{
@@ -153,9 +97,6 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 	}
 
 	m_bNeedModalEditor = m_bNeedModalEditor || m_bModalEditorPreferred;
-
-	// スクリーンキャプチャ機能がないのは紅魔郷
-	m_bTouhouWithoutScreenCapture = touhouIndex == 6.0;
 
 	m_currentRectTransfers = m_editedRectTransfers;
 
@@ -278,11 +219,6 @@ bool THRotatorEditorContext::ConsumeScreenCaptureRequest()
 
 	m_bScreenCaptureQueued = false;
 	return true;
-}
-
-const boost::filesystem::path & THRotatorEditorContext::GetWorkingDirectory() const
-{
-	return m_workingDir;
 }
 
 LPCTSTR THRotatorEditorContext::GetErrorMessage() const
@@ -1049,7 +985,7 @@ bool THRotatorEditorContext::SaveSettings() const
 	settings.rectTransfers = m_currentRectTransfers;
 	settings.bModalEditorPreferred = m_bModalEditorPreferred;
 
-	bool bSaveSuccess = THRotatorSetting::Save(m_workingDir, m_exeFilename, settings);
+	bool bSaveSuccess = THRotatorSetting::Save(settings);
 
 	return bSaveSuccess;
 }
@@ -1059,7 +995,7 @@ bool THRotatorEditorContext::LoadSettings()
 	THRotatorSetting setting;
 	THRotatorFormatVersion formatVersion;
 
-	bool bLoadSuccess = THRotatorSetting::Load(m_workingDir, m_exeFilename, setting, formatVersion);
+	bool bLoadSuccess = THRotatorSetting::Load(setting, formatVersion);
 
 	// 失敗しても、デフォルト値で埋める
 
@@ -1083,7 +1019,7 @@ bool THRotatorEditorContext::LoadSettings()
 
 	if (formatVersion == THRotatorFormatVersion::Version_1)
 	{
-		double touhouIndex = ExtractTouhouIndex(m_exeFilename);
+		double touhouIndex = GetTouhouIndex();
 		if (6.0 <= touhouIndex && touhouIndex < 7.5)
 		{
 			// format version 1で作成された.iniは、
@@ -1169,7 +1105,7 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 				switch (pMsg->wParam)
 				{
 				case VK_HOME:
-					if (context->m_bTouhouWithoutScreenCapture && (HIWORD(pMsg->lParam) & KF_REPEAT) == 0)
+					if (IsTouhouWithoutScreenCapture() && (HIWORD(pMsg->lParam) & KF_REPEAT) == 0)
 					{
 						context->m_bScreenCaptureQueued = true;
 					}

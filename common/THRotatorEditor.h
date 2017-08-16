@@ -46,8 +46,6 @@ public:
 
 	bool ConsumeScreenCaptureRequest();
 
-	const boost::filesystem::path& GetWorkingDirectory() const;
-
 	LPCTSTR GetErrorMessage() const;
 
 	bool IsVerticallyLongWindow() const
@@ -110,8 +108,6 @@ private:
 
 	void SetNewErrorMessage(std::basic_string<TCHAR>&& message);
 
-	boost::filesystem::path m_workingDir;
-
 	/****************************************
 	* THRotator parameters
 	****************************************/
@@ -122,12 +118,10 @@ private:
 	int m_judgeThreshold;
 	int m_judgeCount, m_judgeCountPrev;
 	bool m_bVisible;
-	boost::filesystem::path m_exeFilename;
 	bool m_bVerticallyLongWindow;
 	RotationAngle m_rotationAngle;
 	std::vector<RectTransferData> m_editedRectTransfers, m_currentRectTransfers;
 	D3DTEXTUREFILTERTYPE m_filterType;
-	bool m_bTouhouWithoutScreenCapture;
 	bool m_bHUDRearrangeForced;
 
 

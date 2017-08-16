@@ -75,28 +75,13 @@ struct THRotatorSetting
 		mainScreenSize.cy = 448;
 	}
 
-	static bool Load(const boost::filesystem::path& processWorkingDir,
-		const boost::filesystem::path& exeFilename,
-		THRotatorSetting& outSetting,
+	static bool Load(THRotatorSetting& outSetting,
 		THRotatorFormatVersion& importedFormatVersion);
 
-	static bool Save(const boost::filesystem::path& processWorkingDir,
-		const boost::filesystem::path& exeFilename,
-		const THRotatorSetting& inSetting);
+	static bool Save(const THRotatorSetting& inSetting);
 
-	static void LoadIniFormat(const boost::filesystem::path& processWorkingDir,
-		const boost::filesystem::path& exeFilename,
-		THRotatorSetting& outSetting);
+	static void LoadIniFormat(THRotatorSetting& outSetting);
 
-	static void LoadJsonFormat(const boost::filesystem::path& processWorkingDir,
-		const boost::filesystem::path& exeFilename,
-		THRotatorSetting& outSetting,
+	static void LoadJsonFormat(THRotatorSetting& outSetting,
 		THRotatorFormatVersion& importedFormatVersion);
-
-	static std::string GenerateIniAppName(const boost::filesystem::path& exeFilename);
-
-	static boost::filesystem::path CreateIniFilePath(const boost::filesystem::path& processWorkingDir);
-
-	static boost::filesystem::path CreateJsonFilePath(const boost::filesystem::path& processWorkingDir,
-		const boost::filesystem::path& exeFilename);
 };

@@ -5,6 +5,7 @@
 #include <wrl.h>
 
 #include "THRotatorEditor.h"
+#include "THRotatorSystem.h"
 #include "StringResource.h"
 #include "THRotatorLog.h"
 #include "resource.h"
@@ -1904,10 +1905,7 @@ THRotatorDirect3DDevice::THRotatorDirect3DDevice()
 
 THRotatorDirect3DDevice::~THRotatorDirect3DDevice()
 {
-	if (m_pEditorContext)
-	{
-		OutputLogMessagef(LogSeverity::Info, L"Destructing THRotatorDirect3DDevice");
-	}
+	OutputLogMessagef(LogSeverity::Info, L"Destructing THRotatorDirect3DDevice");
 
 #ifdef TOUHOU_ON_D3D8
 	DeleteObject(m_hFont);
@@ -2688,10 +2686,10 @@ HRESULT THRotatorDirect3DDevice::InternalPresent(CONST RECT *pSourceRect,
 		namespace fs = boost::filesystem;
 		TCHAR fname[MAX_PATH];
 
-		fs::create_directory(m_pEditorContext->GetWorkingDirectory() / _T("snapshot"));
+		fs::create_directory(GetTouhouPlayerDataDirectory() / _T("snapshot"));
 		for (int i = 0; i >= 0; ++i)
 		{
-			wsprintf(fname, (m_pEditorContext->GetWorkingDirectory() / _T("snapshot/thRot%03d.bmp")).string<std::basic_string<TCHAR>>().c_str(), i);
+			wsprintf(fname, (GetTouhouPlayerDataDirectory() / _T("snapshot/thRot%03d.bmp")).string<std::basic_string<TCHAR>>().c_str(), i);
 			if (!fs::exists(fname))
 			{
 				::D3DXSaveSurfaceToFile(fname, D3DXIFF_BMP, m_pRenderTarget.Get(), nullptr, nullptr);

@@ -15,6 +15,7 @@
 #include "THRotatorSettings.h"
 #include "EncodingUtils.h"
 #include "THRotatorLog.h"
+#include "THRotatorSystem.h"
 
 namespace
 {
@@ -57,6 +58,23 @@ void ReadJsonObjectValueKeepOnFailure(const nlohmann::json& j, const std::string
 	{
 		OutputLogMessage(LogSeverity::Error, ConvertFromSjisToUnicode(e.what()));
 	}
+}
+
+std::string GenerateIniAppName()
+{
+	return ConvertFromUnicodeToSjis(std::wstring(L"THRotator_") + GetTouhouExecutableFilename().stem().generic_wstring());
+}
+
+boost::filesystem::path CreateIniFilePath()
+{
+	return GetTouhouPlayerDataDirectory() / L"throt.ini";
+}
+
+boost::filesystem::path CreateJsonFilePath()
+{
+	auto jsonPath = GetTouhouPlayerDataDirectory() / GetTouhouExecutableFilename();
+	jsonPath += L".throtator";
+	return jsonPath;
 }
 
 }
@@ -276,13 +294,11 @@ void to_json(BasicJsonType& j, const THRotatorSetting& setting)
 	j["rects"] = rectsArray;
 }
 
-void THRotatorSetting::LoadIniFormat(const boost::filesystem::path& processWorkingDir,
-	const boost::filesystem::path& exeFilename,
-	THRotatorSetting& outSetting)
+void THRotatorSetting::LoadIniFormat(THRotatorSetting& outSetting)
 {
 	namespace proptree = boost::property_tree;
 
-	auto filename = CreateIniFilePath(processWorkingDir);
+	auto filename = CreateIniFilePath();
 	OutputLogMessagef(LogSeverity::Info, L"Loading {0}", filename.generic_wstring());
 
 	proptree::basic_ptree<std::string, std::string> tree;
@@ -296,7 +312,7 @@ void THRotatorSetting::LoadIniFormat(const boost::filesystem::path& processWorki
 		return;
 	}
 
-	auto appName = GenerateIniAppName(exeFilename); // READ_INI_PARAMの中で参照
+	auto appName = GenerateIniAppName(); // READ_INI_PARAMの中で参照
 
 #define READ_INI_PARAM(destination, name) \
 	do { \
@@ -370,12 +386,10 @@ void THRotatorSetting::LoadIniFormat(const boost::filesystem::path& processWorki
 #undef READ_INI_PARAM
 }
 
-void THRotatorSetting::LoadJsonFormat(const boost::filesystem::path& processWorkingDir,
-	const boost::filesystem::path& exeFilename,
-	THRotatorSetting& outSetting,
+void THRotatorSetting::LoadJsonFormat(THRotatorSetting& outSetting,
 	THRotatorFormatVersion& importedFormatVersion)
 {
-	auto filename = CreateJsonFilePath(processWorkingDir, exeFilename);
+	auto filename = CreateJsonFilePath();
 
 	OutputLogMessagef(LogSeverity::Info, L"Loading {0}", filename.generic_wstring());
 
@@ -398,31 +412,12 @@ void THRotatorSetting::LoadJsonFormat(const boost::filesystem::path& processWork
 	outSetting = loadedJson;
 }
 
-std::string THRotatorSetting::GenerateIniAppName(const boost::filesystem::path& exeFilename)
-{
-	return ConvertFromUnicodeToSjis(std::wstring(L"THRotator_") + exeFilename.stem().generic_wstring());
-}
-
-boost::filesystem::path THRotatorSetting::CreateIniFilePath(const boost::filesystem::path& processWorkingDir)
-{
-	return processWorkingDir / L"throt.ini";
-}
-
-boost::filesystem::path THRotatorSetting::CreateJsonFilePath(const boost::filesystem::path& processWorkingDir, const boost::filesystem::path& exeFilename)
-{
-	auto jsonPath = processWorkingDir / exeFilename;
-	jsonPath += L".throtator";
-	return jsonPath;
-}
-
-bool THRotatorSetting::Load(const boost::filesystem::path& processWorkingDir,
-	const boost::filesystem::path& exeFilename,
-	THRotatorSetting& outSetting,
+bool THRotatorSetting::Load(THRotatorSetting& outSetting,
 	THRotatorFormatVersion& importedFormatVersion)
 {
 	try
 	{
-		THRotatorSetting::LoadJsonFormat(processWorkingDir, exeFilename, outSetting, importedFormatVersion);
+		THRotatorSetting::LoadJsonFormat(outSetting, importedFormatVersion);
 	}
 	catch (const std::invalid_argument& e)
 	{
@@ -432,22 +427,20 @@ bool THRotatorSetting::Load(const boost::filesystem::path& processWorkingDir,
 	catch (const std::ios::failure&)
 	{
 		OutputLogMessagef(LogSeverity::Info, L"Falling back to legacy format v1 loading");
-		THRotatorSetting::LoadIniFormat(processWorkingDir, exeFilename, outSetting);
+		THRotatorSetting::LoadIniFormat(outSetting);
 		importedFormatVersion = THRotatorFormatVersion::Version_1;
 	}
 
 	return true;
 }
 
-bool THRotatorSetting::Save(const boost::filesystem::path& processWorkingDir,
-	const boost::filesystem::path& exeFilename,
-	const THRotatorSetting& inSetting)
+bool THRotatorSetting::Save(const THRotatorSetting& inSetting)
 {
 	nlohmann::json objectToWrite(nlohmann::json::value_t::object);
 
 	objectToWrite = inSetting;
 
-	auto filename = CreateJsonFilePath(processWorkingDir, exeFilename);
+	auto filename = CreateJsonFilePath();
 	OutputLogMessagef(LogSeverity::Info, L"Saving to {0}", filename.generic_wstring());
 	std::ofstream ofs(filename.generic_wstring());
 

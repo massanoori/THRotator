@@ -2,23 +2,19 @@
 
 #include "stdafx.h"
 #include "THRotatorLog.h"
+#include "THRotatorSystem.h"
 #include "EncodingUtils.h"
 
 namespace
 {
 
-std::wstring LOG_FILE_PATH;
 bool bFirstLog = true;
 
+boost::filesystem::path CreateTHRotatorLogFilePath()
+{
+	return GetTouhouPlayerDataDirectory() / L"throtLog.txt";
 }
 
-void SetTHRotatorLogPath(const std::wstring& logPath)
-{
-	if (logPath != LOG_FILE_PATH)
-	{
-		LOG_FILE_PATH = logPath;
-		bFirstLog = true;
-	}
 }
 
 void OutputLogMessage(LogSeverity severity, const std::wstring& message)
@@ -26,12 +22,12 @@ void OutputLogMessage(LogSeverity severity, const std::wstring& message)
 	std::ofstream ofs;
 	if (bFirstLog)
 	{
-		ofs.open(LOG_FILE_PATH);
+		ofs.open(CreateTHRotatorLogFilePath().generic_wstring());
 		bFirstLog = false;
 	}
 	else
 	{
-		ofs.open(LOG_FILE_PATH, std::ios::app);
+		ofs.open(CreateTHRotatorLogFilePath().generic_wstring(), std::ios::app);
 	}
 
 	auto now = std::time(nullptr);

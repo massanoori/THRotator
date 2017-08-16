@@ -10,8 +10,6 @@ enum class LogSeverity
 	Info,
 };
 
-void SetTHRotatorLogPath(const std::wstring& logPath);
-
 void OutputLogMessage(LogSeverity severity, const std::wstring& message);
 
 template <typename... ArgsType>
