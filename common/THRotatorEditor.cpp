@@ -1224,5 +1224,7 @@ void THRotatorEditorContext::UpdateWindowResolution(int requestedWidth, int requ
 	m_modifiedTouhouClientSize.cx = rcModifiedClient.right - rcModifiedClient.left;
 	m_modifiedTouhouClientSize.cy = rcModifiedClient.bottom - rcModifiedClient.top;
 
-	OutputLogMessagef(LogSeverity::Info, L"Updating window client size to {0}x{1}", newWidth, newHeight);
+	OutputLogMessagef(LogSeverity::Info, L"Tried to update window client size to {0}x{1}", newWidth, newHeight);
+	OutputLogMessagef(LogSeverity::Info, L"Result of updating window client size: {0}x{1}",
+		m_modifiedTouhouClientSize.cx, m_modifiedTouhouClientSize.cy);
 }
