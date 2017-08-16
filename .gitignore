@@ -43,6 +43,7 @@ RelWithDebInfo/
 _build/
 
 !.gitignore
+!.gitattributes
 
 # Submodules
 !/nlohmann-json
