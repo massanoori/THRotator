@@ -2228,12 +2228,13 @@ void THRotatorDirect3DDevice::UpdateResolution(UINT Adapter)
 	m_d3dpp.BackBufferWidth = GetSystemMetrics(SM_CXSCREEN);
 	m_d3dpp.BackBufferHeight = GetSystemMetrics(SM_CYSCREEN);
 
-	D3DFORMAT adapterFormat = m_d3dpp.BackBufferFormat;
+	D3DFORMAT adapterFormatForEnumeration = m_d3dpp.BackBufferFormat;
 
 #ifdef TOUHOU_ON_D3D8
 	UINT count = m_pMyD3D->m_pd3d->GetAdapterModeCount(Adapter);
 #else
-	D3DFORMAT adapterFormatCandidates[] =
+	// IDirect3D9::EnumAdapterModes()が受け付けるフォーマット
+	D3DFORMAT formatsForAdapterModeEnumeration[] =
 	{
 		D3DFMT_A8R8G8B8,
 		D3DFMT_X8R8G8B8,
@@ -2243,19 +2244,20 @@ void THRotatorDirect3DDevice::UpdateResolution(UINT Adapter)
 		D3DFMT_A2R10G10B10,
 	};
 
-	// ディスプレイモード列挙のためのアダプタフォーマットを検索
-	for (int candidateIndex = 0; candidateIndex < _countof(adapterFormatCandidates); candidateIndex++)
+	// IDirect3D9::EnumAdapterModes()が受け付けるフォーマットで、
+	// かつm_deviceTypeにおけるディスプレイフォーマットとして利用できるフォーマットを検索。
+	for (int candidateIndex = 0; candidateIndex < _countof(formatsForAdapterModeEnumeration); candidateIndex++)
 	{
-		HRESULT hr = m_pMyD3D->m_pd3d->CheckDeviceType(Adapter, m_deviceType, adapterFormatCandidates[candidateIndex],
+		HRESULT hr = m_pMyD3D->m_pd3d->CheckDeviceType(Adapter, m_deviceType, formatsForAdapterModeEnumeration[candidateIndex],
 			m_d3dpp.BackBufferFormat, FALSE);
 		if (SUCCEEDED(hr))
 		{
-			adapterFormat = adapterFormatCandidates[candidateIndex];
+			adapterFormatForEnumeration = formatsForAdapterModeEnumeration[candidateIndex];
 			break;
 		}
 	}
 
-	UINT count = m_pMyD3D->m_pd3d->GetAdapterModeCount(Adapter, adapterFormat);
+	UINT count = m_pMyD3D->m_pd3d->GetAdapterModeCount(Adapter, adapterFormatForEnumeration);
 #endif
 
 	D3DDISPLAYMODE d3ddm;
@@ -2267,7 +2269,7 @@ void THRotatorDirect3DDevice::UpdateResolution(UINT Adapter)
 	{
 		m_pMyD3D->m_pd3d->EnumAdapterModes(Adapter,
 #ifndef TOUHOU_ON_D3D8
-			adapterFormat,
+			adapterFormatForEnumeration,
 #endif
 			i, &d3ddm);
 
@@ -2277,7 +2279,7 @@ void THRotatorDirect3DDevice::UpdateResolution(UINT Adapter)
 		}
 
 #ifdef TOUHOU_ON_D3D8
-		if (d3ddm.Format != adapterFormat)
+		if (d3ddm.Format != adapterFormatForEnumeration)
 		{
 			continue;
 		}
