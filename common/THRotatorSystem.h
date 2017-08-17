@@ -3,37 +3,37 @@
 #pragma once
 
 /**
- * 東方のナンバリングを取得
- * 例：
- *   東方紅魔郷: 6.0
- *   東方文花帖: 9.5
- *   東方地霊殿: 11.0
- *   妖精大戦争: 12.8
+ * Get touhou series number of current process in real number.
+ * Examples:
+ *   東方紅魔郷 (EoSD): 6.0
+ *   東方文花帖 (StB): 9.5
+ *   東方地霊殿 (SA): 11.0
+ *   妖精大戦争 (FW): 12.8
  *
- * 東方の実行ファイル名は"th<番号><体験版ならtr>.exe"の形式、
- * もしくは".exe"であることを用いて取得する。
- * これらに当てはまらなければ、0.0を返す。
+ * Filename of Touhou executable is "th<number><tr if demo>.exe" or "東方紅魔郷.exe".
+ * This function extracts series number from executable filename.
+ * If the rule above is not applied, 0.0 is returned.
  */
 double GetTouhouSeriesNumber();
 
 /**
- * 実行ファイルをフルパスで取得する。
+ * Get full path of executable.
  */
 boost::filesystem::path GetTouhouExecutableFilePath();
 
 /**
- * 実行ファイルのファイル名を取得する。ディレクトリは含まない。
+ * Get filename of executable. Directory is excluded.
  */
 boost::filesystem::path GetTouhouExecutableFilename();
 
 /**
- * セーブデータを保存するディレクトリを取得する。
+ * Get directory where player's data is saved.
  */
 boost::filesystem::path GetTouhouPlayerDataDirectory();
 
 /**
- * スクリーンキャプチャのない東方であるならtrueを返す。
+ * Returns true if current Touhou doesn't support native screen capture.
  *
- * 現在のところ、東方紅魔郷のみ。
+ * As of 2017, 東方紅魔郷 (EoSD) only.
  */
 bool IsTouhouWithoutScreenCapture();

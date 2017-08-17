@@ -3,6 +3,6 @@
 #pragma once
 
 /**
- * String Table リソースから文字列を読み込む
+ * Load string from string table resource.
  */
 std::basic_string<TCHAR> LoadTHRotatorString(HINSTANCE hModule, UINT nID);

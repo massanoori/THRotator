@@ -25,13 +25,14 @@ public:
 
 	HWND GetTouhouWindow() const;
 
-	// ビューポート設定回数を増やす
 	void AddViewportSetCount();
 
-	// ビューポート設定回数をUIに渡し、設定回数をリセットして計測を再開
+	/**
+	 * Send count of setting viewport to editor's dialog. Then resetting the count to zero.
+	 */
 	void SubmitViewportSetCountToEditor();
 
-	// ビューポート設定回数が閾値を超えたか
+	// If true, HUDs should be rearranged for vertically-long screen.
 	bool IsViewportSetCountOverThreshold() const;
 
 	RotationAngle GetRotationAngle() const;
@@ -63,8 +64,11 @@ public:
 		return m_bHUDRearrangeForced;
 	}
 
-	// 解像度リクエストからウィンドウのサイズを、縦長かどうかも考慮しながら、変更する。
-	// また、D3Dのバックバッファ解像度もoutBackBufferWidth, outBackBufferHeightに返す。
+	/**
+	 * From resolution requested by Touhou process and current THRotator's configuration,
+	 * updates window's resolution.
+	 * The resulting width and height are returned to outBackBufferWidth and outBackBufferHeight.
+	 */
 	void UpdateWindowResolution(int requestedWidth, int requestedHeight, UINT& outBackBufferWidth, UINT& outBackBufferHeight);
 
 	~THRotatorEditorContext();
@@ -72,12 +76,13 @@ public:
 private:
 	THRotatorEditorContext(HWND hTouhouWin);
 
-	// エディタウィンドウの可視性を設定
-	// エディタウィンドウをモーダルで開かなければならない場合は、
-	// 既存のウィンドウの表示非表示を切り替えることはできないので、呼んではいけない
+	/**
+	 * Set visibility of editor window.
+	 * Don't call this function when the editor window is modal.
+	 */
 	void SetEditorWindowVisibility(bool bVisible);
 
-	void InitListView(HWND hLV);
+	void InitRectanglesListView(HWND hLV);
 
 	bool ApplyChangeFromEditorWindow(HWND hWnd);
 	bool ApplyChangeFromEditorWindow()
@@ -102,9 +107,10 @@ private:
 	static BOOL CALLBACK EditRectDialogProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 	/**
-	 * 新規追加の場合は、editedRectTransferにcend()を渡す
+	 * If dialog is for new rect, pass m_editedRectTransfers.cend() to editedRectTransfer.
 	 */
-	bool OpenEditRectDialog(RectTransferData& inoutRectTransfer, std::vector<RectTransferData>::const_iterator editedRectTransfer) const;
+	bool OpenEditRectDialog(RectTransferData& inoutRectTransfer,
+		std::vector<RectTransferData>::const_iterator editedRectTransfer) const;
 
 	void SetNewErrorMessage(std::basic_string<TCHAR>&& message);
 
@@ -130,9 +136,13 @@ private:
 	****************************************/
 
 	bool m_bInitialized;
-	bool m_bScreenCaptureQueued; // スクリーンキャプチャのリクエストがあるか
-	int m_deviceResetRevision; // 何番目のリセットを実施要求しているか
+	bool m_bScreenCaptureQueued;
 
+	/**
+	 * THRotatorDirect3DDevice has a copy of this reset revision.
+	 * Device needs to be reset if this revision and that of THRotatorDirect3DDevice are different.
+	 */
+	int m_deviceResetRevision;
 
 	/****************************************
 	* Editor window
