@@ -5,8 +5,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
 
-// Windows.hで定義されるmin、maxマクロをundefし、
-// 外部ライブラリが使う、std名前空間以下のmin, max関数が使えなくなるのを防ぐ
+// undef min and max macros defined in Windows.h to fix compilation error in json.hpp.
 #undef min
 #undef max
 
@@ -20,14 +19,14 @@
 namespace
 {
 
-// Tがenumなら、その内部の型を、そうでなければTを、RawTypeOfEnum<T>::typeで取得できる
+// Template for retrieving underlying type of enum of T if T is enum, otherwise T.
 template <typename T, typename IsEnum = typename std::is_enum<typename std::remove_reference<T>::type>::type>
 struct RawTypeOfEnum
 {
 	typedef typename std::remove_reference<T>::type type;
 };
 
-// Tがenumの時の特殊化
+// Specialization for T of enum.
 template <typename T>
 struct RawTypeOfEnum<T, std::true_type>
 {
@@ -312,7 +311,7 @@ void THRotatorSetting::LoadIniFormat(THRotatorSetting& outSetting)
 		return;
 	}
 
-	auto appName = GenerateIniAppName(); // READ_INI_PARAMの中で参照
+	auto appName = GenerateIniAppName(); // Referenced by READ_INI_PARAM macro
 
 #define READ_INI_PARAM(destination, name) \
 	do { \
@@ -396,7 +395,7 @@ void THRotatorSetting::LoadJsonFormat(THRotatorSetting& outSetting,
 	std::ifstream ifs;
 	ifs.open(filename.generic_wstring());
 
-	// json.hppでは、ifstreamの例外ビットを設定することができない
+	// json.hpp doesn't allow ifstream's exception bit.
 	if (ifs.fail() || ifs.bad())
 	{
 		OutputLogMessagef(LogSeverity::Error, L"Failed to load {0}", filename.generic_wstring());

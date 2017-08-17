@@ -334,14 +334,20 @@ private:
 	ComPtr<Direct3DDeviceBase> m_pd3dDev;
 	ComPtr<Direct3DDeviceExBase> m_pd3dDevEx;
 	ComPtr<ID3DXSprite> m_pSprite;
-	ComPtr<Direct3DSurfaceBase> m_pBackBuffer, m_pTexSurface;
 
-	// thXX.exeにレンダリングを行ってもらうレンダーターゲット。
-	// ただ画面回転するだけであればm_pTexSurfaceをバックバッファ代わりにすればよいが、
-	// Homeキーによるスクリーンキャプチャでクラッシュするので、別で用意
+	// Original underlying back buffer.
+	ComPtr<Direct3DSurfaceBase> m_pBackBuffer;
+
+	// Dummy render target and accompanying depth stencil surface.
 	ComPtr<Direct3DSurfaceBase> m_pRenderTarget;
 	ComPtr<Direct3DSurfaceBase> m_pDepthStencil;
+
+	// Intermediate texture and texture as a surface.
+	// m_pTexSurface and m_pRenderTarget should be separated
+	// for Touhou's screen capture to work without crash.
 	ComPtr<Direct3DTextureBase> m_pTex;
+	ComPtr<Direct3DSurfaceBase> m_pTexSurface;
+	
 	ComPtr<THRotatorDirect3D> m_pMyD3D;
 
 	ComPtr<ID3DXFont> m_pFont;
@@ -2126,7 +2132,6 @@ HRESULT THRotatorDirect3DDevice::InitResources()
 
 	ComPtr<Direct3DSurfaceBase> pSurf;
 
-	//	深さバッファの作成
 	if (FAILED(hr = m_pd3dDev->GetDepthStencilSurface(&pSurf)))
 	{
 		OutputLogMessagef(LogSeverity::Info, L"Application has no depth stencil surface");
@@ -2233,7 +2238,7 @@ void THRotatorDirect3DDevice::UpdateResolution(UINT Adapter)
 #ifdef TOUHOU_ON_D3D8
 	UINT count = m_pMyD3D->m_pd3d->GetAdapterModeCount(Adapter);
 #else
-	// IDirect3D9::EnumAdapterModes()が受け付けるフォーマット
+	// Formats that IDirect3D9::EnumAdapterModes() accepts.
 	D3DFORMAT formatsForAdapterModeEnumeration[] =
 	{
 		D3DFMT_A8R8G8B8,
@@ -2244,8 +2249,8 @@ void THRotatorDirect3DDevice::UpdateResolution(UINT Adapter)
 		D3DFMT_A2R10G10B10,
 	};
 
-	// IDirect3D9::EnumAdapterModes()が受け付けるフォーマットで、
-	// かつm_deviceTypeにおけるディスプレイフォーマットとして利用できるフォーマットを検索。
+	// Find the format that is accepted by IDirect3D9::EnumAdapterModes()
+	// and is compatible with the requested pixel format.
 	for (int candidateIndex = 0; candidateIndex < _countof(formatsForAdapterModeEnumeration); candidateIndex++)
 	{
 		HRESULT hr = m_pMyD3D->m_pd3d->CheckDeviceType(Adapter, m_deviceType, formatsForAdapterModeEnumeration[candidateIndex],
@@ -2264,7 +2269,7 @@ void THRotatorDirect3DDevice::UpdateResolution(UINT Adapter)
 
 	std::vector<D3DDISPLAYMODE> availableModes;
 
-	//	ディスプレイの最大解像度を探す＆60Hzの解像度を列挙
+	// Find the largest available resolution with refresh rate of 60 Hz.
 	for (UINT i = 0; i < count; ++i)
 	{
 		m_pMyD3D->m_pd3d->EnumAdapterModes(Adapter,
@@ -2292,7 +2297,7 @@ void THRotatorDirect3DDevice::UpdateResolution(UINT Adapter)
 		}
 	}
 
-	//	最大解像度と同じアスペクト比で、できるだけ低い解像度を選ぶ
+	// Choose as small resolution as possible with same aspect ratio to minimize memory footprint.
 	for (std::vector<D3DDISPLAYMODE>::const_iterator itr = availableModes.cbegin();
 		itr != availableModes.cend(); ++itr)
 	{
@@ -2451,7 +2456,7 @@ void THRotatorDirect3DDevice::EndSceneInternal()
 		aspectLessThanRequested = m_d3dpp.BackBufferHeight * m_requestedHeight < m_d3dpp.BackBufferWidth * m_requestedWidth;
 	}
 
-	// エネミーマーカーと周囲の枠が表示されるよう、ゲーム画面の矩形を拡張
+	// To show enemy's mark, extend screen size.
 
 	POINT mainScreenTopLeft = m_pEditorContext->GetMainScreenTopLeft();
 	SIZE mainScreenSize = m_pEditorContext->GetMainScreenSize();
@@ -2478,7 +2483,7 @@ void THRotatorDirect3DDevice::EndSceneInternal()
 
 
 
-	/***** 変換行列の計算 *****
+	/***** Computation of transformation matrix *****
 
 	1. テクスチャを東方が要求したバックバッファ解像度から640x480にスケーリング
 	2. 矩形の中心を原点(0, 0)に移動
@@ -2535,7 +2540,7 @@ void THRotatorDirect3DDevice::EndSceneInternal()
 
 		SIZE srcRectTopLeftOffset = {};
 #ifdef TOUHOU_ON_D3D8
-		// 負の座標値がある場合、D3DX8では描画が行われないため、クランプ
+		// Truncate negative coordinate since D3DX8 skips such a sprite.
 		if (correctedSrcPos.x < 0)
 		{
 			srcRectTopLeftOffset.cx = -correctedSrcPos.x;
@@ -2681,7 +2686,6 @@ HRESULT THRotatorDirect3DDevice::InternalPresent(CONST RECT *pSourceRect,
 		return ret;
 	}
 
-	// スクリーンキャプチャリクエストを消費する
 	if (m_pEditorContext->ConsumeScreenCaptureRequest())
 	{
 		namespace fs = boost::filesystem;
@@ -2873,10 +2877,10 @@ extern "C" {
 HINSTANCE h_original;
 
 BOOL APIENTRY DllMain(HANDLE hModule,
-	DWORD  ul_reason_for_call,
+	DWORD  fdwReason,
 	LPVOID /* lpReserved */)
 {
-	switch (ul_reason_for_call)
+	switch (fdwReason)
 	{
 	case DLL_PROCESS_ATTACH:
 

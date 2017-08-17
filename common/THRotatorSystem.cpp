@@ -49,6 +49,8 @@ public:
 
 		if (bFirstCall)
 		{
+			// Don't log anything before bFirstCall becomes false,
+			// or infinite recursion occurs.
 			bFirstCall = false;
 
 			OutputLogMessagef(LogSeverity::Info, L"Player data directory: {0}", touhouProcessStats.playerDataDir.generic_wstring());
@@ -78,10 +80,10 @@ private:
 		size_t retSize;
 		errno_t resultOfGetEnv = _wgetenv_s(&retSize, iniSavePathRaw, L"APPDATA");
 
-		// ダブルスポイラー(12.5)以降からexeファイルと同じ場所に保存されなくなる
+		// Since Touhou 12.5, player's data is saved to C:\Users\<username>\AppData\Roaming\ShanghaiAlice\<application>
 		if (touhouSeriesNumber > 12.3 && resultOfGetEnv == 0 && retSize > 0)
 		{
-			playerDataDir = boost::filesystem::path(iniSavePathRaw) / _T("ShanghaiAlice") / exeFilename.stem();
+			playerDataDir = boost::filesystem::path(iniSavePathRaw) / L"ShanghaiAlice" / exeFilename.stem();
 			boost::filesystem::create_directory(playerDataDir);
 		}
 		else
@@ -115,6 +117,6 @@ boost::filesystem::path GetTouhouPlayerDataDirectory()
 
 bool IsTouhouWithoutScreenCapture()
 {
-	// スクリーンキャプチャ機能がないのは紅魔郷
+	// Touhou 6 is the only title without screen capture in Touhou main series.
 	return TouhouProcessStats::Get().touhouSeriesNumber == 6.0;
 }

@@ -58,8 +58,6 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 		{
 			INITCOMMONCONTROLSEX InitCtrls;
 			InitCtrls.dwSize = sizeof(InitCtrls);
-			// アプリケーションで使用するすべてのコモン コントロール クラスを含めるには、
-			// これを設定します。
 			InitCtrls.dwICC = ICC_WIN95_CLASSES;
 			InitCommonControlsEx(&InitCtrls);
 
@@ -77,7 +75,7 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 
 	double touhouSeriesNumber = GetTouhouSeriesNumber();
 
-	// 妖々夢の場合モーダルで開かないと、入力のフォーカスが奪われる
+	// Editor window steals input focus from main window on Touhou 7.
 	if (6.0 < touhouSeriesNumber && touhouSeriesNumber < 7.5)
 	{
 		m_bNeedModalEditor = true;
@@ -163,22 +161,16 @@ HWND THRotatorEditorContext::GetTouhouWindow() const
 	return m_hTouhouWin;
 }
 
-// ビューポート設定回数を増やす
-
 void THRotatorEditorContext::AddViewportSetCount()
 {
 	m_judgeCount++;
 }
-
-// ビューポート設定回数をUIに渡し、設定回数をリセットして計測を再開
 
 void THRotatorEditorContext::SubmitViewportSetCountToEditor()
 {
 	m_judgeCountPrev = m_judgeCount;
 	m_judgeCount = 0;
 }
-
-// ビューポート設定回数が閾値を超えたか
 
 bool THRotatorEditorContext::IsViewportSetCountOverThreshold() const
 {
@@ -291,7 +283,7 @@ void THRotatorEditorContext::InitRectanglesListView(HWND hLV)
 
 		lvi.mask = LVIF_TEXT;
 		lvi.iItem = i;
-		lvi.pszText = const_cast<LPTSTR>(itr->name.c_str()); // LVITEM::pszTextは出力先バッファとして使われない
+		lvi.pszText = const_cast<LPTSTR>(itr->name.c_str()); // LVITEM::pszText is not used for output buffer.
 		ListView_InsertItem(hLV, &lvi);
 
 		TCHAR str[64];
@@ -503,7 +495,7 @@ BOOL CALLBACK THRotatorEditorContext::MainDialogProc(HWND hWnd, UINT msg, WPARAM
 			ZeroMemory(&lvi, sizeof(lvi));
 			lvi.mask = LVIF_TEXT;
 			lvi.iItem = ListView_GetItemCount(GetDlgItem(hWnd, IDC_ORLIST));
-			lvi.pszText = const_cast<LPTSTR>(insertedRect.name.c_str()); // LVITEM::pszTextは出力先として使用されない
+			lvi.pszText = const_cast<LPTSTR>(insertedRect.name.c_str()); // LVITEM::pszText is not used for output buffer.
 			ListView_InsertItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
 
 			lvi.pszText = str;
@@ -568,7 +560,7 @@ BOOL CALLBACK THRotatorEditorContext::MainDialogProc(HWND hWnd, UINT msg, WPARAM
 			ZeroMemory(&lvi, sizeof(lvi));
 			lvi.mask = LVIF_TEXT;
 			lvi.iItem = i;
-			lvi.pszText = const_cast<LPTSTR>(editedRect.name.c_str()); // LVITEM::pszTextは出力先として使用されない
+			lvi.pszText = const_cast<LPTSTR>(editedRect.name.c_str()); // LVITEM::pszText is not used for output buffer.
 			ListView_SetItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
 
 			lvi.pszText = str;
@@ -997,8 +989,6 @@ bool THRotatorEditorContext::LoadSettings()
 
 	bool bLoadSuccess = THRotatorSetting::Load(setting, formatVersion);
 
-	// 失敗しても、デフォルト値で埋める
-
 	m_judgeThreshold = setting.judgeThreshold;
 	m_mainScreenTopLeft = setting.mainScreenTopLeft;
 	m_mainScreenSize = setting.mainScreenSize;
@@ -1022,9 +1012,11 @@ bool THRotatorEditorContext::LoadSettings()
 		double touhouSeriesNumber = GetTouhouSeriesNumber();
 		if (6.0 <= touhouSeriesNumber && touhouSeriesNumber < 7.5)
 		{
-			// format version 1で作成された.iniは、
-			// 紅魔郷と妖々夢では、閾値との比較が実際のビューポート設定回数より1回少ない値と行われる条件で作成されたもの。
-			// ここで値を1だけ増やして、実際のビューポート設定回数と正常に比較できるようにする。
+			/**
+			 * .ini files in format version 1 contains judge threshold which is compared with wrong count of setting viewport
+			 * on Touhou 6 and 7.
+			 * Format migration is a chance to fix the wrong value by incrementing by 1.
+			 */
 			m_judgeThreshold++;
 
 			OutputLogMessagef(LogSeverity::Info, L"Threshold has been converted");
@@ -1034,7 +1026,9 @@ bool THRotatorEditorContext::LoadSettings()
 	return true;
 }
 
-// メッセージキューの中で同一のメッセージがポストされていないかチェックし、なければ(ユニークなら)true、そうでなければfalse
+/**
+ * Check if the same message is in message queue.
+ */
 bool IsUniquePostedMessage(const MSG* pMessage)
 {
 	MSG peekedMessage;
@@ -1051,8 +1045,8 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 	LPMSG pMsg = reinterpret_cast<LPMSG>(lParam);
 	if (nCode >= 0 && PM_REMOVE == wParam)
 	{
-		// タブストップを有効にするテクニック
-		// 参考: https://support.microsoft.com/en-us/help/233263/prb-modeless-dialog-box-in-a-dll-does-not-process-tab-key
+		// Workaround to enable tabstop on editor window.
+		// Reference: https://support.microsoft.com/en-us/help/233263/prb-modeless-dialog-box-in-a-dll-does-not-process-tab-key
 
 		// Don't translate non-input events.
 		if (pMsg->message >= WM_KEYFIRST && pMsg->message <= WM_KEYLAST)
@@ -1146,7 +1140,7 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 
 				case VK_UP:
 				case VK_DOWN:
-					// 強制縦用レイアウト
+					// Forced vertical layout
 					if ((HIWORD(pMsg->lParam) & KF_ALTDOWN) && !(HIWORD(pMsg->lParam) & KF_REPEAT)
 						&& IsUniquePostedMessage(pMsg))
 					{
@@ -1183,8 +1177,8 @@ void THRotatorEditorContext::UpdateWindowResolution(int requestedWidth, int requ
 	GetClientRect(m_hTouhouWin, &rcClient);
 	GetWindowRect(m_hTouhouWin, &rcWindow);
 
-	// ゲームアプリケーション側のウィンドウサイズ変更を検知、
-	// これを新しいオリジナルのクライアントサイズとする
+	// Detect the application modified the window size.
+	// If detected, update original client size.
 
 	if (rcClient.left + m_modifiedTouhouClientSize.cx != rcClient.right ||
 		rcClient.top + m_modifiedTouhouClientSize.cy != rcClient.bottom)
@@ -1193,7 +1187,7 @@ void THRotatorEditorContext::UpdateWindowResolution(int requestedWidth, int requ
 		m_originalTouhouClientSize.cy = rcClient.bottom - rcClient.top;
 	}
 
-	// 元のウィンドウの大きさを保ちつつ、アスペクト比も保持する
+	// Keep both extent and aspect ratio of window.
 
 	int newWidth = m_originalTouhouClientSize.cx;
 	int newHeight = m_originalTouhouClientSize.cy;
