@@ -2481,27 +2481,28 @@ void THRotatorDirect3DDevice::EndSceneInternal()
 	LONG baseDestRectWidth = bNeedsRearrangeHUD ? mainScreenSize.cx : static_cast<LONG>(correctedBaseScreenWidth);
 	LONG baseDestRectHeight = bNeedsRearrangeHUD ? mainScreenSize.cy : static_cast<LONG>(correctedBaseScreenHeight);
 
-
-
 	/***** Computation of transformation matrix *****
 
-	1. テクスチャを東方が要求したバックバッファ解像度から640x480にスケーリング
-	2. 矩形の中心を原点(0, 0)に移動
-	3. ユーザが指定した転送元矩形サイズの逆数でスケールをかける
-	4. ユーザが指定した矩形ごとの回転角度で矩形を回転
-	5. ユーザが指定した転送先矩形サイズでスケールをかける
-	6. ユーザが指定した転送先矩形の位置へ移動
-	7. プレイ領域のサイズがTHRotatorで内部的に確保したバックバッファ解像度へ拡大
-	8. 現在の画面回転角度で回転
-	9. 画面全体の中心を原点からバックバッファの中心へ移動
+	Transformation steps are as follow:
 
-	2から6は矩形ごとのパラメータが必要。
-	それより前の1と、後の7-9は事前計算できるので、それぞれpreRectTransform、postRectTransformとして保持
+	1. Scale dummy back buffer to 640x480
+	2. Move the center of rectangle from the source poisition specified by user to the origin (0, 0)
+	3. Scale the rectangle by the inverted size of source rectangle specified by user
+	4. Rotate the rectangle by the angle specified by user
+	5. Scale the rectangle by the size of destination rectangle specified by user
+	6. Move the rectangle from the origin (0, 0) to the destination position specified by user
+	7. Scale from main screen size to the resolution THRotator internally allocates
+	8. Rotate the rectangle by current rotation of screen
+	9. Move the center of screen from the origin (0, 0) to the center of back buffer
+
+	Steps 2-6 require the parameters of a rectangle.
+	Step 1, and Steps 7-9 is precomputed as preRectTransform and postRectTransform, respectively.
 
 	*****/
 
 	D3DXMATRIX preRectTransform;
 	{
+		// step 1
 		D3DXMATRIX baseSrcScale;
 		D3DXMatrixScaling(&baseSrcScale, correctedBaseScreenWidth / static_cast<float>(m_requestedWidth), correctedBaseScreenHeight / static_cast<float>(m_requestedHeight), 1.0f);
 
