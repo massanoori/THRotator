@@ -279,7 +279,7 @@ void THRotatorEditorContext::SetEditorWindowVisibility(bool bVisible)
 	ShowWindow(m_hEditorWin, bVisible ? SW_SHOW : SW_HIDE);
 }
 
-void THRotatorEditorContext::InitListView(HWND hLV)
+void THRotatorEditorContext::InitRectanglesListView(HWND hLV)
 {
 	ListView_DeleteAllItems(hLV);
 	int i = 0;
@@ -384,7 +384,7 @@ BOOL CALLBACK THRotatorEditorContext::MainDialogProc(HWND hWnd, UINT msg, WPARAM
 			ListView_InsertColumn(GetDlgItem(hWnd, IDC_ORLIST), 3, &lvc);
 		}
 
-		pContext->InitListView(GetDlgItem(hWnd, IDC_ORLIST));
+		pContext->InitRectanglesListView(GetDlgItem(hWnd, IDC_ORLIST));
 
 		return TRUE;
 	}
@@ -439,7 +439,7 @@ BOOL CALLBACK THRotatorEditorContext::MainDialogProc(HWND hWnd, UINT msg, WPARAM
 			SetDlgItemInt(hWnd, IDC_PRHEIGHT, pContext->m_mainScreenSize.cy, FALSE);
 			SetDlgItemInt(hWnd, IDC_YOFFSET, pContext->m_yOffset, TRUE);
 			pContext->m_editedRectTransfers = pContext->m_currentRectTransfers;
-			pContext->InitListView(GetDlgItem(hWnd, IDC_ORLIST));
+			pContext->InitRectanglesListView(GetDlgItem(hWnd, IDC_ORLIST));
 			SendDlgItemMessage(hWnd, IDC_VISIBLE, BM_SETCHECK, pContext->m_bVisible ? BST_CHECKED : BST_UNCHECKED, 0);
 			if (pContext->m_bVerticallyLongWindow == 1)
 				SendDlgItemMessage(hWnd, IDC_VERTICALWINDOW, BM_SETCHECK, BST_CHECKED, 0);
@@ -647,7 +647,7 @@ BOOL CALLBACK THRotatorEditorContext::MainDialogProc(HWND hWnd, UINT msg, WPARAM
 			RectTransferData erd = pContext->m_editedRectTransfers[i];
 			pContext->m_editedRectTransfers[i] = pContext->m_editedRectTransfers[i - 1];
 			pContext->m_editedRectTransfers[i - 1] = erd;
-			pContext->InitListView(GetDlgItem(hWnd, IDC_ORLIST));
+			pContext->InitRectanglesListView(GetDlgItem(hWnd, IDC_ORLIST));
 			ListView_SetSelectionMark(GetDlgItem(hWnd, IDC_ORLIST), i - 1);
 			EnableWindow(GetDlgItem(hWnd, IDC_DOWN), TRUE);
 			if (i == 1)
@@ -675,7 +675,7 @@ BOOL CALLBACK THRotatorEditorContext::MainDialogProc(HWND hWnd, UINT msg, WPARAM
 			RectTransferData erd = pContext->m_editedRectTransfers[i];
 			pContext->m_editedRectTransfers[i] = pContext->m_editedRectTransfers[i + 1];
 			pContext->m_editedRectTransfers[i + 1] = erd;
-			pContext->InitListView(GetDlgItem(hWnd, IDC_ORLIST));
+			pContext->InitRectanglesListView(GetDlgItem(hWnd, IDC_ORLIST));
 			ListView_SetSelectionMark(GetDlgItem(hWnd, IDC_ORLIST), i + 1);
 			EnableWindow(GetDlgItem(hWnd, IDC_UP), TRUE);
 			if (i == count - 2)
