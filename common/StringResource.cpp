@@ -10,7 +10,7 @@ std::wstring LoadTHRotatorString(HINSTANCE hModule, UINT nID)
 
 	if (bufferLength == 0)
 	{
-		return std::basic_string<TCHAR>();
+		return std::wstring();
 	}
 	else
 	{

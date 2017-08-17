@@ -633,7 +633,6 @@ BOOL CALLBACK THRotatorEditorContext::MainDialogProc(HWND hWnd, UINT msg, WPARAM
 			}
 			if (i == 0)
 			{
-				MessageBox(hWnd, _T("選択されている矩形が一番上のものです。"), NULL, MB_ICONEXCLAMATION);
 				return FALSE;
 			}
 			RectTransferData erd = pContext->m_editedRectTransfers[i];
@@ -661,7 +660,6 @@ BOOL CALLBACK THRotatorEditorContext::MainDialogProc(HWND hWnd, UINT msg, WPARAM
 			}
 			if (i == count - 1)
 			{
-				MessageBox(hWnd, _T("選択されている矩形が一番下のものです。"), NULL, MB_ICONEXCLAMATION);
 				return FALSE;
 			}
 			RectTransferData erd = pContext->m_editedRectTransfers[i];
@@ -749,7 +747,7 @@ BOOL CALLBACK THRotatorEditorContext::EditRectDialogProc(HWND hWnd, UINT msg, WP
 					if( !bRet )\
 					{\
 						auto messageString = LoadTHRotatorString(g_hModule, stringResourceId);\
-						MessageBox( hWnd, messageString.c_str(), NULL, MB_ICONSTOP );\
+						MessageBox(hWnd, messageString.c_str(), NULL, MB_ICONSTOP );\
 						return FALSE;\
 					}\
 					var = static_cast<decltype(var)>(ret);\
