@@ -406,7 +406,7 @@ public:
 
 	HRESULT InitResources();
 	void ReleaseResources();
-	void UpdateWindowResolution(D3DFORMAT Format, UINT Adapter, BOOL bWindowed, UINT requestedWidth, UINT requestedHeight, UINT& outBackBufferWidth, UINT& outBackBufferHeight);
+	void UpdateResolution(UINT Adapter);
 
 	ULONG WINAPI AddRef(VOID) override;
 	HRESULT WINAPI QueryInterface(REFIID riid, LPVOID* ppvObj) override;
@@ -1989,9 +1989,7 @@ HRESULT THRotatorDirect3DDevice::InternalInit(UINT Adapter,
 	m_pMyD3D = pMyD3D;
 	m_deviceType = DeviceType;
 
-	UpdateWindowResolution(pPresentationParameters->BackBufferFormat, Adapter,
-		pPresentationParameters->Windowed, m_requestedWidth, m_requestedHeight,
-		m_d3dpp.BackBufferWidth, m_d3dpp.BackBufferHeight);
+	UpdateResolution(Adapter);
 
 	OutputLogMessagef(LogSeverity::Info, L"Resolution requested: {0}x{1}, Modified resolution: {2}x{3}",
 		m_requestedWidth, m_requestedHeight, m_d3dpp.BackBufferWidth, m_d3dpp.BackBufferHeight);
@@ -2218,97 +2216,98 @@ void THRotatorDirect3DDevice::ReleaseResources()
 	m_pBackBuffer.Reset();
 }
 
-void THRotatorDirect3DDevice::UpdateWindowResolution(D3DFORMAT Format, UINT Adapter, BOOL bWindowed, UINT requestedWidth, UINT requestedHeight, UINT& outBackBufferWidth, UINT& outBackBufferHeight)
+void THRotatorDirect3DDevice::UpdateResolution(UINT Adapter)
 {
-	if (bWindowed)
+	if (m_d3dpp.Windowed)
 	{
-		m_pEditorContext->UpdateWindowResolution(requestedWidth, requestedHeight, outBackBufferWidth, outBackBufferHeight);
+		m_pEditorContext->UpdateWindowResolution(m_requestedWidth, m_requestedHeight,
+			m_d3dpp.BackBufferWidth, m_d3dpp.BackBufferHeight);
+		return;
 	}
-	else
-	{
-		outBackBufferWidth = GetSystemMetrics(SM_CXSCREEN);
-		outBackBufferHeight = GetSystemMetrics(SM_CYSCREEN);
 
-		D3DFORMAT adapterFormat = Format;
-		
+	m_d3dpp.BackBufferWidth = GetSystemMetrics(SM_CXSCREEN);
+	m_d3dpp.BackBufferHeight = GetSystemMetrics(SM_CYSCREEN);
+
+	D3DFORMAT adapterFormat = m_d3dpp.BackBufferFormat;
+
 #ifdef TOUHOU_ON_D3D8
-		UINT count = m_pMyD3D->m_pd3d->GetAdapterModeCount(Adapter);
+	UINT count = m_pMyD3D->m_pd3d->GetAdapterModeCount(Adapter);
 #else
-		D3DFORMAT adapterFormatCandidates[] =
-		{
-			D3DFMT_A8R8G8B8,
-			D3DFMT_X8R8G8B8,
-			D3DFMT_R5G6B5,
-			D3DFMT_X1R5G5B5,
-			D3DFMT_A1R5G5B5,
-			D3DFMT_A2R10G10B10,
-		};
+	D3DFORMAT adapterFormatCandidates[] =
+	{
+		D3DFMT_A8R8G8B8,
+		D3DFMT_X8R8G8B8,
+		D3DFMT_R5G6B5,
+		D3DFMT_X1R5G5B5,
+		D3DFMT_A1R5G5B5,
+		D3DFMT_A2R10G10B10,
+	};
 
-		// ディスプレイモード列挙のためのアダプタフォーマットを検索
-		for (int candidateIndex = 0; candidateIndex < _countof(adapterFormatCandidates); candidateIndex++)
+	// ディスプレイモード列挙のためのアダプタフォーマットを検索
+	for (int candidateIndex = 0; candidateIndex < _countof(adapterFormatCandidates); candidateIndex++)
+	{
+		HRESULT hr = m_pMyD3D->m_pd3d->CheckDeviceType(Adapter, m_deviceType, adapterFormatCandidates[candidateIndex],
+			m_d3dpp.BackBufferFormat, FALSE);
+		if (SUCCEEDED(hr))
 		{
-			HRESULT hr = m_pMyD3D->m_pd3d->CheckDeviceType(Adapter, m_deviceType, adapterFormatCandidates[candidateIndex], Format, FALSE);
-			if (SUCCEEDED(hr))
-			{
-				adapterFormat = adapterFormatCandidates[candidateIndex];
-				break;
-			}
+			adapterFormat = adapterFormatCandidates[candidateIndex];
+			break;
 		}
+	}
 
-		UINT count = m_pMyD3D->m_pd3d->GetAdapterModeCount(Adapter, adapterFormat);
+	UINT count = m_pMyD3D->m_pd3d->GetAdapterModeCount(Adapter, adapterFormat);
 #endif
 
-		D3DDISPLAYMODE d3ddm;
+	D3DDISPLAYMODE d3ddm;
 
-		std::vector<D3DDISPLAYMODE> availableModes;
+	std::vector<D3DDISPLAYMODE> availableModes;
 
-		//	ディスプレイの最大解像度を探す＆60Hzの解像度を列挙
-		for (UINT i = 0; i < count; ++i)
-		{
-			m_pMyD3D->m_pd3d->EnumAdapterModes(Adapter,
+	//	ディスプレイの最大解像度を探す＆60Hzの解像度を列挙
+	for (UINT i = 0; i < count; ++i)
+	{
+		m_pMyD3D->m_pd3d->EnumAdapterModes(Adapter,
 #ifndef TOUHOU_ON_D3D8
-				adapterFormat,
+			adapterFormat,
 #endif
-				i, &d3ddm);
+			i, &d3ddm);
 
-			if (d3ddm.RefreshRate != 60 && d3ddm.RefreshRate != 59)
-			{
-				continue;
-			}
+		if (d3ddm.RefreshRate != 60 && d3ddm.RefreshRate != 59)
+		{
+			continue;
+		}
 
 #ifdef TOUHOU_ON_D3D8
-			if (d3ddm.Format != adapterFormat)
-			{
-				continue;
-			}
+		if (d3ddm.Format != adapterFormat)
+		{
+			continue;
+		}
 #endif
-			availableModes.push_back(d3ddm);
-			if (outBackBufferWidth*outBackBufferHeight < d3ddm.Width*d3ddm.Height)
-			{
-				outBackBufferWidth = d3ddm.Width;
-				outBackBufferHeight = d3ddm.Height;
-			}
+		availableModes.push_back(d3ddm);
+		if (m_d3dpp.BackBufferWidth * m_d3dpp.BackBufferHeight < d3ddm.Width*d3ddm.Height)
+		{
+			m_d3dpp.BackBufferWidth = d3ddm.Width;
+			m_d3dpp.BackBufferHeight = d3ddm.Height;
+		}
+	}
+
+	//	最大解像度と同じアスペクト比で、できるだけ低い解像度を選ぶ
+	for (std::vector<D3DDISPLAYMODE>::const_iterator itr = availableModes.cbegin();
+		itr != availableModes.cend(); ++itr)
+	{
+		if (m_d3dpp.BackBufferWidth * itr->Height != m_d3dpp.BackBufferHeight * itr->Width)
+		{
+			continue;
 		}
 
-		//	最大解像度と同じアスペクト比で、できるだけ低い解像度を選ぶ
-		for (std::vector<D3DDISPLAYMODE>::const_iterator itr = availableModes.cbegin();
-			itr != availableModes.cend(); ++itr)
+		if (m_d3dpp.BackBufferWidth <= itr->Width || m_d3dpp.BackBufferHeight <= itr->Height)
 		{
-			if (outBackBufferWidth * itr->Height != outBackBufferHeight * itr->Width)
-			{
-				continue;
-			}
+			continue;
+		}
 
-			if (outBackBufferWidth <= itr->Width || outBackBufferHeight <= itr->Height)
-			{
-				continue;
-			}
-
-			if (itr->Width >= requestedWidth && itr->Height >= requestedHeight)
-			{
-				outBackBufferWidth = itr->Width;
-				outBackBufferHeight = itr->Height;
-			}
+		if (itr->Width >= m_requestedWidth && itr->Height >= m_requestedHeight)
+		{
+			m_d3dpp.BackBufferWidth = itr->Width;
+			m_d3dpp.BackBufferHeight = itr->Height;
 		}
 	}
 }
@@ -2766,8 +2765,7 @@ HRESULT THRotatorDirect3DDevice::InternalReset(
 	D3DDEVICE_CREATION_PARAMETERS creationParameters;
 	m_pd3dDev->GetCreationParameters(&creationParameters);
 
-	UpdateWindowResolution(m_d3dpp.BackBufferFormat, creationParameters.AdapterOrdinal,
-		m_d3dpp.Windowed, m_requestedWidth, m_requestedHeight, m_d3dpp.BackBufferWidth, m_d3dpp.BackBufferHeight);
+	UpdateResolution(creationParameters.AdapterOrdinal);
 
 	HRESULT ret;
 #ifndef TOUHOU_ON_D3D8
