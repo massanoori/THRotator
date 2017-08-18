@@ -72,6 +72,12 @@ For Th125, Th128, Th13, Th14, Th143, Th15, and later
    
      - Where the game is installed.
 
+.. note:: Migration from old format
+
+   - Don't copy new config file named as ``<filename of exe>.throtator``. THRotator tries to load ``<filename of exe>.throtator`` first.
+   - Keep the installed location of ``throt.ini`` or copy your backed-up ``throt.ini`` to the location of save data.
+   - Yout configuration will be saved to ``<filename of exe>.throtator`` since next launch.
+
 Localize
 ========================
 
