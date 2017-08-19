@@ -6,16 +6,11 @@
 THRotatorのソースコードの入手
 ==================================
 
-THRotatorのソースコードは、 `GitHub <https://github.com/massanoori/THRotator>`_ から入手ができます。
+`GitHub <https://github.com/massanoori/THRotator>`_ から、gitを用いてリポジトリをクローンしてください。
 
-とりあえずダウンロードして、ビルドしたり改造したりする場合は、
-GitHubから直接ソースコードをダウンロードすることができます。
-``Clone or download`` をクリックし、表示される ``Download ZIP`` をクリックするとダウンロードが始まります。
-ダウンロードしたzipファイルを解凍すると、ソースコードが含まれたフォルダが作成されます。
-
-お使いのPCにgitがインストール済みの場合は、
-``Clone or download`` をクリックすると表示されるURLからクローンすることでも、
-ソースコードを取得できます。
+次に、コマンドプロンプトでクローン先のディレクトリにカレントディレクトリを移し、 ``git submodule update --init`` を実行します。
+このコマンドにより、外部ライブラリの `fmt <https://github.com/fmtlib/fmt>`_ と
+`json.hpp <https://github.com/nlohmann/json>`_ のソースコードが取得されます。
 
 
 THRotatorのビルド

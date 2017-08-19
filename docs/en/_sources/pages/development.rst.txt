@@ -6,15 +6,11 @@ Development
 Get the THRotator source code
 ==================================
 
-Source code of THRotator can be downloaded from `GitHub <https://github.com/massanoori/THRotator>`_.
+Clone the THRotator repository by git from `GitHub <https://github.com/massanoori/THRotator>`_.
 
-If you just try to build or modify THRotator,
-you can directly download from GitHub.
-By clicking ``Clone or download`` and then clicking ``Download ZIP``, the download will start.
-By extracting the downloaded ZIP file, the folder containing source code is created.
-
-If you have installed git on your PC,
-you can clone the repository from the URL shown after clicking ``Clone or download``.
+Next, change directory to cloned directory and run ``git submodule update --init``.
+This command downloads the source code of external libraries, `fmt <https://github.com/fmtlib/fmt>`_
+and `json.hpp <https://github.com/nlohmann/json>`_.
 
 
 Build THRotator
