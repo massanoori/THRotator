@@ -29,6 +29,8 @@ endif ()
 set(BOOST_INCLUDE_DIR "" CACHE PATH "boost header file directory")
 set(BOOST_LIB_DIR "" CACHE PATH "boost library directory")
 
+set_property(GLOBAL PROPERTY USE_FOLDERS ON) 
+
 add_subdirectory(fmtlib)
 add_subdirectory(d3d9)
 add_subdirectory(d3d8)

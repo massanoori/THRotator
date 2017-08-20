@@ -12,7 +12,8 @@ target_include_directories(d3d8
 	PRIVATE "../common/"
 	PRIVATE ${BOOST_INCLUDE_DIR}
 	PRIVATE "../nlohmann-json/src/"
-	PRIVATE "../fmtlib/")
+	PRIVATE "../fmtlib/"
+	PRIVATE "../imgui/")
 
 target_compile_definitions(d3d8
 	PRIVATE TOUHOU_ON_D3D8=1)

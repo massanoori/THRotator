@@ -10,6 +10,8 @@
 #include "THRotatorLog.h"
 #include "resource.h"
 
+#include <imgui.h>
+
 #ifdef TOUHOU_ON_D3D8
 
 #include <d3dx8.h>
@@ -34,6 +36,8 @@ typedef IDirect3DSwapChain8 Direct3DSwapChainBase;
 
 #include <d3dx9.h>
 #pragma comment(lib,"d3dx9.lib")
+
+#include <imgui_impl_dx9.h>
 
 typedef IDirect3D9 Direct3DBase;
 typedef IDirect3D9Ex Direct3DExBase;
@@ -1915,6 +1919,9 @@ THRotatorDirect3DDevice::~THRotatorDirect3DDevice()
 
 #ifdef TOUHOU_ON_D3D8
 	DeleteObject(m_hFont);
+	// ImGui_ImplDX8_ShutDown();
+#else
+	ImGui_ImplDX9_Shutdown();
 #endif
 }
 
@@ -2051,6 +2058,12 @@ HRESULT THRotatorDirect3DDevice::InternalInit(UINT Adapter,
 
 		//m_pd3dDev.As<Direct3DDeviceExBase>(&m_pd3dDevEx);
 	}
+
+#ifdef TOUHOU_ON_D3D8
+	//ImGui_ImplDX8_Init(m_pEditorContext->GetTouhouWindow(), m_pd3dDev.Get());
+#else
+	ImGui_ImplDX9_Init(m_pEditorContext->GetTouhouWindow(), m_pd3dDev.Get());
+#endif
 
 	ret = InitResources();
 	if (FAILED(ret))
@@ -2191,6 +2204,8 @@ HRESULT THRotatorDirect3DDevice::InitResources()
 		OutputLogMessagef(LogSeverity::Error, L"Failed to overwrite depth stencil surface");
 		return hr;
 	}
+
+	ImGui_ImplDX9_CreateDeviceObjects();
 #endif
 
 	return S_OK;
@@ -2200,9 +2215,11 @@ void THRotatorDirect3DDevice::ReleaseResources()
 {
 	OutputLogMessagef(LogSeverity::Info, L"Releasing resources");
 
-#if TOUHOU_ON_D3D8
+#ifdef TOUHOU_ON_D3D8
+	// ImGui_ImplDX8_InvalidateDeviceObjects();
 	m_pSprite.Reset();
 #else
+	ImGui_ImplDX9_InvalidateDeviceObjects();
 	if (m_pSprite)
 	{
 		m_pSprite->OnLostDevice();
@@ -2387,6 +2404,12 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 	D3DXLoadSurfaceFromSurface(m_pTexSurface.Get(), nullptr, nullptr,
 		m_pRenderTarget.Get(), nullptr, nullptr, D3DX_FILTER_NONE, 0);
 
+#ifdef TOUHOU_ON_D3D8
+	// ImGui_ImplDX8_NewFrame();
+#else
+	ImGui_ImplDX9_NewFrame();
+#endif
+
 	m_pd3dDev->Clear(0, NULL, D3DCLEAR_TARGET, 0x00000000, 1.f, 0);
 	//if( SUCCEEDED( m_pd3dDev->BeginScene() ) )
 	{
@@ -2419,12 +2442,31 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 		}
 	}
 
+	// Dirty texture transform matrix glitches ImGui.
+	// Disabling texture transform matrix temporarily.
+	DWORD previousTextureTransformFlags;
+	m_pd3dDev->GetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, &previousTextureTransformFlags);
+	m_pd3dDev->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, FALSE);
+
+	// ImGui test
+	/*
+	bool b = true;
+	ImGui::Begin("Another Window", &b);
+	ImGui::Text("Hello");
+	ImGui::End();
+	*/
+
+	ImGui::Render();
+
+	m_pd3dDev->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, previousTextureTransformFlags);
+
 #ifdef TOUHOU_ON_D3D8
 	m_pd3dDev->SetRenderTarget(m_pRenderTarget.Get(), m_pDepthStencil.Get());
 #else
 	m_pd3dDev->SetRenderTarget(0, m_pRenderTarget.Get());
 	m_pd3dDev->SetDepthStencilSurface(m_pDepthStencil.Get());
 #endif
+
 	return m_pd3dDev->EndScene();
 }
 

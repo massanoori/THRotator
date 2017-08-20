@@ -1,5 +1,10 @@
 file(GLOB throtator_source_files "${CMAKE_CURRENT_LIST_DIR}/*.cpp")
 file(GLOB throtator_other_files "${CMAKE_CURRENT_LIST_DIR}/*.h" "${CMAKE_CURRENT_LIST_DIR}/*.rc")
+file(GLOB imgui_source_files "${CMAKE_CURRENT_LIST_DIR}/../imgui/*.cpp")
+file(GLOB imgui_header_files "${CMAKE_CURRENT_LIST_DIR}/../imgui/*.h")
+
+source_group("Source Files\\imgui" FILES ${imgui_source_files})
+source_group("Header Files\\imgui" FILES ${imgui_header_files})
 
 set_source_files_properties(${CMAKE_CURRENT_LIST_DIR}/stdafx.cpp
 	PROPERTIES
@@ -19,7 +24,7 @@ endforeach ()
 # Don't generate manifest since muirct emits errors
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /MANIFEST:NO")
 
-add_library(${throtator_target} SHARED ${throtator_source_files} ${throtator_other_files} "${throtator_dll_def}")
+add_library(${throtator_target} SHARED ${throtator_source_files} ${throtator_other_files} ${imgui_source_files} ${imgui_header_files} "${throtator_dll_def}")
 
 set(target_file \"\$\(OutDir\)$<TARGET_FILE_NAME:${throtator_target}>\")
 

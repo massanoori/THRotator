@@ -48,6 +48,7 @@ _build/
 # Submodules
 !/nlohmann-json
 !/fmtlib
+!/imgui
 
 # Appveyor
 !appveyor.yml

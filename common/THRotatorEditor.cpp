@@ -7,6 +7,13 @@
 #include <CommCtrl.h>
 #include <ShlObj.h>
 #include <ctime>
+#include <imgui.h>
+
+#ifdef TOUHOU_ON_D3D8
+// #include <imgui_impl_dx8.h>
+#else
+#include <imgui_impl_dx9.h>
+#endif
 
 #include "THRotatorSettings.h"
 #include "THRotatorEditor.h"
@@ -1075,6 +1082,14 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 		auto foundItr = ms_touhouWinToContext.find(pMsg->hwnd);
 		if (foundItr != ms_touhouWinToContext.end() && !foundItr->second.expired())
 		{
+#ifdef TOUHOU_ON_D3D8
+			// ImGui_ImplDX8_WndProcHandler(pMsg->hwnd, pMsg->message, pMsg->wParam, pMsg->lParam);
+#else
+			// defined in imgui_impl_dx9.cpp
+			extern LRESULT ImGui_ImplDX9_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+			ImGui_ImplDX9_WndProcHandler(pMsg->hwnd, pMsg->message, pMsg->wParam, pMsg->lParam);
+#endif
+
 			auto context = foundItr->second.lock();
 			switch (pMsg->message)
 			{
