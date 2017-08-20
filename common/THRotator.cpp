@@ -21,6 +21,8 @@
 #pragma comment(lib, "legacy_stdio_definitions.lib")
 #endif
 
+#include <imgui_impl_dx8.h>
+
 typedef IDirect3D8 Direct3DBase;
 typedef IDirect3D8 Direct3DExBase;
 typedef IDirect3DDevice8 Direct3DDeviceBase;
@@ -1919,7 +1921,7 @@ THRotatorDirect3DDevice::~THRotatorDirect3DDevice()
 
 #ifdef TOUHOU_ON_D3D8
 	DeleteObject(m_hFont);
-	// ImGui_ImplDX8_ShutDown();
+	ImGui_ImplDX8_Shutdown();
 #else
 	ImGui_ImplDX9_Shutdown();
 #endif
@@ -2060,7 +2062,7 @@ HRESULT THRotatorDirect3DDevice::InternalInit(UINT Adapter,
 	}
 
 #ifdef TOUHOU_ON_D3D8
-	//ImGui_ImplDX8_Init(m_pEditorContext->GetTouhouWindow(), m_pd3dDev.Get());
+	ImGui_ImplDX8_Init(m_pEditorContext->GetTouhouWindow(), m_pd3dDev.Get());
 #else
 	ImGui_ImplDX9_Init(m_pEditorContext->GetTouhouWindow(), m_pd3dDev.Get());
 #endif
@@ -2186,6 +2188,8 @@ HRESULT THRotatorDirect3DDevice::InitResources()
 		OutputLogMessagef(LogSeverity::Error, L"Failed to overwrite render target");
 		return hr;
 	}
+
+	ImGui_ImplDX8_CreateDeviceObjects();
 #else
 	if (FAILED(hr = m_pd3dDev->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &m_pBackBuffer)))
 	{
@@ -2216,7 +2220,7 @@ void THRotatorDirect3DDevice::ReleaseResources()
 	OutputLogMessagef(LogSeverity::Info, L"Releasing resources");
 
 #ifdef TOUHOU_ON_D3D8
-	// ImGui_ImplDX8_InvalidateDeviceObjects();
+	ImGui_ImplDX8_InvalidateDeviceObjects();
 	m_pSprite.Reset();
 #else
 	ImGui_ImplDX9_InvalidateDeviceObjects();
@@ -2405,7 +2409,7 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 		m_pRenderTarget.Get(), nullptr, nullptr, D3DX_FILTER_NONE, 0);
 
 #ifdef TOUHOU_ON_D3D8
-	// ImGui_ImplDX8_NewFrame();
+	ImGui_ImplDX8_NewFrame();
 #else
 	ImGui_ImplDX9_NewFrame();
 #endif
@@ -2449,12 +2453,10 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 	m_pd3dDev->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, FALSE);
 
 	// ImGui test
-	/*
 	bool b = true;
 	ImGui::Begin("Another Window", &b);
 	ImGui::Text("Hello");
 	ImGui::End();
-	*/
 
 	ImGui::Render();
 

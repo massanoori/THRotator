@@ -10,7 +10,7 @@
 #include <imgui.h>
 
 #ifdef TOUHOU_ON_D3D8
-// #include <imgui_impl_dx8.h>
+#include <imgui_impl_dx8.h>
 #else
 #include <imgui_impl_dx9.h>
 #endif
@@ -1083,7 +1083,9 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 		if (foundItr != ms_touhouWinToContext.end() && !foundItr->second.expired())
 		{
 #ifdef TOUHOU_ON_D3D8
-			// ImGui_ImplDX8_WndProcHandler(pMsg->hwnd, pMsg->message, pMsg->wParam, pMsg->lParam);
+			// defined in imgui_impl_dx8.cpp
+			extern LRESULT ImGui_ImplDX8_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+			ImGui_ImplDX8_WndProcHandler(pMsg->hwnd, pMsg->message, pMsg->wParam, pMsg->lParam);
 #else
 			// defined in imgui_impl_dx9.cpp
 			extern LRESULT ImGui_ImplDX9_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
