@@ -18,15 +18,18 @@
 
 using Microsoft::WRL::ComPtr;
 
+namespace
+{
+
 // Data
-static HWND                     g_hWnd = 0;
-static INT64                    g_Time = 0;
-static INT64                    g_TicksPerSecond = 0;
-static LPDIRECT3DDEVICE8        g_pd3dDevice = NULL;
-static LPDIRECT3DVERTEXBUFFER8  g_pVB = NULL;
-static LPDIRECT3DINDEXBUFFER8   g_pIB = NULL;
-static LPDIRECT3DTEXTURE8       g_FontTexture = NULL;
-static int                      g_VertexBufferSize = 5000, g_IndexBufferSize = 10000;
+HWND                     g_hWnd = 0;
+INT64                    g_Time = 0;
+INT64                    g_TicksPerSecond = 0;
+LPDIRECT3DDEVICE8        g_pd3dDevice = NULL;
+LPDIRECT3DVERTEXBUFFER8  g_pVB = NULL;
+LPDIRECT3DINDEXBUFFER8   g_pIB = NULL;
+LPDIRECT3DTEXTURE8       g_FontTexture = NULL;
+int                      g_VertexBufferSize = 5000, g_IndexBufferSize = 10000;
 
 struct CUSTOMVERTEX
 {
@@ -122,6 +125,8 @@ struct ScopedTransform
 		g_pd3dDevice->SetTransform(transformStateType, &previousTransformMatrix);
 	}
 };
+
+} // end of anonymous namespace
 
 // This is the main rendering function that you have to implement and provide to ImGui (via setting up 'RenderDrawListsFn' in the ImGuiIO structure)
 // If text or lines are blurry when integrating ImGui in your engine:
