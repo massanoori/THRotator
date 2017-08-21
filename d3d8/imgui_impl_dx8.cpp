@@ -14,6 +14,10 @@
 #define DIRECTINPUT_VERSION 0x0800
 #include <dinput.h>
 
+#include <wrl.h>
+
+using Microsoft::WRL::ComPtr;
+
 // Data
 static HWND                     g_hWnd = 0;
 static INT64                    g_Time = 0;
@@ -31,6 +35,93 @@ struct CUSTOMVERTEX
     float    uv[2];
 };
 #define D3DFVF_CUSTOMVERTEX (D3DFVF_XYZ|D3DFVF_DIFFUSE|D3DFVF_TEX1)
+
+// Structs for updating and restoring device states by RAII
+
+struct ScopedRS
+{
+	D3DRENDERSTATETYPE renderStateType;
+	DWORD previousValue;
+
+	ScopedRS(D3DRENDERSTATETYPE inRenderStateType, DWORD value)
+		: renderStateType(inRenderStateType)
+	{
+		g_pd3dDevice->GetRenderState(renderStateType, &previousValue);
+		g_pd3dDevice->SetRenderState(renderStateType, value);
+	}
+
+	~ScopedRS()
+	{
+		g_pd3dDevice->SetRenderState(renderStateType, previousValue);
+	}
+};
+
+struct ScopedTSS
+{
+	DWORD textureStage;
+	D3DTEXTURESTAGESTATETYPE textureStageStateType;
+	DWORD previousValue;
+
+	ScopedTSS(DWORD inTextureStage, D3DTEXTURESTAGESTATETYPE inTextureStageStateType, DWORD value)
+		: textureStage(inTextureStage)
+		, textureStageStateType(inTextureStageStateType)
+	{
+		g_pd3dDevice->GetTextureStageState(textureStage, textureStageStateType, &previousValue);
+		g_pd3dDevice->SetTextureStageState(textureStage, textureStageStateType, value);
+	}
+
+	~ScopedTSS()
+	{
+		g_pd3dDevice->SetTextureStageState(textureStage, textureStageStateType, previousValue);
+	}
+};
+
+struct ScopedTex
+{
+	DWORD textureStage;
+	ComPtr<IDirect3DBaseTexture8> previousTexture;
+
+	ScopedTex(DWORD inTextureStage, IDirect3DBaseTexture8* texture)
+		: textureStage(inTextureStage)
+	{
+		g_pd3dDevice->GetTexture(textureStage, &previousTexture);
+		g_pd3dDevice->SetTexture(textureStage, texture);
+	}
+
+	ScopedTex(DWORD inTextureStage)
+		: textureStage(inTextureStage)
+	{
+		g_pd3dDevice->GetTexture(textureStage, &previousTexture);
+	}
+
+	~ScopedTex()
+	{
+		g_pd3dDevice->SetTexture(textureStage, previousTexture.Get());
+	}
+};
+
+struct ScopedTransform
+{
+	D3DTRANSFORMSTATETYPE transformStateType;
+	D3DMATRIX previousTransformMatrix;
+
+	ScopedTransform(D3DTRANSFORMSTATETYPE inTransformType, const D3DMATRIX& transformMatrix)
+		: transformStateType(inTransformType)
+	{
+		g_pd3dDevice->GetTransform(transformStateType, &previousTransformMatrix);
+		g_pd3dDevice->SetTransform(transformStateType, &transformMatrix);
+	}
+
+	ScopedTransform(D3DTRANSFORMSTATETYPE inTransformType)
+	{
+		g_pd3dDevice->GetTransform(transformStateType, &previousTransformMatrix);
+	}
+
+	~ScopedTransform()
+	{
+		g_pd3dDevice->SetTransform(transformStateType, &previousTransformMatrix);
+	}
+};
 
 // This is the main rendering function that you have to implement and provide to ImGui (via setting up 'RenderDrawListsFn' in the ImGuiIO structure)
 // If text or lines are blurry when integrating ImGui in your engine:
@@ -102,25 +193,39 @@ void ImGui_ImplDX8_RenderDrawLists(ImDrawData* draw_data)
 
     // Setup render state: fixed-pipeline, alpha-blending, no face culling, no depth testing
     g_pd3dDevice->SetPixelShader(NULL);
-    g_pd3dDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
-    g_pd3dDevice->SetRenderState(D3DRS_LIGHTING, false);
-    g_pd3dDevice->SetRenderState(D3DRS_ZENABLE, false);
-    g_pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
-    g_pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, false);
-    g_pd3dDevice->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
-    g_pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-    g_pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-    //g_pd3dDevice->SetRenderState(D3DRS_SCISSORTESTENABLE, true);
-    g_pd3dDevice->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
-    g_pd3dDevice->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
-    g_pd3dDevice->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
-    g_pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
-    g_pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
-    g_pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
-    //g_pd3dDevice->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-    //g_pd3dDevice->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
-	g_pd3dDevice->SetTextureStageState(0, D3DTSS_MINFILTER, D3DTEXF_LINEAR);
-	g_pd3dDevice->SetTextureStageState(0, D3DTSS_MAGFILTER, D3DTEXF_LINEAR);
+
+	ScopedRS scopedRenderStates[] =
+	{
+		ScopedRS(D3DRS_CULLMODE, D3DCULL_NONE),
+		ScopedRS(D3DRS_LIGHTING, false),
+		ScopedRS(D3DRS_ZENABLE, false),
+		ScopedRS(D3DRS_ALPHABLENDENABLE, true),
+		ScopedRS(D3DRS_ALPHATESTENABLE, false),
+		ScopedRS(D3DRS_BLENDOP, D3DBLENDOP_ADD),
+		ScopedRS(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA),
+		ScopedRS(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA),
+	};
+
+	ScopedTSS scopedTextureStageStates[] =
+	{
+		ScopedTSS(0, D3DTSS_COLOROP, D3DTOP_MODULATE),
+		ScopedTSS(0, D3DTSS_COLORARG1, D3DTA_TEXTURE),
+		ScopedTSS(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE),
+		ScopedTSS(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE),
+		ScopedTSS(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE),
+		ScopedTSS(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE),
+		ScopedTSS(0, D3DTSS_MINFILTER, D3DTEXF_LINEAR),
+		ScopedTSS(0, D3DTSS_MAGFILTER, D3DTEXF_LINEAR),
+	};
+
+	ScopedTransform scopedTransforms[] =
+	{
+		ScopedTransform(D3DTS_WORLD),
+		ScopedTransform(D3DTS_VIEW),
+		ScopedTransform(D3DTS_PROJECTION),
+	};
+
+	ScopedTex scopedTexture(0);
 
     // Setup orthographic projection matrix
     // Being agnostic of whether <d3DX8.h> or <DirectXMath.h> can be used, we aren't relying on D3DXMatrixIdentity()/D3DXMatrixOrthoOffCenterLH() or DirectX::XMMatrixIdentity()/DirectX::XMMatrixOrthographicOffCenterLH()
@@ -164,10 +269,6 @@ void ImGui_ImplDX8_RenderDrawLists(ImDrawData* draw_data)
         }
         vtx_offset += cmd_list->VtxBuffer.Size;
     }
-
-    // Restore the DX8 state
-    //d3d9_state_block->Apply();
-    //d3d9_state_block->Release();
 }
 
 IMGUI_API LRESULT ImGui_ImplDX8_WndProcHandler(HWND, UINT msg, WPARAM wParam, LPARAM lParam)
