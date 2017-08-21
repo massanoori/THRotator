@@ -36,8 +36,9 @@ struct CUSTOMVERTEX
 	float    pos[3];
 	DWORD col;
 	float    uv[2];
+
+	enum : DWORD { FVF = D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1 };
 };
-#define D3DFVF_CUSTOMVERTEX (D3DFVF_XYZ|D3DFVF_DIFFUSE|D3DFVF_TEX1)
 
 // Structs for updating and restoring device states by RAII
 
@@ -143,7 +144,7 @@ void ImGui_ImplDX8_RenderDrawLists(ImDrawData* draw_data)
 	{
 		if (g_pVB) { g_pVB->Release(); g_pVB = NULL; }
 		g_VertexBufferSize = draw_data->TotalVtxCount + 5000;
-		if (g_pd3dDevice->CreateVertexBuffer(g_VertexBufferSize * sizeof(CUSTOMVERTEX), D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_DEFAULT, &g_pVB) < 0)
+		if (g_pd3dDevice->CreateVertexBuffer(g_VertexBufferSize * sizeof(CUSTOMVERTEX), D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, CUSTOMVERTEX::FVF, D3DPOOL_DEFAULT, &g_pVB) < 0)
 			return;
 	}
 	if (!g_pIB || g_IndexBufferSize < draw_data->TotalIdxCount)
@@ -183,9 +184,11 @@ void ImGui_ImplDX8_RenderDrawLists(ImDrawData* draw_data)
 	g_pVB->Unlock();
 	g_pIB->Unlock();
 	g_pd3dDevice->SetStreamSource(0, g_pVB, sizeof(CUSTOMVERTEX));
-	g_pd3dDevice->SetVertexShader(D3DFVF_CUSTOMVERTEX); // SetFVF equivalent for D3D8
 
-														// Setup viewport
+	// SetFVF() equivalent for D3D8
+	g_pd3dDevice->SetVertexShader(CUSTOMVERTEX::FVF);
+	
+	// Setup viewport
 	D3DVIEWPORT8 vp;
 	vp.X = vp.Y = 0;
 	vp.Width = (DWORD)io.DisplaySize.x;
