@@ -197,8 +197,6 @@ void ImGui_ImplDX8_RenderDrawLists(ImDrawData* draw_data)
 	vp.MaxZ = 1.0f;
 	g_pd3dDevice->SetViewport(&vp);
 
-	// TODO: Full restoration of states of D3D device
-
 	// Setup render state: fixed-pipeline, alpha-blending, no face culling, no depth testing
 	g_pd3dDevice->SetPixelShader(NULL);
 

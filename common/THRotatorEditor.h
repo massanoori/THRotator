@@ -64,6 +64,8 @@ public:
 		return m_bHUDRearrangeForced;
 	}
 
+	void RenderAndUpdateEditor();
+
 	/**
 	 * From resolution requested by Touhou process and current THRotator's configuration,
 	 * updates window's resolution.

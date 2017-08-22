@@ -2452,13 +2452,7 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 	m_pd3dDev->GetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, &previousTextureTransformFlags);
 	m_pd3dDev->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, FALSE);
 
-	// ImGui test
-	bool b = true;
-	ImGui::Begin("Another Window", &b);
-	ImGui::Text("Hello");
-	ImGui::End();
-
-	ImGui::Render();
+	m_pEditorContext->RenderAndUpdateEditor();
 
 	m_pd3dDev->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, previousTextureTransformFlags);
 

@@ -1186,6 +1186,85 @@ void THRotatorEditorContext::SetVerticallyLongWindow(bool bVerticallyLongWindow)
 	m_bVerticallyLongWindow = bVerticallyLongWindow;
 }
 
+void THRotatorEditorContext::RenderAndUpdateEditor()
+{
+	if (!ImGui::Begin(fmt::format("THRotator {}", "1.4.0-devel").c_str()))
+	{
+		// Early out if the window is collapsed, as an optimization.
+		ImGui::End();
+		return;
+	}
+
+	ImGui::PushItemWidth(-140);
+
+	{
+		int rotationAngle = static_cast<int>(m_rotationAngle);
+		ImGui::RadioButton(u8"0Åã", reinterpret_cast<int*>(&rotationAngle), Rotation_0); ImGui::SameLine();
+		ImGui::RadioButton(u8"90Åã", reinterpret_cast<int*>(&rotationAngle), Rotation_90); ImGui::SameLine();
+		ImGui::RadioButton(u8"180Åã", reinterpret_cast<int*>(&rotationAngle), Rotation_180); ImGui::SameLine();
+		ImGui::RadioButton(u8"270Åã", reinterpret_cast<int*>(&rotationAngle), Rotation_270);
+		m_rotationAngle = static_cast<RotationAngle>(rotationAngle);
+	}
+
+	{
+		bool bNewVerticalWindow = m_bVerticallyLongWindow;
+		ImGui::Checkbox("Vertical window", &bNewVerticalWindow);
+		SetVerticallyLongWindow(bNewVerticalWindow);
+	}
+
+	{
+		ImGui::Checkbox("Show THRotator first", &m_bVisible);
+		ImGui::Checkbox("Force HUD rearrangements", &m_bHUDRearrangeForced);
+	}
+
+	if (ImGui::CollapsingHeader("Gameplay detection"))
+	{
+		const std::string currentSetVPCountText = fmt::format("{}", m_judgeCountPrev).c_str();
+		ImGui::InputText("SetViewport() count",
+			const_cast<char*>(currentSetVPCountText.c_str()), currentSetVPCountText.length(),
+			ImGuiInputTextFlags_ReadOnly);
+
+		ImGui::InputInt("Threshold", &m_judgeThreshold);
+
+		if (m_judgeThreshold < 0)
+		{
+			m_judgeThreshold = 0;
+		}
+		
+		if (m_judgeThreshold > 999)
+		{
+			m_judgeThreshold = 999;
+		}
+	}
+
+	if (ImGui::CollapsingHeader("Main screen region"))
+	{
+		int leftAndTop[] = { m_mainScreenTopLeft.x, m_mainScreenTopLeft.y };
+		ImGui::InputInt2("Left and Top", leftAndTop);
+
+		leftAndTop[0] = (std::max)(0, (std::min)(leftAndTop[0], 999));
+		leftAndTop[1] = (std::max)(0, (std::min)(leftAndTop[1], 999));
+
+		m_mainScreenTopLeft.x = leftAndTop[0];
+		m_mainScreenTopLeft.y = leftAndTop[1];
+
+		int widthAndHeight[] = { m_mainScreenSize.cx, m_mainScreenSize.cy };
+		ImGui::InputInt2("Width and Height", widthAndHeight);
+
+		widthAndHeight[0] = (std::max)(0, (std::min)(widthAndHeight[0], 999));
+		widthAndHeight[1] = (std::max)(0, (std::min)(widthAndHeight[1], 999));
+
+		m_mainScreenSize.cx = widthAndHeight[0];
+		m_mainScreenSize.cy = widthAndHeight[1];
+	}
+
+	ImGui::End();
+
+	ImGui::ShowTestWindow();
+
+	ImGui::Render();
+}
+
 void THRotatorEditorContext::UpdateWindowResolution(int requestedWidth, int requestedHeight, UINT& outBackBufferWidth, UINT& outBackBufferHeight)
 {
 	RECT rcClient, rcWindow;
