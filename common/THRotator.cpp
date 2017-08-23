@@ -2067,6 +2067,29 @@ HRESULT THRotatorDirect3DDevice::InternalInit(UINT Adapter,
 	ImGui_ImplDX9_Init(m_pEditorContext->GetTouhouWindow(), m_pd3dDev.Get());
 #endif
 
+	using GUIFontSource = std::pair<std::string, int>;
+
+	// Japanese font candidates for ImGui
+	std::vector<GUIFontSource> fontSources
+	{
+		{ "C:\\Windows\\Fonts\\meiryo.ttc", 2 }, // Meiryo UI
+		{ "C:\\Windows\\Fonts\\msgothic.ttc", 1 }, // MS UI Gothic
+	};
+
+	ImGuiIO& io = ImGui::GetIO();
+	for (const auto& fontSource : fontSources)
+	{
+		if (boost::filesystem::exists(fontSource.first))
+		{
+			ImFontConfig fontConfig;
+			fontConfig.FontNo = fontSource.second;
+
+			io.Fonts->AddFontFromFileTTF(fontSource.first.c_str(), 16.0f, &fontConfig, io.Fonts->GetGlyphRangesJapanese());
+
+			break;
+		}
+	}
+
 	ret = InitResources();
 	if (FAILED(ret))
 	{
