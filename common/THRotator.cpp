@@ -2072,6 +2072,7 @@ HRESULT THRotatorDirect3DDevice::InternalInit(UINT Adapter,
 	// Japanese font candidates for ImGui
 	std::vector<GUIFontSource> fontSources
 	{
+		//{ "C:\\Windows\\Fonts\\YuGothB.ttc", 1 }, // Yu Gothic UI Bold (path of .ttc differ on different Windows OS)
 		{ "C:\\Windows\\Fonts\\meiryo.ttc", 2 }, // Meiryo UI
 		{ "C:\\Windows\\Fonts\\msgothic.ttc", 1 }, // MS UI Gothic
 	};

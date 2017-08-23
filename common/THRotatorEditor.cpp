@@ -1268,7 +1268,20 @@ void THRotatorEditorContext::RenderAndUpdateEditor()
 	if (ImGui::CollapsingHeader("Other rectangles"))
 	{
 		// TODO: make other rectangles editable
-		ImGui::TextUnformatted(fmt::format("[WIP] Number of other rectangles: {}", m_editedRectTransfers.size()).c_str());
+		// TODO: create array of const char* in advance
+		std::vector<std::string> listItemStrs;
+		std::vector<const char*> listItemStrPtrs;
+		listItemStrs.reserve(m_currentRectTransfers.size());
+		listItemStrPtrs.reserve(listItemStrs.size());
+
+		for (const auto& rectTransfer : m_currentRectTransfers)
+		{
+			listItemStrs.push_back(ConvertFromUnicodeToUtf8(rectTransfer.name));
+			listItemStrPtrs.push_back(listItemStrs.back().c_str());
+		}
+
+		static int currentItem = 0;
+		ImGui::ListBox("Rectangles", &currentItem, listItemStrPtrs.data(), listItemStrPtrs.size());
 	}
 
 	if (ImGui::Button("Reload"))
