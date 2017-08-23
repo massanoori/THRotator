@@ -1206,10 +1206,9 @@ void THRotatorEditorContext::RenderAndUpdateEditor()
 		m_rotationAngle = static_cast<RotationAngle>(rotationAngle);
 	}
 
+	bool bPreviousVerticalWindow = m_bVerticallyLongWindow;
 	{
-		bool bNewVerticalWindow = m_bVerticallyLongWindow;
-		ImGui::Checkbox("Vertical window", &bNewVerticalWindow);
-		SetVerticallyLongWindow(bNewVerticalWindow);
+		ImGui::Checkbox("Vertical window", &m_bVerticallyLongWindow);
 	}
 
 	{
@@ -1258,11 +1257,43 @@ void THRotatorEditorContext::RenderAndUpdateEditor()
 		m_mainScreenSize.cy = widthAndHeight[1];
 	}
 
+	if (ImGui::CollapsingHeader("Pixel interpolation"))
+	{
+		std::underlying_type<D3DTEXTUREFILTERTYPE>::type rawFilterType = m_filterType;
+		ImGui::RadioButton("None", &rawFilterType, D3DTEXF_NONE); ImGui::SameLine();
+		ImGui::RadioButton("Bilinear", &rawFilterType, D3DTEXF_LINEAR);
+		m_filterType = static_cast<D3DTEXTUREFILTERTYPE>(rawFilterType);
+	}
+
+	if (ImGui::CollapsingHeader("Other rectangles"))
+	{
+		// TODO: make other rectangles editable
+		ImGui::TextUnformatted(fmt::format("[WIP] Number of other rectangles: {}", m_editedRectTransfers.size()).c_str());
+	}
+
+	if (ImGui::Button("Reload"))
+	{
+		LoadSettings();
+	}
+
+	ImGui::SameLine();
+
+	if (ImGui::Button("Save"))
+	{
+		SaveSettings();
+	}
+
 	ImGui::End();
 
 	ImGui::ShowTestWindow();
 
 	ImGui::Render();
+
+	if (bPreviousVerticalWindow != m_bVerticallyLongWindow)
+	{
+		m_bVerticallyLongWindow = bPreviousVerticalWindow;
+		SetVerticallyLongWindow(!bPreviousVerticalWindow);
+	}
 }
 
 void THRotatorEditorContext::UpdateWindowResolution(int requestedWidth, int requestedHeight, UINT& outBackBufferWidth, UINT& outBackBufferHeight)
