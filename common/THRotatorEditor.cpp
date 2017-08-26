@@ -292,8 +292,8 @@ void THRotatorEditorContext::InitRectanglesListView(HWND hLV)
 
 		lvi.mask = LVIF_TEXT;
 		lvi.iItem = i;
-		lvi.pszText = const_cast<LPTSTR>(itr->name.c_str()); // LVITEM::pszText is not used for output buffer.
-		ListView_InsertItem(hLV, &lvi);
+		/*lvi.pszText = const_cast<LPTSTR>(itr->name.c_str()); // LVITEM::pszText is not used for output buffer.
+		ListView_InsertItem(hLV, &lvi);*/
 
 		TCHAR str[64];
 		lvi.pszText = str;
@@ -504,8 +504,8 @@ BOOL CALLBACK THRotatorEditorContext::MainDialogProc(HWND hWnd, UINT msg, WPARAM
 			ZeroMemory(&lvi, sizeof(lvi));
 			lvi.mask = LVIF_TEXT;
 			lvi.iItem = ListView_GetItemCount(GetDlgItem(hWnd, IDC_ORLIST));
-			lvi.pszText = const_cast<LPTSTR>(insertedRect.name.c_str()); // LVITEM::pszText is not used for output buffer.
-			ListView_InsertItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
+			/*lvi.pszText = const_cast<LPTSTR>(insertedRect.name.c_str()); // LVITEM::pszText is not used for output buffer.
+			ListView_InsertItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);*/
 
 			lvi.pszText = str;
 
@@ -569,8 +569,8 @@ BOOL CALLBACK THRotatorEditorContext::MainDialogProc(HWND hWnd, UINT msg, WPARAM
 			ZeroMemory(&lvi, sizeof(lvi));
 			lvi.mask = LVIF_TEXT;
 			lvi.iItem = i;
-			lvi.pszText = const_cast<LPTSTR>(editedRect.name.c_str()); // LVITEM::pszText is not used for output buffer.
-			ListView_SetItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);
+			/*lvi.pszText = const_cast<LPTSTR>(editedRect.name.c_str()); // LVITEM::pszText is not used for output buffer.
+			ListView_SetItem(GetDlgItem(hWnd, IDC_ORLIST), &lvi);*/
 
 			lvi.pszText = str;
 
@@ -740,7 +740,7 @@ BOOL CALLBACK THRotatorEditorContext::EditRectDialogProc(HWND hWnd, UINT msg, WP
 			break;
 		}
 
-		SetDlgItemText(hWnd, IDC_RECTNAME, pErd->name.c_str());
+		//SetDlgItemText(hWnd, IDC_RECTNAME, pErd->name.c_str());
 
 		return TRUE;
 	}
@@ -811,7 +811,7 @@ BOOL CALLBACK THRotatorEditorContext::EditRectDialogProc(HWND hWnd, UINT msg, WP
 
 			GetDlgItemText(hWnd, IDC_RECTNAME,
 				nameBuffer.data(), static_cast<int>(nameBuffer.size()));
-			pErd->name = nameBuffer.data();
+			//pErd->name = nameBuffer.data();
 
 			EndDialog(hWnd, IDOK);
 			return TRUE;
@@ -1299,7 +1299,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 
 		for (const auto& rectTransfer : m_currentRectTransfers)
 		{
-			listItemStrs.push_back(ConvertFromUnicodeToUtf8(rectTransfer.name));
+			listItemStrs.push_back(rectTransfer.name);
 			listItemStrPtrs.push_back(listItemStrs.back().c_str());
 		}
 
@@ -1364,21 +1364,21 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		if (ImGui::Button("Add"))
 		{
 			int newNameSuffix = 1;
-			std::wstring newName;
+			std::string newName;
 
 			auto nameOverlapPredicate = [&newName](const RectTransferData& r)
 			{
 				return newName == r.name;
 			};
 
-			newName = fmt::format(L"NewRect_{}", newNameSuffix++);
+			newName = fmt::format("NewRect_{}", newNameSuffix++);
 
 			auto rectWithOverlappingName = std::find_if(m_currentRectTransfers.begin(),
 				m_currentRectTransfers.end(), nameOverlapPredicate);
 
 			while (rectWithOverlappingName != m_currentRectTransfers.end())
 			{
-				newName = fmt::format(L"NewRect_{}", newNameSuffix++);
+				newName = fmt::format("NewRect_{}", newNameSuffix++);
 				rectWithOverlappingName = std::find_if(m_currentRectTransfers.begin(),
 					m_currentRectTransfers.end(), nameOverlapPredicate);
 			}

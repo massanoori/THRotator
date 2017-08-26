@@ -30,7 +30,7 @@ struct RectTransferData
 	SIZE destSize;
 
 	RotationAngle rotation;
-	std::basic_string<TCHAR> name;
+	std::string name; // rect name in UTF-8
 
 	RectTransferData()
 		: rotation(Rotation_0)

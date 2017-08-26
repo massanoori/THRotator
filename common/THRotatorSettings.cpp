@@ -172,11 +172,7 @@ void from_json(const BasicJsonType& j, RectTransferData& rectData)
 	std::string rectName;
 	ReadJsonObjectValue(j, "rect_name", rectName);
 
-#ifdef _UNICODE
-	rectData.name = ConvertFromUtf8ToUnicode(rectName);
-#else
-	rectData.name = ConvertFromUtf8ToSjis(rectName);
-#endif
+	rectData.name = rectName;
 
 	ReadJsonObjectValue(j, "source_left", rectData.sourcePosition.x);
 	ReadJsonObjectValue(j, "source_top", rectData.sourcePosition.y);
@@ -194,12 +190,7 @@ void from_json(const BasicJsonType& j, RectTransferData& rectData)
 template <typename BasicJsonType>
 void to_json(BasicJsonType& j, const RectTransferData& rectData)
 {
-#ifdef _UNICODE
-	std::string rectName = ConvertFromUnicodeToUtf8(rectData.name);
-#else
-	std::string rectName = ConvertFromSjisToUtf8(rectData.name);
-#endif
-	j["rect_name"] = rectName;
+	j["rect_name"] = rectData.name;
 
 	j["source_left"] = rectData.sourcePosition.x;
 	j["source_top"] = rectData.sourcePosition.y;
@@ -357,11 +348,7 @@ void THRotatorSetting::LoadIniFormat(THRotatorSetting& outSetting)
 		std::string rectName;
 		READ_INDEXED_INI_PARAM(rectName, "Name", rectIndex);
 
-#ifdef _UNICODE
-		rectData.name = ConvertFromSjisToUnicode(rectName);
-#else
-		rectData.name = std::move(rectName);
-#endif
+		rectData.name = ConvertFromSjisToUtf8(rectName);
 
 		READ_INDEXED_INI_PARAM(rectData.sourcePosition.x, "OSL", rectIndex);
 		READ_INDEXED_INI_PARAM(rectData.sourcePosition.y, "OST", rectIndex);
