@@ -64,7 +64,7 @@ public:
 		return m_bHUDRearrangeForced;
 	}
 
-	void RenderAndUpdateEditor();
+	void RenderAndUpdateEditor(bool bFullscreen);
 
 	/**
 	 * From resolution requested by Touhou process and current THRotator's configuration,
@@ -139,6 +139,7 @@ private:
 
 	bool m_bInitialized;
 	bool m_bScreenCaptureQueued;
+	bool m_bEditorShown;
 
 	/**
 	 * THRotatorDirect3DDevice has a copy of this reset revision.

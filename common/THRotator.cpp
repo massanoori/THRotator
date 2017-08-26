@@ -2599,7 +2599,7 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 	m_pd3dDev->GetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, &previousTextureTransformFlags);
 	m_pd3dDev->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, FALSE);
 
-	m_pEditorContext->RenderAndUpdateEditor();
+	m_pEditorContext->RenderAndUpdateEditor(!m_d3dpp.Windowed);
 
 	m_pd3dDev->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, previousTextureTransformFlags);
 

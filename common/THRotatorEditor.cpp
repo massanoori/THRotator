@@ -101,6 +101,8 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 #endif
 	}
 
+	m_bEditorShown = m_bVisible;
+
 	m_bNeedModalEditor = m_bNeedModalEditor || m_bModalEditorPreferred;
 
 	m_currentRectTransfers = m_editedRectTransfers;
@@ -1168,6 +1170,14 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 						}
 					}
 					break;
+
+				case 'R':
+					if ((HIWORD(pMsg->lParam) & KF_ALTDOWN) && !(HIWORD(pMsg->lParam) & KF_REPEAT)
+						&& IsUniquePostedMessage(pMsg))
+					{
+						context->m_bEditorShown = !context->m_bEditorShown;
+					}
+					break;
 				}
 				break;
 			}
@@ -1186,8 +1196,17 @@ void THRotatorEditorContext::SetVerticallyLongWindow(bool bVerticallyLongWindow)
 	m_bVerticallyLongWindow = bVerticallyLongWindow;
 }
 
-void THRotatorEditorContext::RenderAndUpdateEditor()
+void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 {
+	// when windowed: cursor from OS
+	// when fullscreen: cursor by ImGui only while editing
+	ImGui::GetIO().MouseDrawCursor = bFullscreen && m_bEditorShown;
+
+	if (!m_bEditorShown)
+	{
+		return;
+	}
+
 	if (!ImGui::Begin(fmt::format("THRotator {}", "1.4.0-devel").c_str()))
 	{
 		// Early out if the window is collapsed, as an optimization.
