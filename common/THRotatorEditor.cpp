@@ -1199,10 +1199,12 @@ void THRotatorEditorContext::RenderAndUpdateEditor()
 
 	{
 		int rotationAngle = static_cast<int>(m_rotationAngle);
+		ImGui::PushID("MainScreenRotation");
 		ImGui::RadioButton(u8"0Åã", reinterpret_cast<int*>(&rotationAngle), Rotation_0); ImGui::SameLine();
 		ImGui::RadioButton(u8"90Åã", reinterpret_cast<int*>(&rotationAngle), Rotation_90); ImGui::SameLine();
 		ImGui::RadioButton(u8"180Åã", reinterpret_cast<int*>(&rotationAngle), Rotation_180); ImGui::SameLine();
 		ImGui::RadioButton(u8"270Åã", reinterpret_cast<int*>(&rotationAngle), Rotation_270);
+		ImGui::PopID();
 		m_rotationAngle = static_cast<RotationAngle>(rotationAngle);
 	}
 
@@ -1260,14 +1262,16 @@ void THRotatorEditorContext::RenderAndUpdateEditor()
 	if (ImGui::CollapsingHeader("Pixel interpolation"))
 	{
 		std::underlying_type<D3DTEXTUREFILTERTYPE>::type rawFilterType = m_filterType;
+		ImGui::PushID("PixelInterpolationSelection");
 		ImGui::RadioButton("None", &rawFilterType, D3DTEXF_NONE); ImGui::SameLine();
 		ImGui::RadioButton("Bilinear", &rawFilterType, D3DTEXF_LINEAR);
+		ImGui::PopID();
 		m_filterType = static_cast<D3DTEXTUREFILTERTYPE>(rawFilterType);
 	}
 
 	if (ImGui::CollapsingHeader("Other rectangles"))
 	{
-		// TODO: make other rectangles editable
+		// TODO: make rectangle name editable
 		// TODO: create array of const char* in advance
 		std::vector<std::string> listItemStrs;
 		std::vector<const char*> listItemStrPtrs;
@@ -1281,7 +1285,66 @@ void THRotatorEditorContext::RenderAndUpdateEditor()
 		}
 
 		static int currentItem = 0;
-		ImGui::ListBox("Rectangles", &currentItem, listItemStrPtrs.data(), listItemStrPtrs.size());
+
+		currentItem = (std::min)(currentItem, static_cast<int>(m_currentRectTransfers.size()) - 1);
+		auto& selectedRectTransfer = m_currentRectTransfers[currentItem];
+		
+		int srcLeftAndTop[] =
+		{
+			selectedRectTransfer.sourcePosition.x,
+			selectedRectTransfer.sourcePosition.y,
+		};
+
+		ImGui::InputInt2("Src Left and Top", srcLeftAndTop);
+
+		selectedRectTransfer.sourcePosition.x = srcLeftAndTop[0];
+		selectedRectTransfer.sourcePosition.y = srcLeftAndTop[1];
+
+		int srcWidthAndHeight[] =
+		{
+			selectedRectTransfer.sourceSize.cx,
+			selectedRectTransfer.sourceSize.cy,
+		};
+
+		ImGui::InputInt2("Src Width and Height", srcWidthAndHeight);
+
+		selectedRectTransfer.sourceSize.cx = srcWidthAndHeight[0];
+		selectedRectTransfer.sourceSize.cy = srcWidthAndHeight[1];
+
+		int dstLeftAndTop[] =
+		{
+			selectedRectTransfer.destPosition.x,
+			selectedRectTransfer.destPosition.y,
+		};
+
+		ImGui::InputInt2("Dst Left and Top", dstLeftAndTop);
+
+		selectedRectTransfer.destPosition.x = dstLeftAndTop[0];
+		selectedRectTransfer.destPosition.y = dstLeftAndTop[1];
+
+		int dstWidthAndHeight[] =
+		{
+			selectedRectTransfer.destSize.cx,
+			selectedRectTransfer.destSize.cy,
+		};
+
+		ImGui::InputInt2("Dst Width and Height", dstWidthAndHeight);
+
+		selectedRectTransfer.destSize.cx = dstWidthAndHeight[0];
+		selectedRectTransfer.destSize.cy = dstWidthAndHeight[1];
+
+		int rotationAngle = static_cast<int>(selectedRectTransfer.rotation);
+		ImGui::PushID("PerRectRotation");
+		ImGui::RadioButton(u8"0Åã", &rotationAngle, Rotation_0); ImGui::SameLine();
+		ImGui::RadioButton(u8"90Åã", &rotationAngle, Rotation_90); ImGui::SameLine();
+		ImGui::RadioButton(u8"180Åã", &rotationAngle, Rotation_180); ImGui::SameLine();
+		ImGui::RadioButton(u8"270Åã", &rotationAngle, Rotation_270);
+		ImGui::PopID();
+		selectedRectTransfer.rotation = static_cast<RotationAngle>(rotationAngle);
+
+		ImGui::ListBox("List of rectangles\n(single selection)",
+			&currentItem, listItemStrPtrs.data(),
+			listItemStrPtrs.size(), 4);
 	}
 
 	if (ImGui::Button("Reload"))
