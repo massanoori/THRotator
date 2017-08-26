@@ -1307,7 +1307,14 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 
 		currentItem = (std::min)(currentItem, static_cast<int>(m_currentRectTransfers.size()) - 1);
 		auto& selectedRectTransfer = m_currentRectTransfers[currentItem];
-		
+
+		{
+			char nameEditBuffer[128];
+			strcpy_s(nameEditBuffer, selectedRectTransfer.name.c_str());
+			ImGui::InputText("Name", nameEditBuffer, _countof(nameEditBuffer));
+			selectedRectTransfer.name = nameEditBuffer;
+		}
+
 		int srcLeftAndTop[] =
 		{
 			selectedRectTransfer.sourcePosition.x,
