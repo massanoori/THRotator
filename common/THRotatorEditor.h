@@ -98,7 +98,10 @@ private:
 		ApplyRotationToEditorWindow(m_hEditorWin);
 	}
 
-	bool SaveSettings() const;
+	/**
+	 * non-const since SaveSettings() updates error message.
+	 */
+	bool SaveSettings();
 
 	bool LoadSettings();
 

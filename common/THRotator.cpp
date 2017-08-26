@@ -63,7 +63,6 @@ namespace
 
 const UINT BASE_SCREEN_WIDTH = 640u;
 const UINT BASE_SCREEN_HEIGHT = 480u;
-const int ERROR_MESSAGE_FONT_HEIGHT = 26;
 
 }
 
@@ -351,11 +350,6 @@ private:
 	ComPtr<Direct3DSurfaceBase> m_pTexSurface;
 	
 	ComPtr<THRotatorDirect3D> m_pMyD3D;
-
-	ComPtr<ID3DXFont> m_pFont;
-#ifdef TOUHOU_ON_D3D8
-	HFONT m_hFont;
-#endif
 
 
 	/****************************************
@@ -1888,9 +1882,6 @@ HRESULT THRotatorDirect3D::CreateDeviceEx(UINT Adapter,
 
 THRotatorDirect3DDevice::THRotatorDirect3DDevice()
 	: m_bInitialized(false)
-#if defined(_DEBUG) && defined(TOUHOU_ON_D3D8)
-	, m_hFont(nullptr)
-#endif
 	, m_referenceCount(1)
 	, m_requestedWidth(0)
 	, m_requestedHeight(0)
@@ -1904,20 +1895,11 @@ THRotatorDirect3DDevice::THRotatorDirect3DDevice()
 	QueryPerformanceFrequency(&m_freq);
 	ZeroMemory(&m_prev, sizeof(m_prev));
 #endif
-
-#ifdef TOUHOU_ON_D3D8
-	auto fontFamily = LoadTHRotatorString(g_hModule, IDS_ERROR_MESSAGE_FONT_FAMILY);
-	m_hFont = CreateFont(ERROR_MESSAGE_FONT_HEIGHT, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, fontFamily.c_str());
-#endif
 }
 
 THRotatorDirect3DDevice::~THRotatorDirect3DDevice()
 {
 	OutputLogMessagef(LogSeverity::Info, L"Destructing THRotatorDirect3DDevice");
-
-#ifdef TOUHOU_ON_D3D8
-	DeleteObject(m_hFont);
-#endif
 
 	THRotatorImGui_Shutdown();
 }
@@ -2104,24 +2086,6 @@ HRESULT THRotatorDirect3DDevice::InitResources()
 		return hr;
 	}
 
-	auto fontFamily = LoadTHRotatorString(g_hModule, IDS_ERROR_MESSAGE_FONT_FAMILY);
-
-	if (m_pFont && FAILED(hr = m_pFont->OnResetDevice()))
-	{
-		OutputLogMessagef(LogSeverity::Error, L"Failed to reset font");
-		return hr;
-	}
-#ifdef TOUHOU_ON_D3D8
-	else if (FAILED(hr = D3DXCreateFont(m_pd3dDev.Get(), m_hFont, &m_pFont)))
-#else
-	else if (FAILED(hr = D3DXCreateFont(m_pd3dDev.Get(),
-		ERROR_MESSAGE_FONT_HEIGHT, 0, 0, 0, 0, 0, 0, 0, 0, fontFamily.c_str(), &m_pFont)))
-#endif
-	{
-		OutputLogMessagef(LogSeverity::Error, L"Failed to create font");
-		return hr;
-	}
-
 	hr = m_pd3dDev->CreateRenderTarget(m_requestedWidth, m_requestedHeight,
 		m_d3dpp.BackBufferFormat, m_d3dpp.MultiSampleType,
 #ifdef TOUHOU_ON_D3D8
@@ -2218,11 +2182,6 @@ void THRotatorDirect3DDevice::ReleaseResources()
 		m_pSprite->OnLostDevice();
 	}
 #endif
-
-	if (m_pFont)
-	{
-		m_pFont->OnLostDevice();
-	}
 
 	m_pDepthStencil.Reset();
 	m_pRenderTarget.Reset();
@@ -2409,24 +2368,6 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 		{
 			EndSceneInternal();
 			m_pSprite->End();
-		}
-
-		auto errorMessage = m_pEditorContext->GetErrorMessage();
-		if (errorMessage)
-		{
-			RECT rcText;
-			rcText.right = m_d3dpp.BackBufferWidth;
-			rcText.left = rcText.right - 480;
-			rcText.bottom = m_d3dpp.BackBufferHeight;
-			rcText.top = rcText.bottom - ERROR_MESSAGE_FONT_HEIGHT;
-#ifdef TOUHOU_ON_D3D8
-			m_pFont->DrawText(
-#else
-			//(THIS_ LPD3DXSPRITE pSprite, LPCWSTR pString, INT Count, LPRECT pRect, DWORD Format, D3DCOLOR Color)
-			m_pFont->DrawText(NULL,
-#endif
-				errorMessage, -1, &rcText, 0,
-				D3DCOLOR_XRGB(0xff, 0x7f, 0x7f));
 		}
 	}
 

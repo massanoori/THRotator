@@ -83,17 +83,7 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 	}
 
 	OutputLogMessagef(LogSeverity::Info, L"Initializing THRotatorEditorContext");
-
-	if (!LoadSettings())
-	{
-		auto loadFailureMessage = LoadTHRotatorString(g_hModule, IDS_SETTING_FILE_LOAD_FAILED);
-
-#ifdef _UNICODE
-		SetNewErrorMessage(std::move(loadFailureMessage));
-#else
-		SetNewErrorMessage(ConvertFromUnicodeToSjis(loadFailureMessage));
-#endif
-	}
+	LoadSettings();
 
 	m_bEditorShown = m_bVisible;
 
@@ -964,7 +954,7 @@ void THRotatorEditorContext::ApplyRotationToEditorWindow(HWND hWnd) const
 	}
 }
 
-bool THRotatorEditorContext::SaveSettings() const
+bool THRotatorEditorContext::SaveSettings()
 {
 	THRotatorSetting settings;
 	settings.judgeThreshold = m_judgeThreshold;
@@ -979,6 +969,16 @@ bool THRotatorEditorContext::SaveSettings() const
 	settings.bModalEditorPreferred = m_bModalEditorPreferred;
 
 	bool bSaveSuccess = THRotatorSetting::Save(settings);
+
+	if (!bSaveSuccess)
+	{
+		auto saveFailureMessage = LoadTHRotatorString(g_hModule, IDS_SETTING_FILE_SAVE_FAILED);
+#ifdef _UNICODE
+		SetNewErrorMessage(std::move(saveFailureMessage));
+#else
+		SetNewErrorMessage(ConvertFromUnicodeToSjis(saveFailureMessage));
+#endif
+	}
 
 	return bSaveSuccess;
 }
@@ -1005,6 +1005,14 @@ bool THRotatorEditorContext::LoadSettings()
 	if (!bLoadSuccess)
 	{
 		OutputLogMessagef(LogSeverity::Error, L"Failed to load");
+
+		auto loadFailureMessage = LoadTHRotatorString(g_hModule, IDS_SETTING_FILE_LOAD_FAILED);
+#ifdef _UNICODE
+		SetNewErrorMessage(std::move(loadFailureMessage));
+#else
+		SetNewErrorMessage(ConvertFromUnicodeToSjis(loadFailureMessage));
+#endif
+
 		return false;
 	}
 
@@ -1128,16 +1136,7 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 							context->ApplyRotationToEditorWindow();
 						}
 
-						if (!context->SaveSettings())
-						{
-							auto saveFailureMessage = LoadTHRotatorString(g_hModule, IDS_SETTING_FILE_SAVE_FAILED);
-#ifdef _UNICODE
-							context->SetNewErrorMessage(std::move(saveFailureMessage));
-#else
-							context->SetNewErrorMessage(ConvertFromUnicodeToSjis(saveFailureMessage));
-#endif
-							break;
-						}
+						context->SaveSettings();
 					}
 					break;
 
@@ -1184,12 +1183,42 @@ void THRotatorEditorContext::SetVerticallyLongWindow(bool bVerticallyLongWindow)
 
 void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 {
+	auto errorMessagePtr = GetErrorMessage();
+
 	// when windowed: cursor from OS
 	// when fullscreen: cursor by ImGui only while editing
-	ImGui::GetIO().MouseDrawCursor = bFullscreen && m_bEditorShown;
+	
+	ImGui::GetIO().MouseDrawCursor = bFullscreen && (m_bEditorShown || errorMessagePtr);
+
+	if (errorMessagePtr)
+	{
+		ImGui::OpenPopup("ErrorMessage");
+		if (ImGui::BeginPopupModal("ErrorMessage", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+		{
+			LARGE_INTEGER currentClock, clockFrequency;
+			QueryPerformanceCounter(&currentClock);
+			QueryPerformanceFrequency(&clockFrequency);
+
+			auto durationInClock = m_errorMessageExpirationClock.QuadPart - currentClock.QuadPart;
+
+			ImGui::Text(ConvertFromUnicodeToUtf8(errorMessagePtr).c_str());
+			ImGui::Text(fmt::format("This window closes in {} second(s).",
+				durationInClock / clockFrequency.QuadPart + 1).c_str());
+			if (ImGui::Button("OK"))
+			{
+				m_errorMessageExpirationClock = currentClock;
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::EndPopup();
+		}
+	}
 
 	if (!m_bEditorShown)
 	{
+		if (errorMessagePtr)
+		{
+			ImGui::Render();
+		}
 		return;
 	}
 
