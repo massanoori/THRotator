@@ -1342,6 +1342,65 @@ void THRotatorEditorContext::RenderAndUpdateEditor()
 		ImGui::PopID();
 		selectedRectTransfer.rotation = static_cast<RotationAngle>(rotationAngle);
 
+		if (ImGui::Button("Add"))
+		{
+			int newNameSuffix = 1;
+			std::wstring newName;
+
+			auto nameOverlapPredicate = [&newName](const RectTransferData& r)
+			{
+				return newName == r.name;
+			};
+
+			newName = fmt::format(L"NewRect_{}", newNameSuffix++);
+
+			auto rectWithOverlappingName = std::find_if(m_currentRectTransfers.begin(),
+				m_currentRectTransfers.end(), nameOverlapPredicate);
+
+			while (rectWithOverlappingName != m_currentRectTransfers.end())
+			{
+				newName = fmt::format(L"NewRect_{}", newNameSuffix++);
+				rectWithOverlappingName = std::find_if(m_currentRectTransfers.begin(),
+					m_currentRectTransfers.end(), nameOverlapPredicate);
+			}
+
+			m_currentRectTransfers.emplace_back();
+			auto& addedRect = m_currentRectTransfers.back();
+
+			addedRect.name = std::move(newName);
+			addedRect.sourceSize.cx = addedRect.sourceSize.cy = 10;
+			addedRect.destSize.cx = addedRect.destSize.cy = 10;
+			currentItem = static_cast<int>(m_currentRectTransfers.size() - 1);
+		}
+
+		ImGui::SameLine();
+
+		if (ImGui::Button("Delete"))
+		{
+			m_currentRectTransfers.erase(m_currentRectTransfers.begin() + currentItem);
+			currentItem = (std::min)(currentItem, static_cast<int>(m_currentRectTransfers.size() - 1));
+		}
+
+		ImGui::SameLine();
+
+		if (ImGui::Button("Up") && currentItem > 0)
+		{
+			int newItemPosition = currentItem - 1;
+			std::swap(m_currentRectTransfers[currentItem],
+				m_currentRectTransfers[newItemPosition]);
+			currentItem = newItemPosition;
+		}
+
+		ImGui::SameLine();
+
+		if (ImGui::Button("Down") && currentItem < static_cast<int>(m_currentRectTransfers.size() - 1))
+		{
+			int newItemPosition = currentItem + 1;
+			std::swap(m_currentRectTransfers[currentItem],
+				m_currentRectTransfers[newItemPosition]);
+			currentItem = newItemPosition;
+		}
+
 		ImGui::ListBox("List of rectangles\n(single selection)",
 			&currentItem, listItemStrPtrs.data(),
 			listItemStrPtrs.size(), 4);
@@ -1350,12 +1409,16 @@ void THRotatorEditorContext::RenderAndUpdateEditor()
 	if (ImGui::Button("Reload"))
 	{
 		LoadSettings();
+		// NOTE: multiple arrays are necessary?
+		m_currentRectTransfers = m_editedRectTransfers;
 	}
 
 	ImGui::SameLine();
 
 	if (ImGui::Button("Save"))
 	{
+		// NOTE: multiple arrays are necessary?
+		m_editedRectTransfers = m_currentRectTransfers;
 		SaveSettings();
 	}
 
