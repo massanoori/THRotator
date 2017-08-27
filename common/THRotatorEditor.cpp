@@ -70,8 +70,6 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 	LoadSettings();
 	m_bEditorShown = m_bEditorShownInitially;
 
-	m_currentRectTransfers = m_editedRectTransfers;
-
 	// Modify menu
 	HMENU hMenu = GetSystemMenu(m_hTouhouWin, FALSE);
 
@@ -157,7 +155,7 @@ LONG THRotatorEditorContext::GetYOffset() const
 
 const std::vector<RectTransferData> THRotatorEditorContext::GetRectTransfers() const
 {
-	return m_currentRectTransfers;
+	return m_rectTransfers;
 }
 
 bool THRotatorEditorContext::ConsumeScreenCaptureRequest()
@@ -245,7 +243,7 @@ bool THRotatorEditorContext::SaveSettings()
 	settings.bVerticallyLongWindow = m_bVerticallyLongWindow;
 	settings.filterType = m_filterType;
 	settings.rotationAngle = m_rotationAngle;
-	settings.rectTransfers = m_currentRectTransfers;
+	settings.rectTransfers = m_rectTransfers;
 
 	bool bSaveSuccess = THRotatorSetting::Save(settings);
 
@@ -278,7 +276,7 @@ bool THRotatorEditorContext::LoadSettings()
 	m_rotationAngle = setting.rotationAngle;
 	m_filterType = setting.filterType;
 
-	m_editedRectTransfers = std::move(setting.rectTransfers);
+	m_rectTransfers = std::move(setting.rectTransfers);
 
 	if (!bLoadSuccess)
 	{
@@ -544,9 +542,9 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		RectTransferData dummyRectForNoRect;
 
 		m_GuiContext.selectedRectIndex = (std::min)(m_GuiContext.selectedRectIndex,
-			static_cast<int>(m_currentRectTransfers.size()) - 1);
+			static_cast<int>(m_rectTransfers.size()) - 1);
 		auto& selectedRectTransfer = m_GuiContext.selectedRectIndex >= 0 ?
-			m_currentRectTransfers[m_GuiContext.selectedRectIndex] : dummyRectForNoRect;
+			m_rectTransfers[m_GuiContext.selectedRectIndex] : dummyRectForNoRect;
 
 		{
 			char nameEditBuffer[128];
@@ -625,23 +623,23 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 
 			newName = fmt::format("NewRect_{}", newNameSuffix++);
 
-			auto rectWithOverlappingName = std::find_if(m_currentRectTransfers.begin(),
-				m_currentRectTransfers.end(), nameOverlapPredicate);
+			auto rectWithOverlappingName = std::find_if(m_rectTransfers.begin(),
+				m_rectTransfers.end(), nameOverlapPredicate);
 
-			while (rectWithOverlappingName != m_currentRectTransfers.end())
+			while (rectWithOverlappingName != m_rectTransfers.end())
 			{
 				newName = fmt::format("NewRect_{}", newNameSuffix++);
-				rectWithOverlappingName = std::find_if(m_currentRectTransfers.begin(),
-					m_currentRectTransfers.end(), nameOverlapPredicate);
+				rectWithOverlappingName = std::find_if(m_rectTransfers.begin(),
+					m_rectTransfers.end(), nameOverlapPredicate);
 			}
 
-			m_currentRectTransfers.emplace_back();
-			auto& addedRect = m_currentRectTransfers.back();
+			m_rectTransfers.emplace_back();
+			auto& addedRect = m_rectTransfers.back();
 
 			addedRect.name = std::move(newName);
 			addedRect.sourceSize.cx = addedRect.sourceSize.cy = 10;
 			addedRect.destSize.cx = addedRect.destSize.cy = 10;
-			m_GuiContext.selectedRectIndex = static_cast<int>(m_currentRectTransfers.size() - 1);
+			m_GuiContext.selectedRectIndex = static_cast<int>(m_rectTransfers.size() - 1);
 		}
 
 		if (m_GuiContext.selectedRectIndex >= 0)
@@ -650,9 +648,9 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 
 			if (ImGui::Button("Delete"))
 			{
-				m_currentRectTransfers.erase(m_currentRectTransfers.begin() + m_GuiContext.selectedRectIndex);
+				m_rectTransfers.erase(m_rectTransfers.begin() + m_GuiContext.selectedRectIndex);
 				m_GuiContext.selectedRectIndex = (std::min)(m_GuiContext.selectedRectIndex,
-					static_cast<int>(m_currentRectTransfers.size()) - 1);
+					static_cast<int>(m_rectTransfers.size()) - 1);
 			}
 
 			ImGui::SameLine();
@@ -660,31 +658,31 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 			if (ImGui::Button("Up") && m_GuiContext.selectedRectIndex > 0)
 			{
 				int newItemPosition = m_GuiContext.selectedRectIndex - 1;
-				std::swap(m_currentRectTransfers[m_GuiContext.selectedRectIndex],
-					m_currentRectTransfers[newItemPosition]);
+				std::swap(m_rectTransfers[m_GuiContext.selectedRectIndex],
+					m_rectTransfers[newItemPosition]);
 				m_GuiContext.selectedRectIndex = newItemPosition;
 			}
 
 			ImGui::SameLine();
 
 			if (ImGui::Button("Down")
-				&& m_GuiContext.selectedRectIndex < static_cast<int>(m_currentRectTransfers.size() - 1))
+				&& m_GuiContext.selectedRectIndex < static_cast<int>(m_rectTransfers.size() - 1))
 			{
 				int newItemPosition = m_GuiContext.selectedRectIndex + 1;
-				std::swap(m_currentRectTransfers[m_GuiContext.selectedRectIndex],
-					m_currentRectTransfers[newItemPosition]);
+				std::swap(m_rectTransfers[m_GuiContext.selectedRectIndex],
+					m_rectTransfers[newItemPosition]);
 				m_GuiContext.selectedRectIndex = newItemPosition;
 			}
 		}
 
-		if (m_GuiContext.rectListBoxItemBuffer.size() != m_currentRectTransfers.size())
+		if (m_GuiContext.rectListBoxItemBuffer.size() != m_rectTransfers.size())
 		{
-			m_GuiContext.rectListBoxItemBuffer = std::vector<const char*>(m_currentRectTransfers.size());
+			m_GuiContext.rectListBoxItemBuffer = std::vector<const char*>(m_rectTransfers.size());
 		}
 
-		for (std::size_t rectIndex = 0; rectIndex < m_currentRectTransfers.size(); rectIndex++)
+		for (std::size_t rectIndex = 0; rectIndex < m_rectTransfers.size(); rectIndex++)
 		{
-			m_GuiContext.rectListBoxItemBuffer[rectIndex] = m_currentRectTransfers[rectIndex].name.c_str();
+			m_GuiContext.rectListBoxItemBuffer[rectIndex] = m_rectTransfers[rectIndex].name.c_str();
 		}
 
 		ImGui::ListBox("Rectangle list", &m_GuiContext.selectedRectIndex,
@@ -695,16 +693,12 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 	if (ImGui::Button("Reload"))
 	{
 		LoadSettings();
-		// NOTE: multiple arrays are necessary?
-		m_currentRectTransfers = m_editedRectTransfers;
 	}
 
 	ImGui::SameLine();
 
 	if (ImGui::Button("Save"))
 	{
-		// NOTE: multiple arrays are necessary?
-		m_editedRectTransfers = m_currentRectTransfers;
 		SaveSettings();
 	}
 

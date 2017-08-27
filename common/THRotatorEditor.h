@@ -105,7 +105,7 @@ private:
 	bool m_bEditorShownInitially;
 	bool m_bVerticallyLongWindow;
 	RotationAngle m_rotationAngle;
-	std::vector<RectTransferData> m_editedRectTransfers, m_currentRectTransfers;
+	std::vector<RectTransferData> m_rectTransfers;
 	D3DTEXTUREFILTERTYPE m_filterType;
 	bool m_bHUDRearrangeForced;
 
