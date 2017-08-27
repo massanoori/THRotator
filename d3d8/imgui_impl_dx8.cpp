@@ -153,7 +153,7 @@ struct ScopedVP
 // This is the main rendering function that you have to implement and provide to ImGui (via setting up 'RenderDrawListsFn' in the ImGuiIO structure)
 // If text or lines are blurry when integrating ImGui in your engine:
 // - in your Render function, try translating your projection matrix by (0.5f,0.5f) or (0.375f,0.375f)
-void ImGui_ImplDX8_RenderDrawLists(ImDrawData* draw_data)
+void ImGui_ImplDX8_RenderDrawLists(ImDrawData* drawData)
 {
 	// Avoid rendering when minimized
 	ImGuiIO& io = ImGui::GetIO();
@@ -161,46 +161,46 @@ void ImGui_ImplDX8_RenderDrawLists(ImDrawData* draw_data)
 		return;
 
 	// Create and grow buffers if needed
-	if (!g_pVB || g_VertexBufferSize < draw_data->TotalVtxCount)
+	if (!g_pVB || g_VertexBufferSize < drawData->TotalVtxCount)
 	{
 		if (g_pVB) { g_pVB->Release(); g_pVB = NULL; }
-		g_VertexBufferSize = draw_data->TotalVtxCount + 5000;
+		g_VertexBufferSize = drawData->TotalVtxCount + 5000;
 		if (g_pd3dDevice->CreateVertexBuffer(g_VertexBufferSize * sizeof(CUSTOMVERTEX), D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, CUSTOMVERTEX::FVF, D3DPOOL_DEFAULT, &g_pVB) < 0)
 			return;
 	}
-	if (!g_pIB || g_IndexBufferSize < draw_data->TotalIdxCount)
+	if (!g_pIB || g_IndexBufferSize < drawData->TotalIdxCount)
 	{
 		if (g_pIB) { g_pIB->Release(); g_pIB = NULL; }
-		g_IndexBufferSize = draw_data->TotalIdxCount + 10000;
+		g_IndexBufferSize = drawData->TotalIdxCount + 10000;
 		if (g_pd3dDevice->CreateIndexBuffer(g_IndexBufferSize * sizeof(ImDrawIdx), D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, sizeof(ImDrawIdx) == 2 ? D3DFMT_INDEX16 : D3DFMT_INDEX32, D3DPOOL_DEFAULT, &g_pIB) < 0)
 			return;
 	}
 
 	// Copy and convert all vertices into a single contiguous buffer
-	CUSTOMVERTEX* vtx_dst;
-	ImDrawIdx* idx_dst;
-	if (g_pVB->Lock(0, (UINT)(draw_data->TotalVtxCount * sizeof(CUSTOMVERTEX)), (BYTE**)&vtx_dst, D3DLOCK_DISCARD) < 0)
+	CUSTOMVERTEX* destVertices;
+	ImDrawIdx* destIndices;
+	if (g_pVB->Lock(0, (UINT)(drawData->TotalVtxCount * sizeof(CUSTOMVERTEX)), (BYTE**)&destVertices, D3DLOCK_DISCARD) < 0)
 		return;
-	if (g_pIB->Lock(0, (UINT)(draw_data->TotalIdxCount * sizeof(ImDrawIdx)), (BYTE**)&idx_dst, D3DLOCK_DISCARD) < 0)
+	if (g_pIB->Lock(0, (UINT)(drawData->TotalIdxCount * sizeof(ImDrawIdx)), (BYTE**)&destIndices, D3DLOCK_DISCARD) < 0)
 		return;
 
-	for (int n = 0; n < draw_data->CmdListsCount; n++)
+	for (int n = 0; n < drawData->CmdListsCount; n++)
 	{
-		const ImDrawList* cmd_list = draw_data->CmdLists[n];
-		const ImDrawVert* vtx_src = cmd_list->VtxBuffer.Data;
-		for (int i = 0; i < cmd_list->VtxBuffer.Size; i++)
+		const ImDrawList* drawCommandList = drawData->CmdLists[n];
+		const ImDrawVert* sourceVertices = drawCommandList->VtxBuffer.Data;
+		for (int i = 0; i < drawCommandList->VtxBuffer.Size; i++)
 		{
-			vtx_dst->pos[0] = vtx_src->pos.x;
-			vtx_dst->pos[1] = vtx_src->pos.y;
-			vtx_dst->pos[2] = 0.0f;
-			vtx_dst->col = (vtx_src->col & 0xFF00FF00) | ((vtx_src->col & 0xFF0000) >> 16) | ((vtx_src->col & 0xFF) << 16);     // RGBA --> ARGB for DirectX9
-			vtx_dst->uv[0] = vtx_src->uv.x;
-			vtx_dst->uv[1] = vtx_src->uv.y;
-			vtx_dst++;
-			vtx_src++;
+			destVertices->pos[0] = sourceVertices->pos.x;
+			destVertices->pos[1] = sourceVertices->pos.y;
+			destVertices->pos[2] = 0.0f;
+			destVertices->col = (sourceVertices->col & 0xFF00FF00) | ((sourceVertices->col & 0xFF0000) >> 16) | ((sourceVertices->col & 0xFF) << 16);     // RGBA --> ARGB for DirectX9
+			destVertices->uv[0] = sourceVertices->uv.x;
+			destVertices->uv[1] = sourceVertices->uv.y;
+			destVertices++;
+			sourceVertices++;
 		}
-		memcpy(idx_dst, cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx));
-		idx_dst += cmd_list->IdxBuffer.Size;
+		memcpy(destIndices, drawCommandList->IdxBuffer.Data, drawCommandList->IdxBuffer.Size * sizeof(ImDrawIdx));
+		destIndices += drawCommandList->IdxBuffer.Size;
 	}
 	g_pVB->Unlock();
 	g_pIB->Unlock();
@@ -245,18 +245,16 @@ void ImGui_ImplDX8_RenderDrawLists(ImDrawData* draw_data)
 
 	ScopedTex scopedTexture(0);
 
-	// Setup orthographic projection matrix
-	// Being agnostic of whether <d3DX8.h> or <DirectXMath.h> can be used, we aren't relying on D3DXMatrixIdentity()/D3DXMatrixOrthoOffCenterLH() or DirectX::XMMatrixIdentity()/DirectX::XMMatrixOrthographicOffCenterLH()
 	{
-		D3DMATRIX mat_identity = { { 1.0f, 0.0f, 0.0f, 0.0f,  0.0f, 1.0f, 0.0f, 0.0f,  0.0f, 0.0f, 1.0f, 0.0f,  0.0f, 0.0f, 0.0f, 1.0f } };
+		D3DMATRIX matIdentity = { { 1.0f, 0.0f, 0.0f, 0.0f,  0.0f, 1.0f, 0.0f, 0.0f,  0.0f, 0.0f, 1.0f, 0.0f,  0.0f, 0.0f, 0.0f, 1.0f } };
 
-		g_pd3dDevice->SetTransform(D3DTS_WORLD, &mat_identity);
-		g_pd3dDevice->SetTransform(D3DTS_VIEW, &mat_identity);
+		g_pd3dDevice->SetTransform(D3DTS_WORLD, &matIdentity);
+		g_pd3dDevice->SetTransform(D3DTS_VIEW, &matIdentity);
 	}
 
 	// Render command lists
-	int vtx_offset = 0;
-	int idx_offset = 0;
+	int vertexBufferOffset = 0;
+	int indexBufferOffset = 0;
 
 	ScopedVP scopedViewport;
 
@@ -264,15 +262,15 @@ void ImGui_ImplDX8_RenderDrawLists(ImDrawData* draw_data)
 	viewport.MinZ = 0.0f;
 	viewport.MaxZ = 1.0f;
 
-	for (int n = 0; n < draw_data->CmdListsCount; n++)
+	for (int n = 0; n < drawData->CmdListsCount; n++)
 	{
-		const ImDrawList* cmd_list = draw_data->CmdLists[n];
-		for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++)
+		const ImDrawList* drawCommandList = drawData->CmdLists[n];
+		for (int cmd_i = 0; cmd_i < drawCommandList->CmdBuffer.Size; cmd_i++)
 		{
-			const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[cmd_i];
+			const ImDrawCmd* pcmd = &drawCommandList->CmdBuffer[cmd_i];
 			if (pcmd->UserCallback)
 			{
-				pcmd->UserCallback(cmd_list, pcmd);
+				pcmd->UserCallback(drawCommandList, pcmd);
 			}
 			else
 			{
@@ -281,6 +279,8 @@ void ImGui_ImplDX8_RenderDrawLists(ImDrawData* draw_data)
 				viewport.Width = static_cast<DWORD>(pcmd->ClipRect.z - pcmd->ClipRect.x);
 				viewport.Height = static_cast<DWORD>(pcmd->ClipRect.w - pcmd->ClipRect.y);
 				g_pd3dDevice->SetViewport(&viewport);
+
+				// Setup orthographic projection matrix
 
 				const float L = 0.5f + viewport.X, R = viewport.Width + 0.5f + viewport.X;
 				const float T = 0.5f + viewport.Y, B = viewport.Height + 0.5f + viewport.Y;
@@ -293,16 +293,13 @@ void ImGui_ImplDX8_RenderDrawLists(ImDrawData* draw_data)
 				};
 
 				g_pd3dDevice->SetTransform(D3DTS_PROJECTION, &mat_projection);
-
-				//const RECT r = { (LONG)pcmd->ClipRect.x, (LONG)pcmd->ClipRect.y, (LONG)pcmd->ClipRect.z, (LONG)pcmd->ClipRect.w };
 				g_pd3dDevice->SetTexture(0, (LPDIRECT3DTEXTURE8)pcmd->TextureId);
-				//g_pd3dDevice->SetScissorRect(&r);
-				g_pd3dDevice->SetIndices(g_pIB, vtx_offset);
-				g_pd3dDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, (UINT)cmd_list->VtxBuffer.Size, idx_offset, pcmd->ElemCount / 3);
+				g_pd3dDevice->SetIndices(g_pIB, vertexBufferOffset);
+				g_pd3dDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, (UINT)drawCommandList->VtxBuffer.Size, indexBufferOffset, pcmd->ElemCount / 3);
 			}
-			idx_offset += pcmd->ElemCount;
+			indexBufferOffset += pcmd->ElemCount;
 		}
-		vtx_offset += cmd_list->VtxBuffer.Size;
+		vertexBufferOffset += drawCommandList->VtxBuffer.Size;
 	}
 }
 
