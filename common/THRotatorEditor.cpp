@@ -467,10 +467,10 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 	{
 		int rotationAngle = static_cast<int>(m_rotationAngle);
 		ImGui::PushID("MainScreenRotation");
-		ImGui::RadioButton(u8"0Åã", reinterpret_cast<int*>(&rotationAngle), Rotation_0); ImGui::SameLine();
-		ImGui::RadioButton(u8"90Åã", reinterpret_cast<int*>(&rotationAngle), Rotation_90); ImGui::SameLine();
-		ImGui::RadioButton(u8"180Åã", reinterpret_cast<int*>(&rotationAngle), Rotation_180); ImGui::SameLine();
-		ImGui::RadioButton(u8"270Åã", reinterpret_cast<int*>(&rotationAngle), Rotation_270);
+		ImGui::RadioButton("0\xC2\xB0", reinterpret_cast<int*>(&rotationAngle), Rotation_0); ImGui::SameLine();
+		ImGui::RadioButton("90\xC2\xB0", reinterpret_cast<int*>(&rotationAngle), Rotation_90); ImGui::SameLine();
+		ImGui::RadioButton("180\xC2\xB0", reinterpret_cast<int*>(&rotationAngle), Rotation_180); ImGui::SameLine();
+		ImGui::RadioButton("270\xC2\xB0", reinterpret_cast<int*>(&rotationAngle), Rotation_270);
 		ImGui::PopID();
 		m_rotationAngle = static_cast<RotationAngle>(rotationAngle);
 	}
@@ -630,10 +630,10 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 
 		int rotationAngle = static_cast<int>(selectedRectTransfer.rotation);
 		ImGui::PushID("PerRectRotation");
-		ImGui::RadioButton(u8"0Åã", &rotationAngle, Rotation_0); ImGui::SameLine();
-		ImGui::RadioButton(u8"90Åã", &rotationAngle, Rotation_90); ImGui::SameLine();
-		ImGui::RadioButton(u8"180Åã", &rotationAngle, Rotation_180); ImGui::SameLine();
-		ImGui::RadioButton(u8"270Åã", &rotationAngle, Rotation_270);
+		ImGui::RadioButton("0\xC2\xB0", &rotationAngle, Rotation_0); ImGui::SameLine();
+		ImGui::RadioButton("90\xC2\xB0", &rotationAngle, Rotation_90); ImGui::SameLine();
+		ImGui::RadioButton("180\xC2\xB0", &rotationAngle, Rotation_180); ImGui::SameLine();
+		ImGui::RadioButton("270\xC2\xB0", &rotationAngle, Rotation_270);
 		ImGui::PopID();
 		selectedRectTransfer.rotation = static_cast<RotationAngle>(rotationAngle);
 
@@ -684,7 +684,8 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 
 			ImGui::SameLine();
 
-			if (ImGui::Button(u8"Å™") && m_GuiContext.selectedRectIndex > 0)
+			if (ImGui::Button("\xE2\x86\x91") // upwards arrow
+				&& m_GuiContext.selectedRectIndex > 0)
 			{
 				int newItemPosition = m_GuiContext.selectedRectIndex - 1;
 				std::swap(m_rectTransfers[m_GuiContext.selectedRectIndex],
@@ -694,7 +695,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 
 			ImGui::SameLine();
 
-			if (ImGui::Button(u8"Å´")
+			if (ImGui::Button("\xE2\x86\x93") // downwards arrow
 				&& m_GuiContext.selectedRectIndex < static_cast<int>(m_rectTransfers.size()) - 1)
 			{
 				int newItemPosition = m_GuiContext.selectedRectIndex + 1;
@@ -749,7 +750,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 	if (ImGui::BeginPopupModal(labelAboutTHRotator.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize))
 	{
 		ImGui::Text(fmt::format("THRotator {}", THROTATOR_VERSION_STRING).c_str());
-		ImGui::Text(u8"\xa9 2017 massanoori.");
+		ImGui::Text("\xC2\xA9 2017 massanoori."); // "(c) 2017 massanoori."
 		if (ImGui::Button("OK"))
 		{
 			ImGui::CloseCurrentPopup();
