@@ -454,7 +454,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		return;
 	}
 
-	if (!ImGui::Begin(fmt::format("THRotator {}", "1.4.0-devel").c_str()))
+	if (!ImGui::Begin("THRotator"))
 	{
 		// Early out if the window is collapsed, as an optimization.
 		ImGui::End();
@@ -706,6 +706,24 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		// NOTE: multiple arrays are necessary?
 		m_editedRectTransfers = m_currentRectTransfers;
 		SaveSettings();
+	}
+
+	ImGui::SameLine();
+	
+	if (ImGui::Button("About"))
+	{
+		ImGui::OpenPopup("About THRotator");
+	}
+
+	if (ImGui::BeginPopupModal("About THRotator", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::Text(fmt::format("THRotator {}", "1.4.0-devel").c_str());
+		ImGui::Text(u8"\xa9 2017 massanoori.");
+		if (ImGui::Button("OK"))
+		{
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::EndPopup();
 	}
 
 	ImGui::End();
