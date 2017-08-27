@@ -458,6 +458,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 	{
 		// Early out if the window is collapsed, as an optimization.
 		ImGui::End();
+		ImGui::Render();
 		return;
 	}
 
@@ -708,8 +709,6 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 	}
 
 	ImGui::End();
-
-	ImGui::ShowTestWindow();
 
 	ImGui::Render();
 
