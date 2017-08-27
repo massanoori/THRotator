@@ -37,6 +37,7 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 	, m_deviceResetRevision(0)
 	, m_bInitialized(false)
 	, m_bScreenCaptureQueued(false)
+	, m_bSaveBySysKeyAllowed(true)
 	, m_modifiedTouhouClientSize{ 0, 0 }
 {
 	m_errorMessageExpirationClock.QuadPart = 0;
@@ -68,6 +69,7 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 
 	OutputLogMessagef(LogSeverity::Info, "Initializing THRotatorEditorContext");
 	
+
 	if (!LoadSettings())
 	{
 		// If initial load failed, use default setting
@@ -226,15 +228,13 @@ void THRotatorEditorContext::UpdateVisibilitySwitchMenuText()
 	SetMenuItemInfo(m_hSysMenu, ms_switchVisibilityID, FALSE, &mi);
 }
 
-void THRotatorEditorContext::SetNewErrorMessage(std::string&& message)
+void THRotatorEditorContext::SetNewErrorMessage(std::string&& message, int timeToLiveInSeconds)
 {
 	LARGE_INTEGER frequency;
 	::QueryPerformanceFrequency(&frequency);
 	::QueryPerformanceCounter(&m_errorMessageExpirationClock);
 
-	const int TTL = 8;
-
-	m_errorMessageExpirationClock.QuadPart += frequency.QuadPart * TTL;
+	m_errorMessageExpirationClock.QuadPart += frequency.QuadPart * timeToLiveInSeconds;
 	m_errorMessage = std::move(message);
 }
 
@@ -264,6 +264,8 @@ bool THRotatorEditorContext::LoadSettings()
 	THRotatorFormatVersion formatVersion;
 
 	bool bLoadSuccess = THRotatorSetting::Load(setting, formatVersion);
+	m_bSaveBySysKeyAllowed = bLoadSuccess;
+
 	if (!bLoadSuccess)
 	{
 		OutputLogMessagef(LogSeverity::Error, "Failed to load");
@@ -360,7 +362,18 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 
 						auto nextRotationAngle = static_cast<RotationAngle>((context->m_rotationAngle + Rotation_Num + rotatingDirection) % Rotation_Num);
 						context->m_rotationAngle = nextRotationAngle;
-						context->SaveSettings();
+
+						if (context->m_bSaveBySysKeyAllowed)
+						{
+							context->SaveSettings();
+						}
+						else
+						{
+							context->SetNewErrorMessage(
+								"THRotator failed to load configuration file last time.\n"
+								"To prevent unintentional loss of data, THRotator has cancelled to overwrite the configuration file.\n"
+								"To overwrite anyway, open THRotator window by Alt+R and press 'Save'.", 20);
+						}
 					}
 					break;
 
@@ -688,6 +701,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 	if (ImGui::Button("Save"))
 	{
 		SaveSettings();
+		m_bSaveBySysKeyAllowed = true;
 	}
 
 	ImGui::SameLine();

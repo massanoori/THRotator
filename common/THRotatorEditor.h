@@ -94,7 +94,7 @@ private:
 
 	static LRESULT CALLBACK MessageHookProc(int nCode, WPARAM wParam, LPARAM lParam);
 
-	void SetNewErrorMessage(std::string&& message);
+	void SetNewErrorMessage(std::string&& message, int timeToLiveInSeconds = 8);
 
 	/****************************************
 	* THRotator parameters
@@ -120,6 +120,7 @@ private:
 	bool m_bInitialized;
 	bool m_bScreenCaptureQueued;
 	bool m_bEditorShown;
+	bool m_bSaveBySysKeyAllowed;
 
 	/**
 	 * THRotatorDirect3DDevice has a copy of this reset revision.
