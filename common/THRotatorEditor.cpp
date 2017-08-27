@@ -1291,6 +1291,8 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 
 		m_mainScreenSize.cx = widthAndHeight[0];
 		m_mainScreenSize.cy = widthAndHeight[1];
+
+		ImGui::InputInt("Y offset", &m_yOffset);
 	}
 
 	if (ImGui::CollapsingHeader("Pixel interpolation"))
