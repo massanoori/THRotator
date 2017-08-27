@@ -1320,13 +1320,16 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 
 		static int currentItem = 0;
 
+		RectTransferData dummyRectForNoRect;
+
 		currentItem = (std::min)(currentItem, static_cast<int>(m_currentRectTransfers.size()) - 1);
-		auto& selectedRectTransfer = m_currentRectTransfers[currentItem];
+		auto& selectedRectTransfer = currentItem >= 0 ? m_currentRectTransfers[currentItem] : dummyRectForNoRect;
 
 		{
 			char nameEditBuffer[128];
 			strcpy_s(nameEditBuffer, selectedRectTransfer.name.c_str());
-			ImGui::InputText("Name", nameEditBuffer, _countof(nameEditBuffer));
+			ImGui::InputText("Name", nameEditBuffer, _countof(nameEditBuffer),
+				currentItem >= 0 ? 0 : ImGuiInputTextFlags_ReadOnly);
 			selectedRectTransfer.name = nameEditBuffer;
 		}
 
@@ -1336,7 +1339,8 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 			selectedRectTransfer.sourcePosition.y,
 		};
 
-		ImGui::InputInt2("Src Left and Top", srcLeftAndTop);
+		ImGui::InputInt2("Src Left and Top", srcLeftAndTop,
+			currentItem >= 0 ? 0 : ImGuiInputTextFlags_ReadOnly);
 
 		selectedRectTransfer.sourcePosition.x = srcLeftAndTop[0];
 		selectedRectTransfer.sourcePosition.y = srcLeftAndTop[1];
@@ -1347,7 +1351,8 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 			selectedRectTransfer.sourceSize.cy,
 		};
 
-		ImGui::InputInt2("Src Width and Height", srcWidthAndHeight);
+		ImGui::InputInt2("Src Width and Height", srcWidthAndHeight,
+			currentItem >= 0 ? 0 : ImGuiInputTextFlags_ReadOnly);
 
 		selectedRectTransfer.sourceSize.cx = srcWidthAndHeight[0];
 		selectedRectTransfer.sourceSize.cy = srcWidthAndHeight[1];
@@ -1358,7 +1363,8 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 			selectedRectTransfer.destPosition.y,
 		};
 
-		ImGui::InputInt2("Dst Left and Top", dstLeftAndTop);
+		ImGui::InputInt2("Dst Left and Top", dstLeftAndTop,
+			currentItem >= 0 ? 0 : ImGuiInputTextFlags_ReadOnly);
 
 		selectedRectTransfer.destPosition.x = dstLeftAndTop[0];
 		selectedRectTransfer.destPosition.y = dstLeftAndTop[1];
@@ -1369,7 +1375,8 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 			selectedRectTransfer.destSize.cy,
 		};
 
-		ImGui::InputInt2("Dst Width and Height", dstWidthAndHeight);
+		ImGui::InputInt2("Dst Width and Height", dstWidthAndHeight,
+			currentItem >= 0 ? 0 : ImGuiInputTextFlags_ReadOnly);
 
 		selectedRectTransfer.destSize.cx = dstWidthAndHeight[0];
 		selectedRectTransfer.destSize.cy = dstWidthAndHeight[1];
@@ -1414,35 +1421,38 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 			currentItem = static_cast<int>(m_currentRectTransfers.size() - 1);
 		}
 
-		ImGui::SameLine();
-
-		if (ImGui::Button("Delete"))
+		if (currentItem >= 0)
 		{
-			m_currentRectTransfers.erase(m_currentRectTransfers.begin() + currentItem);
-			currentItem = (std::min)(currentItem, static_cast<int>(m_currentRectTransfers.size() - 1));
+			ImGui::SameLine();
+
+			if (ImGui::Button("Delete"))
+			{
+				m_currentRectTransfers.erase(m_currentRectTransfers.begin() + currentItem);
+				currentItem = (std::min)(currentItem, static_cast<int>(m_currentRectTransfers.size()) - 1);
+			}
+
+			ImGui::SameLine();
+
+			if (ImGui::Button("Up") && currentItem > 0)
+			{
+				int newItemPosition = currentItem - 1;
+				std::swap(m_currentRectTransfers[currentItem],
+					m_currentRectTransfers[newItemPosition]);
+				currentItem = newItemPosition;
+			}
+
+			ImGui::SameLine();
+
+			if (ImGui::Button("Down") && currentItem < static_cast<int>(m_currentRectTransfers.size() - 1))
+			{
+				int newItemPosition = currentItem + 1;
+				std::swap(m_currentRectTransfers[currentItem],
+					m_currentRectTransfers[newItemPosition]);
+				currentItem = newItemPosition;
+			}
 		}
 
-		ImGui::SameLine();
-
-		if (ImGui::Button("Up") && currentItem > 0)
-		{
-			int newItemPosition = currentItem - 1;
-			std::swap(m_currentRectTransfers[currentItem],
-				m_currentRectTransfers[newItemPosition]);
-			currentItem = newItemPosition;
-		}
-
-		ImGui::SameLine();
-
-		if (ImGui::Button("Down") && currentItem < static_cast<int>(m_currentRectTransfers.size() - 1))
-		{
-			int newItemPosition = currentItem + 1;
-			std::swap(m_currentRectTransfers[currentItem],
-				m_currentRectTransfers[newItemPosition]);
-			currentItem = newItemPosition;
-		}
-
-		ImGui::ListBox("List of rectangles\n(single selection)",
+		ImGui::ListBox("Rectangle list",
 			&currentItem, listItemStrPtrs.data(),
 			listItemStrPtrs.size(), 4);
 	}
