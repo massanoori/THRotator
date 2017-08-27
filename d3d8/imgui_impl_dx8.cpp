@@ -148,6 +148,95 @@ struct ScopedVP
 	}
 };
 
+struct ScopedStreamSource
+{
+	ComPtr<IDirect3DVertexBuffer8> previousVertexBuffer;
+	UINT streamNumber;
+	UINT previousStride;
+
+	ScopedStreamSource(UINT inStreamNumber, IDirect3DVertexBuffer8* vertexBuffer, UINT stride)
+		: streamNumber(inStreamNumber)
+	{
+		g_pd3dDevice->GetStreamSource(streamNumber, &previousVertexBuffer, &previousStride);
+		g_pd3dDevice->SetStreamSource(streamNumber, vertexBuffer, stride);
+	}
+
+	ScopedStreamSource(UINT inStreamNumber)
+		: streamNumber(inStreamNumber)
+	{
+		g_pd3dDevice->GetStreamSource(streamNumber, &previousVertexBuffer, &previousStride);
+	}
+
+	~ScopedStreamSource()
+	{
+		g_pd3dDevice->SetStreamSource(streamNumber, previousVertexBuffer.Get(), previousStride);
+	}
+};
+
+struct ScopedVS
+{
+	DWORD previousVertexShader;
+
+	ScopedVS(DWORD vertexShader)
+	{
+		g_pd3dDevice->GetVertexShader(&previousVertexShader);
+		g_pd3dDevice->SetVertexShader(vertexShader);
+	}
+
+	ScopedVS()
+	{
+		g_pd3dDevice->GetVertexShader(&previousVertexShader);
+	}
+
+	~ScopedVS()
+	{
+		g_pd3dDevice->SetVertexShader(previousVertexShader);
+	}
+};
+
+struct ScopedPS
+{
+	DWORD previousPixelShader;
+
+	ScopedPS(DWORD pixelShader)
+	{
+		g_pd3dDevice->GetVertexShader(&previousPixelShader);
+		g_pd3dDevice->SetVertexShader(pixelShader);
+	}
+
+	ScopedPS()
+	{
+		g_pd3dDevice->GetVertexShader(&previousPixelShader);
+	}
+
+	~ScopedPS()
+	{
+		g_pd3dDevice->SetVertexShader(previousPixelShader);
+	}
+};
+
+struct ScopedIndices
+{
+	ComPtr<IDirect3DIndexBuffer8> previousIndexBuffer;
+	UINT previousOffset;
+
+	ScopedIndices(IDirect3DIndexBuffer8* indices, UINT offset)
+	{
+		g_pd3dDevice->GetIndices(&previousIndexBuffer, &previousOffset);
+		g_pd3dDevice->SetIndices(indices, offset);
+	}
+
+	ScopedIndices()
+	{
+		g_pd3dDevice->GetIndices(&previousIndexBuffer, &previousOffset);
+	}
+
+	~ScopedIndices()
+	{
+		g_pd3dDevice->SetIndices(previousIndexBuffer.Get(), previousOffset);
+	}
+};
+
 } // end of anonymous namespace
 
 // This is the main rendering function that you have to implement and provide to ImGui (via setting up 'RenderDrawListsFn' in the ImGuiIO structure)
@@ -204,13 +293,15 @@ void ImGui_ImplDX8_RenderDrawLists(ImDrawData* drawData)
 	}
 	g_pVB->Unlock();
 	g_pIB->Unlock();
-	g_pd3dDevice->SetStreamSource(0, g_pVB, sizeof(CUSTOMVERTEX));
+
+	ScopedStreamSource scopedStreamSource(0, g_pVB, sizeof(CUSTOMVERTEX));
+	ScopedIndices scopedIndices;
 
 	// SetFVF() equivalent for D3D8
-	g_pd3dDevice->SetVertexShader(CUSTOMVERTEX::FVF);
+	ScopedVS scopedVS(CUSTOMVERTEX::FVF);
 
 	// Setup render state: fixed-pipeline, alpha-blending, no face culling, no depth testing
-	g_pd3dDevice->SetPixelShader(NULL);
+	ScopedPS scopedPS(0);
 
 	ScopedRS scopedRenderStates[] =
 	{
