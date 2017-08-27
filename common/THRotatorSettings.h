@@ -54,7 +54,6 @@ struct THRotatorSetting
 	int yOffset;
 	bool bVisible;
 	bool bVerticallyLongWindow;
-	bool bModalEditorPreferred;
 	RotationAngle rotationAngle;
 	D3DTEXTUREFILTERTYPE filterType;
 
@@ -65,7 +64,6 @@ struct THRotatorSetting
 		, yOffset(0)
 		, bVisible(false)
 		, bVerticallyLongWindow(false)
-		, bModalEditorPreferred(false)
 		, rotationAngle(Rotation_0)
 		, filterType(D3DTEXF_LINEAR)
 	{

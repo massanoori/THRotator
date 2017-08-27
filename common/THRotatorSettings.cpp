@@ -226,7 +226,6 @@ void from_json(const BasicJsonType& j, THRotatorSetting& setting)
 	ReadJsonObjectValueKeepOnFailure(j, "y_offset", setting.yOffset);
 	ReadJsonObjectValueKeepOnFailure(j, "window_visible", setting.bVisible);
 	ReadJsonObjectValueKeepOnFailure(j, "vertical_window", setting.bVerticallyLongWindow);
-	ReadJsonObjectValueKeepOnFailure(j, "use_modal_editor", setting.bModalEditorPreferred);
 	ReadJsonObjectValueKeepOnFailure(j, "rotation_angle", setting.rotationAngle);
 	ReadJsonObjectValueKeepOnFailure(j, "fileter_type", setting.filterType);
 
@@ -271,7 +270,6 @@ void to_json(BasicJsonType& j, const THRotatorSetting& setting)
 	j["vertical_window"] = setting.bVerticallyLongWindow;
 	j["fileter_type"] = setting.filterType;
 	j["rotation_angle"] = setting.rotationAngle;
-	j["use_modal_editor"] = setting.bModalEditorPreferred;
 
 	nlohmann::json rectsArray(nlohmann::json::value_t::array);
 

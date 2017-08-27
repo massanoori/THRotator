@@ -78,25 +78,7 @@ public:
 private:
 	THRotatorEditorContext(HWND hTouhouWin);
 
-	/**
-	 * Set visibility of editor window.
-	 * Don't call this function when the editor window is modal.
-	 */
-	void SetEditorWindowVisibility(bool bVisible);
-
-	void InitRectanglesListView(HWND hLV);
-
-	bool ApplyChangeFromEditorWindow(HWND hWnd);
-	bool ApplyChangeFromEditorWindow()
-	{
-		return ApplyChangeFromEditorWindow(m_hEditorWin);
-	}
-
-	void ApplyRotationToEditorWindow(HWND hWnd) const;
-	void ApplyRotationToEditorWindow() const
-	{
-		ApplyRotationToEditorWindow(m_hEditorWin);
-	}
+	void UpdateVisibilitySwitchMenuText();
 
 	/**
 	 * non-const since SaveSettings() updates error message.
@@ -108,14 +90,6 @@ private:
 	void SetVerticallyLongWindow(bool bVerticallyLongWindow);
 
 	static LRESULT CALLBACK MessageHookProc(int nCode, WPARAM wParam, LPARAM lParam);
-	static BOOL CALLBACK MainDialogProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-	static BOOL CALLBACK EditRectDialogProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-
-	/**
-	 * If dialog is for new rect, pass m_editedRectTransfers.cend() to editedRectTransfer.
-	 */
-	bool OpenEditRectDialog(RectTransferData& inoutRectTransfer,
-		std::vector<RectTransferData>::const_iterator editedRectTransfer) const;
 
 	void SetNewErrorMessage(std::basic_string<TCHAR>&& message);
 
@@ -128,7 +102,7 @@ private:
 	int m_yOffset;
 	int m_judgeThreshold;
 	int m_judgeCount, m_judgeCountPrev;
-	bool m_bVisible;
+	bool m_bEditorShownInitially;
 	bool m_bVerticallyLongWindow;
 	RotationAngle m_rotationAngle;
 	std::vector<RectTransferData> m_editedRectTransfers, m_currentRectTransfers;
@@ -155,10 +129,7 @@ private:
 	****************************************/
 
 	HMENU m_hSysMenu;
-	HWND m_hEditorWin, m_hTouhouWin;
-	bool m_bModalEditorPreferred;
-	bool m_bNeedModalEditor;
-	int m_modalEditorWindowPosX, m_modalEditorWindowPosY;
+	HWND m_hTouhouWin;
 	UINT m_insertedMenuSeparatorID;
 	SIZE m_originalTouhouClientSize;
 	SIZE m_modifiedTouhouClientSize;
