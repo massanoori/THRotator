@@ -749,7 +749,10 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 
 	if (ImGui::BeginPopupModal(labelAboutTHRotator.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize))
 	{
-		ImGui::Text(fmt::format("THRotator {}", THROTATOR_VERSION_STRING).c_str());
+		static std::string versionInfoString = fmt::format("THRotator {} for Direct3D {}",
+			THROTATOR_VERSION_STRING, DIRECT3D_VERSION >> 8);
+
+		ImGui::Text(versionInfoString.c_str());
 		ImGui::Text("\xC2\xA9 2017 massanoori."); // "(c) 2017 massanoori."
 		if (ImGui::Button("OK"))
 		{
