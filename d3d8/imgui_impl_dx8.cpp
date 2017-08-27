@@ -286,10 +286,10 @@ void ImGui_ImplDX8_RenderDrawLists(ImDrawData* draw_data)
 				const float T = 0.5f + viewport.Y, B = viewport.Height + 0.5f + viewport.Y;
 				D3DMATRIX mat_projection =
 				{
-					2.0f / (R - L),    0.0f,              0.0f,  0.0f,
-					0.0f,              2.0f / (T - B),    0.0f,  0.0f,
-					0.0f,              0.0f,              0.5f,  0.0f,
-					(L + R) / (L - R), (T + B) / (B - T), 0.5f,  1.0f,
+					2.0f / (R - L),    0.0f,              0.0f, 0.0f,
+					0.0f,              2.0f / (T - B),    0.0f, 0.0f,
+					0.0f,              0.0f,              0.5f, 0.0f,
+					(L + R) / (L - R), (T + B) / (B - T), 0.5f, 1.0f,
 				};
 
 				g_pd3dDevice->SetTransform(D3DTS_PROJECTION, &mat_projection);

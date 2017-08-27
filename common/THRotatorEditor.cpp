@@ -668,7 +668,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 			addedRect.name = std::move(newName);
 			addedRect.sourceSize.cx = addedRect.sourceSize.cy = 10;
 			addedRect.destSize.cx = addedRect.destSize.cy = 10;
-			m_GuiContext.selectedRectIndex = static_cast<int>(m_rectTransfers.size() - 1);
+			m_GuiContext.selectedRectIndex = static_cast<int>(m_rectTransfers.size()) - 1;
 		}
 
 		if (m_GuiContext.selectedRectIndex >= 0)
@@ -695,7 +695,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 			ImGui::SameLine();
 
 			if (ImGui::Button(u8"Å´")
-				&& m_GuiContext.selectedRectIndex < static_cast<int>(m_rectTransfers.size() - 1))
+				&& m_GuiContext.selectedRectIndex < static_cast<int>(m_rectTransfers.size()) - 1)
 			{
 				int newItemPosition = m_GuiContext.selectedRectIndex + 1;
 				std::swap(m_rectTransfers[m_GuiContext.selectedRectIndex],
