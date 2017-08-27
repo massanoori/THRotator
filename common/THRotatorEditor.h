@@ -94,7 +94,7 @@ private:
 
 	static LRESULT CALLBACK MessageHookProc(int nCode, WPARAM wParam, LPARAM lParam);
 
-	void SetNewErrorMessage(std::string&& message, int timeToLiveInSeconds = 8);
+	void SetNewErrorMessage(const std::string& message, int timeToLiveInSeconds = 8);
 
 	/****************************************
 	* THRotator parameters

@@ -120,6 +120,8 @@ static ImWchar baseUnicodeRanges[] =
 	0x3000, 0x30FF, // Punctuations, Hiragana, Katakana
 	0x31F0, 0x31FF, // Katakana Phonetic Extensions
 	0xFF00, 0xFFEF, // Half-width characters
+	0x2191, 0x2191, // Upwards arrow
+	0x2193, 0x2193, // Downwards arrow
 };
 
 }

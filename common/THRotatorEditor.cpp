@@ -22,7 +22,7 @@
 namespace
 {
 
-LPCTSTR THROTATOR_VERSION_STRING = _T("1.3.1");
+const char* THROTATOR_VERSION_STRING = "1.4.0-devel";
 
 HHOOK ms_hHook;
 std::map<HWND, std::weak_ptr<THRotatorEditorContext>> ms_touhouWinToContext;
@@ -228,14 +228,14 @@ void THRotatorEditorContext::UpdateVisibilitySwitchMenuText()
 	SetMenuItemInfo(m_hSysMenu, ms_switchVisibilityID, FALSE, &mi);
 }
 
-void THRotatorEditorContext::SetNewErrorMessage(std::string&& message, int timeToLiveInSeconds)
+void THRotatorEditorContext::SetNewErrorMessage(const std::string& message, int timeToLiveInSeconds)
 {
 	LARGE_INTEGER frequency;
 	::QueryPerformanceFrequency(&frequency);
 	::QueryPerformanceCounter(&m_errorMessageExpirationClock);
 
 	m_errorMessageExpirationClock.QuadPart += frequency.QuadPart * timeToLiveInSeconds;
-	m_errorMessage = std::move(message);
+	m_errorMessage = message;
 }
 
 bool THRotatorEditorContext::SaveSettings()
@@ -369,10 +369,8 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 						}
 						else
 						{
-							context->SetNewErrorMessage(
-								"THRotator failed to load configuration file last time.\n"
-								"To prevent unintentional loss of data, THRotator has cancelled to overwrite the configuration file.\n"
-								"To overwrite anyway, open THRotator window by Alt+R and press 'Save'.", 20);
+							static std::string messageLossOfDataPrevention = LoadTHRotatorStringUtf8(g_hModule, IDS_LOSS_OF_DATA_PREVENTED);
+							context->SetNewErrorMessage(messageLossOfDataPrevention.c_str(), 20);
 						}
 					}
 					break;
@@ -423,9 +421,11 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 
 	if (errorMessagePtr)
 	{
-		ImGui::OpenPopup("ErrorMessage");
-		if (ImGui::BeginPopupModal("ErrorMessage", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+		ImGui::OpenPopup("Error message");
+		if (ImGui::BeginPopupModal("Error message", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
 		{
+			static std::string labelThisWindowClosesInSeconds = LoadTHRotatorStringUtf8(g_hModule, IDS_WINDOW_CLOSES_IN_SECONDS);
+
 			LARGE_INTEGER currentClock, clockFrequency;
 			QueryPerformanceCounter(&currentClock);
 			QueryPerformanceFrequency(&clockFrequency);
@@ -433,7 +433,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 			auto durationInClock = m_errorMessageExpirationClock.QuadPart - currentClock.QuadPart;
 
 			ImGui::Text(errorMessagePtr);
-			ImGui::Text(fmt::format("This window closes in {} second(s).",
+			ImGui::Text(fmt::format(labelThisWindowClosesInSeconds.c_str(),
 				durationInClock / clockFrequency.QuadPart + 1).c_str());
 			if (ImGui::Button("OK"))
 			{
@@ -477,22 +477,30 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 
 	bool bPreviousVerticalWindow = m_bVerticallyLongWindow;
 	{
-		ImGui::Checkbox("Vertical window", &m_bVerticallyLongWindow);
+		static std::string labelVerticalWindow = LoadTHRotatorStringUtf8(g_hModule, IDS_VERTICAL_WINDOW);
+		ImGui::Checkbox(labelVerticalWindow.c_str(), &m_bVerticallyLongWindow);
 	}
 
 	{
-		ImGui::Checkbox("Show THRotator first", &m_bEditorShownInitially);
-		ImGui::Checkbox("Force HUD rearrangements", &m_bHUDRearrangeForced);
+		static std::string labelShowFirst = LoadTHRotatorStringUtf8(g_hModule, IDS_SHOW_THROTATOR_FIRST);
+		static std::string labelForceRearrangement = LoadTHRotatorStringUtf8(g_hModule, IDS_FORCE_REARRANGEMENTS);
+
+		ImGui::Checkbox(labelShowFirst.c_str(), &m_bEditorShownInitially);
+		ImGui::Checkbox(labelForceRearrangement.c_str(), &m_bHUDRearrangeForced);
 	}
 
-	if (ImGui::CollapsingHeader("Gameplay detection"))
+	static std::string labelGameplayDetection = LoadTHRotatorStringUtf8(g_hModule, IDS_GAMEPLAY_DETECTION);
+	if (ImGui::CollapsingHeader(labelGameplayDetection.c_str()))
 	{
+		static std::string labelSetVPCount = LoadTHRotatorStringUtf8(g_hModule, IDS_SET_VP_COUNT);
+		static std::string labelThreshold = LoadTHRotatorStringUtf8(g_hModule, IDS_THRESHOLD);
+
 		const std::string currentSetVPCountText = fmt::format("{}", m_judgeCountPrev).c_str();
-		ImGui::InputText("SetViewport() count",
+		ImGui::InputText(labelSetVPCount.c_str(),
 			const_cast<char*>(currentSetVPCountText.c_str()), currentSetVPCountText.length(),
 			ImGuiInputTextFlags_ReadOnly);
 
-		ImGui::InputInt("Threshold", &m_judgeThreshold);
+		ImGui::InputInt(labelThreshold.c_str(), &m_judgeThreshold);
 
 		if (m_judgeThreshold < 0)
 		{
@@ -505,10 +513,15 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		}
 	}
 
-	if (ImGui::CollapsingHeader("Main screen region"))
+	static std::string labelMainScreenRegion = LoadTHRotatorStringUtf8(g_hModule, IDS_MAIN_SCREEN_REGION);
+	if (ImGui::CollapsingHeader(labelMainScreenRegion.c_str()))
 	{
+		static std::string labelLeftAndTop = LoadTHRotatorStringUtf8(g_hModule, IDS_LEFT_AND_TOP);
+		static std::string labelWidthAndHeight = LoadTHRotatorStringUtf8(g_hModule, IDS_WIDTH_AND_HEIGHT);
+		static std::string labelYOffset = LoadTHRotatorStringUtf8(g_hModule, IDS_Y_OFFSET);
+
 		int leftAndTop[] = { m_mainScreenTopLeft.x, m_mainScreenTopLeft.y };
-		ImGui::InputInt2("Left and Top", leftAndTop);
+		ImGui::InputInt2(labelLeftAndTop.c_str(), leftAndTop);
 
 		leftAndTop[0] = (std::max)(0, (std::min)(leftAndTop[0], 999));
 		leftAndTop[1] = (std::max)(0, (std::min)(leftAndTop[1], 999));
@@ -517,7 +530,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		m_mainScreenTopLeft.y = leftAndTop[1];
 
 		int widthAndHeight[] = { m_mainScreenSize.cx, m_mainScreenSize.cy };
-		ImGui::InputInt2("Width and Height", widthAndHeight);
+		ImGui::InputInt2(labelWidthAndHeight.c_str(), widthAndHeight);
 
 		widthAndHeight[0] = (std::max)(0, (std::min)(widthAndHeight[0], 999));
 		widthAndHeight[1] = (std::max)(0, (std::min)(widthAndHeight[1], 999));
@@ -525,21 +538,31 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		m_mainScreenSize.cx = widthAndHeight[0];
 		m_mainScreenSize.cy = widthAndHeight[1];
 
-		ImGui::InputInt("Y offset", &m_yOffset);
+		ImGui::InputInt(labelYOffset.c_str(), &m_yOffset);
 	}
 
-	if (ImGui::CollapsingHeader("Pixel interpolation"))
+	static std::string labelPixelInterpolation = LoadTHRotatorStringUtf8(g_hModule, IDS_PIXEL_INTERPOLATION);
+	if (ImGui::CollapsingHeader(labelPixelInterpolation.c_str()))
 	{
+		static std::string labelFilterNone = LoadTHRotatorStringUtf8(g_hModule, IDS_FILTER_NONE);
+		static std::string labelFilterBilinear = LoadTHRotatorStringUtf8(g_hModule, IDS_FILTER_BILINEAR);
+
 		std::underlying_type<D3DTEXTUREFILTERTYPE>::type rawFilterType = m_filterType;
 		ImGui::PushID("PixelInterpolationSelection");
-		ImGui::RadioButton("None", &rawFilterType, D3DTEXF_NONE); ImGui::SameLine();
-		ImGui::RadioButton("Bilinear", &rawFilterType, D3DTEXF_LINEAR);
+		ImGui::RadioButton(labelFilterNone.c_str(), &rawFilterType, D3DTEXF_NONE); ImGui::SameLine();
+		ImGui::RadioButton(labelFilterBilinear.c_str(), &rawFilterType, D3DTEXF_LINEAR);
 		ImGui::PopID();
 		m_filterType = static_cast<D3DTEXTUREFILTERTYPE>(rawFilterType);
 	}
 
-	if (ImGui::CollapsingHeader("Other rectangles"))
+	static std::string labelOtherRectangles = LoadTHRotatorStringUtf8(g_hModule, IDS_OTHER_RECTANGLES);
+	if (ImGui::CollapsingHeader(labelOtherRectangles.c_str()))
 	{
+		static std::string labelSourceLeftAndTop = LoadTHRotatorStringUtf8(g_hModule, IDS_SOURCE_LEFT_AND_TOP);
+		static std::string labelSourceWidthAndHeight = LoadTHRotatorStringUtf8(g_hModule, IDS_SOURCE_WIDTH_AND_HEIGHT);
+		static std::string labelDestLeftAndTop = LoadTHRotatorStringUtf8(g_hModule, IDS_DEST_LEFT_AND_TOP);
+		static std::string labelDestWidthAndHeight = LoadTHRotatorStringUtf8(g_hModule, IDS_DEST_WIDTH_AND_HEIGHT);
+
 		RectTransferData dummyRectForNoRect;
 
 		m_GuiContext.selectedRectIndex = (std::min)(m_GuiContext.selectedRectIndex,
@@ -548,9 +571,11 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 			m_rectTransfers[m_GuiContext.selectedRectIndex] : dummyRectForNoRect;
 
 		{
+			static std::string labelRectName = LoadTHRotatorStringUtf8(g_hModule, IDS_RECT_NAME);
+
 			char nameEditBuffer[128];
 			strcpy_s(nameEditBuffer, selectedRectTransfer.name.c_str());
-			ImGui::InputText("Name", nameEditBuffer, _countof(nameEditBuffer),
+			ImGui::InputText(labelRectName.c_str(), nameEditBuffer, _countof(nameEditBuffer),
 				m_GuiContext.selectedRectIndex >= 0 ? 0 : ImGuiInputTextFlags_ReadOnly);
 			selectedRectTransfer.name = nameEditBuffer;
 		}
@@ -561,7 +586,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 			selectedRectTransfer.sourcePosition.y,
 		};
 
-		ImGui::InputInt2("Src Left and Top", srcLeftAndTop,
+		ImGui::InputInt2(labelSourceLeftAndTop.c_str(), srcLeftAndTop,
 			m_GuiContext.selectedRectIndex >= 0 ? 0 : ImGuiInputTextFlags_ReadOnly);
 
 		selectedRectTransfer.sourcePosition.x = srcLeftAndTop[0];
@@ -573,7 +598,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 			selectedRectTransfer.sourceSize.cy,
 		};
 
-		ImGui::InputInt2("Src Width and Height", srcWidthAndHeight,
+		ImGui::InputInt2(labelSourceWidthAndHeight.c_str(), srcWidthAndHeight,
 			m_GuiContext.selectedRectIndex >= 0 ? 0 : ImGuiInputTextFlags_ReadOnly);
 
 		selectedRectTransfer.sourceSize.cx = srcWidthAndHeight[0];
@@ -585,7 +610,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 			selectedRectTransfer.destPosition.y,
 		};
 
-		ImGui::InputInt2("Dst Left and Top", dstLeftAndTop,
+		ImGui::InputInt2(labelDestLeftAndTop.c_str(), dstLeftAndTop,
 			m_GuiContext.selectedRectIndex >= 0 ? 0 : ImGuiInputTextFlags_ReadOnly);
 
 		selectedRectTransfer.destPosition.x = dstLeftAndTop[0];
@@ -597,7 +622,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 			selectedRectTransfer.destSize.cy,
 		};
 
-		ImGui::InputInt2("Dst Width and Height", dstWidthAndHeight,
+		ImGui::InputInt2(labelDestWidthAndHeight.c_str(), dstWidthAndHeight,
 			m_GuiContext.selectedRectIndex >= 0 ? 0 : ImGuiInputTextFlags_ReadOnly);
 
 		selectedRectTransfer.destSize.cx = dstWidthAndHeight[0];
@@ -612,7 +637,10 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		ImGui::PopID();
 		selectedRectTransfer.rotation = static_cast<RotationAngle>(rotationAngle);
 
-		if (ImGui::Button("Add"))
+		static std::string labelAdd = LoadTHRotatorStringUtf8(g_hModule, IDS_ADD);
+		static std::string labelDelete = LoadTHRotatorStringUtf8(g_hModule, IDS_DELETE);
+
+		if (ImGui::Button(labelAdd.c_str()))
 		{
 			int newNameSuffix = 1;
 			std::string newName;
@@ -647,7 +675,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		{
 			ImGui::SameLine();
 
-			if (ImGui::Button("Delete"))
+			if (ImGui::Button(labelDelete.c_str()))
 			{
 				m_rectTransfers.erase(m_rectTransfers.begin() + m_GuiContext.selectedRectIndex);
 				m_GuiContext.selectedRectIndex = (std::min)(m_GuiContext.selectedRectIndex,
@@ -656,7 +684,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 
 			ImGui::SameLine();
 
-			if (ImGui::Button("Up") && m_GuiContext.selectedRectIndex > 0)
+			if (ImGui::Button(u8"Å™") && m_GuiContext.selectedRectIndex > 0)
 			{
 				int newItemPosition = m_GuiContext.selectedRectIndex - 1;
 				std::swap(m_rectTransfers[m_GuiContext.selectedRectIndex],
@@ -666,7 +694,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 
 			ImGui::SameLine();
 
-			if (ImGui::Button("Down")
+			if (ImGui::Button(u8"Å´")
 				&& m_GuiContext.selectedRectIndex < static_cast<int>(m_rectTransfers.size() - 1))
 			{
 				int newItemPosition = m_GuiContext.selectedRectIndex + 1;
@@ -686,19 +714,26 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 			m_GuiContext.rectListBoxItemBuffer[rectIndex] = m_rectTransfers[rectIndex].name.c_str();
 		}
 
-		ImGui::ListBox("Rectangle list", &m_GuiContext.selectedRectIndex,
+		static std::string labelRectList = LoadTHRotatorStringUtf8(g_hModule, IDS_RECT_LIST);
+
+		ImGui::ListBox(labelRectList.c_str(), &m_GuiContext.selectedRectIndex,
 			m_GuiContext.rectListBoxItemBuffer.data(),
 			m_GuiContext.rectListBoxItemBuffer.size(), 4);
 	}
 
-	if (ImGui::Button("Reload"))
+	static std::string labelReload = LoadTHRotatorStringUtf8(g_hModule, IDS_RELOAD);
+	static std::string labelSave = LoadTHRotatorStringUtf8(g_hModule, IDS_SAVE);
+	static std::string labelAbout = LoadTHRotatorStringUtf8(g_hModule, IDS_ABOUT);
+	static std::string labelAboutTHRotator = LoadTHRotatorStringUtf8(g_hModule, IDS_ABOUT_THROTATOR);
+
+	if (ImGui::Button(labelReload.c_str()))
 	{
 		LoadSettings();
 	}
 
 	ImGui::SameLine();
 
-	if (ImGui::Button("Save"))
+	if (ImGui::Button(labelSave.c_str()))
 	{
 		SaveSettings();
 		m_bSaveBySysKeyAllowed = true;
@@ -706,14 +741,14 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 
 	ImGui::SameLine();
 	
-	if (ImGui::Button("About"))
+	if (ImGui::Button(labelAbout.c_str()))
 	{
-		ImGui::OpenPopup("About THRotator");
+		ImGui::OpenPopup(labelAboutTHRotator.c_str());
 	}
 
-	if (ImGui::BeginPopupModal("About THRotator", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+	if (ImGui::BeginPopupModal(labelAboutTHRotator.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize))
 	{
-		ImGui::Text(fmt::format("THRotator {}", "1.4.0-devel").c_str());
+		ImGui::Text(fmt::format("THRotator {}", THROTATOR_VERSION_STRING).c_str());
 		ImGui::Text(u8"\xa9 2017 massanoori.");
 		if (ImGui::Button("OK"))
 		{
