@@ -67,7 +67,13 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 	double touhouSeriesNumber = GetTouhouSeriesNumber();
 
 	OutputLogMessagef(LogSeverity::Info, "Initializing THRotatorEditorContext");
-	LoadSettings();
+	
+	if (!LoadSettings())
+	{
+		// If initial load failed, use default setting
+		ApplySetting(THRotatorSetting());
+	}
+
 	m_bEditorShown = m_bEditorShownInitially;
 
 	// Modify menu
@@ -234,18 +240,10 @@ void THRotatorEditorContext::SetNewErrorMessage(std::string&& message)
 
 bool THRotatorEditorContext::SaveSettings()
 {
-	THRotatorSetting settings;
-	settings.judgeThreshold = m_judgeThreshold;
-	settings.mainScreenTopLeft = m_mainScreenTopLeft;
-	settings.mainScreenSize = m_mainScreenSize;
-	settings.yOffset = m_yOffset;
-	settings.bVisible = m_bEditorShownInitially;
-	settings.bVerticallyLongWindow = m_bVerticallyLongWindow;
-	settings.filterType = m_filterType;
-	settings.rotationAngle = m_rotationAngle;
-	settings.rectTransfers = m_rectTransfers;
+	THRotatorSetting setting;
+	RetrieveSetting(setting);
 
-	bool bSaveSuccess = THRotatorSetting::Save(settings);
+	bool bSaveSuccess = THRotatorSetting::Save(setting);
 
 	if (!bSaveSuccess)
 	{
@@ -266,18 +264,6 @@ bool THRotatorEditorContext::LoadSettings()
 	THRotatorFormatVersion formatVersion;
 
 	bool bLoadSuccess = THRotatorSetting::Load(setting, formatVersion);
-
-	m_judgeThreshold = setting.judgeThreshold;
-	m_mainScreenTopLeft = setting.mainScreenTopLeft;
-	m_mainScreenSize = setting.mainScreenSize;
-	m_yOffset = setting.yOffset;
-	m_bEditorShownInitially = setting.bVisible;
-	m_bVerticallyLongWindow = setting.bVerticallyLongWindow;
-	m_rotationAngle = setting.rotationAngle;
-	m_filterType = setting.filterType;
-
-	m_rectTransfers = std::move(setting.rectTransfers);
-
 	if (!bLoadSuccess)
 	{
 		OutputLogMessagef(LogSeverity::Error, "Failed to load");
@@ -302,11 +288,13 @@ bool THRotatorEditorContext::LoadSettings()
 			 * on Touhou 6 and 7.
 			 * Format migration is a chance to fix the wrong value by incrementing by 1.
 			 */
-			m_judgeThreshold++;
+			setting.judgeThreshold++;
 
 			OutputLogMessagef(LogSeverity::Info, "Threshold has been converted");
 		}
 	}
+
+	ApplySetting(setting);
 
 	return true;
 }
@@ -781,4 +769,31 @@ void THRotatorEditorContext::UpdateWindowResolution(int requestedWidth, int requ
 	OutputLogMessagef(LogSeverity::Info, "Tried to update window client size to {0}x{1}", newWidth, newHeight);
 	OutputLogMessagef(LogSeverity::Info, "Result of updating window client size: {0}x{1}",
 		m_modifiedTouhouClientSize.cx, m_modifiedTouhouClientSize.cy);
+}
+
+void THRotatorEditorContext::ApplySetting(const THRotatorSetting& setting)
+{
+	m_judgeThreshold = setting.judgeThreshold;
+	m_mainScreenTopLeft = setting.mainScreenTopLeft;
+	m_mainScreenSize = setting.mainScreenSize;
+	m_yOffset = setting.yOffset;
+	m_bEditorShownInitially = setting.bVisible;
+	m_bVerticallyLongWindow = setting.bVerticallyLongWindow;
+	m_rotationAngle = setting.rotationAngle;
+	m_filterType = setting.filterType;
+
+	m_rectTransfers = setting.rectTransfers;
+}
+
+void THRotatorEditorContext::RetrieveSetting(THRotatorSetting& setting) const
+{
+	setting.judgeThreshold = m_judgeThreshold;
+	setting.mainScreenTopLeft = m_mainScreenTopLeft;
+	setting.mainScreenSize = m_mainScreenSize;
+	setting.yOffset = m_yOffset;
+	setting.bVisible = m_bEditorShownInitially;
+	setting.bVerticallyLongWindow = m_bVerticallyLongWindow;
+	setting.filterType = m_filterType;
+	setting.rotationAngle = m_rotationAngle;
+	setting.rectTransfers = m_rectTransfers;
 }

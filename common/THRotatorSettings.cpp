@@ -46,19 +46,6 @@ void ReadJsonObjectValue(const nlohmann::json& j, const std::string& key, T& out
 	}
 }
 
-template <typename T>
-void ReadJsonObjectValueKeepOnFailure(const nlohmann::json& j, const std::string& key, T& out)
-{
-	try
-	{
-		ReadJsonObjectValue(j, key, out);
-	}
-	catch (const std::logic_error& e)
-	{
-		OutputLogMessage(LogSeverity::Error, e.what());
-	}
-}
-
 std::string GenerateIniAppName()
 {
 	return ConvertFromUnicodeToSjis(std::wstring(L"THRotator_") + GetTouhouExecutableFilename().stem().generic_wstring());
@@ -216,18 +203,18 @@ void from_json(const BasicJsonType& j, THRotatorSetting& setting)
 
 	// used for migration
 	THRotatorFormatVersion formatVersion;
-	ReadJsonObjectValueKeepOnFailure(j, "format_version", formatVersion);
+	ReadJsonObjectValue(j, "format_version", formatVersion);
 
-	ReadJsonObjectValueKeepOnFailure(j, "judge_threshold", setting.judgeThreshold);
-	ReadJsonObjectValueKeepOnFailure(j, "main_screen_left", setting.mainScreenTopLeft.x);
-	ReadJsonObjectValueKeepOnFailure(j, "main_screen_top", setting.mainScreenTopLeft.y);
-	ReadJsonObjectValueKeepOnFailure(j, "main_screen_width", setting.mainScreenSize.cx);
-	ReadJsonObjectValueKeepOnFailure(j, "main_screen_height", setting.mainScreenSize.cy);
-	ReadJsonObjectValueKeepOnFailure(j, "y_offset", setting.yOffset);
-	ReadJsonObjectValueKeepOnFailure(j, "window_visible", setting.bVisible);
-	ReadJsonObjectValueKeepOnFailure(j, "vertical_window", setting.bVerticallyLongWindow);
-	ReadJsonObjectValueKeepOnFailure(j, "rotation_angle", setting.rotationAngle);
-	ReadJsonObjectValueKeepOnFailure(j, "fileter_type", setting.filterType);
+	ReadJsonObjectValue(j, "judge_threshold", setting.judgeThreshold);
+	ReadJsonObjectValue(j, "main_screen_left", setting.mainScreenTopLeft.x);
+	ReadJsonObjectValue(j, "main_screen_top", setting.mainScreenTopLeft.y);
+	ReadJsonObjectValue(j, "main_screen_width", setting.mainScreenSize.cx);
+	ReadJsonObjectValue(j, "main_screen_height", setting.mainScreenSize.cy);
+	ReadJsonObjectValue(j, "y_offset", setting.yOffset);
+	ReadJsonObjectValue(j, "window_visible", setting.bVisible);
+	ReadJsonObjectValue(j, "vertical_window", setting.bVerticallyLongWindow);
+	ReadJsonObjectValue(j, "rotation_angle", setting.rotationAngle);
+	ReadJsonObjectValue(j, "fileter_type", setting.filterType);
 
 	auto rectsItr = j.find("rects");
 	if (rectsItr == j.end() || !rectsItr->is_array())
@@ -242,15 +229,8 @@ void from_json(const BasicJsonType& j, THRotatorSetting& setting)
 	int currentRectIndex = 0;
 	for (const auto& rectObject : rectsObject)
 	{
-		try
-		{
-			RectTransferData rectData = rectObject;
-			setting.rectTransfers.push_back(rectData);
-		}
-		catch (const std::logic_error& e)
-		{
-			OutputLogMessagef(LogSeverity::Error, "Failed to load 'rects[{0}]' ({1})", currentRectIndex, e.what());
-		}
+		RectTransferData rectData = rectObject;
+		setting.rectTransfers.push_back(rectData);
 
 		currentRectIndex++;
 	}
@@ -391,7 +371,7 @@ void THRotatorSetting::LoadJsonFormat(THRotatorSetting& outSetting,
 
 	ifs >> loadedJson;
 
-	ReadJsonObjectValueKeepOnFailure(loadedJson, "format_version", importedFormatVersion);
+	ReadJsonObjectValue(loadedJson, "format_version", importedFormatVersion);
 
 	outSetting = loadedJson;
 }
@@ -403,16 +383,16 @@ bool THRotatorSetting::Load(THRotatorSetting& outSetting,
 	{
 		THRotatorSetting::LoadJsonFormat(outSetting, importedFormatVersion);
 	}
-	catch (const std::invalid_argument& e)
-	{
-		OutputLogMessagef(LogSeverity::Error, "Json parse failed ({0})", e.what());
-		return false;
-	}
 	catch (const std::ios::failure&)
 	{
 		OutputLogMessagef(LogSeverity::Info, "Falling back to legacy format v1 loading");
 		THRotatorSetting::LoadIniFormat(outSetting);
 		importedFormatVersion = THRotatorFormatVersion::Version_1;
+	}
+	catch (const std::exception& e)
+	{
+		OutputLogMessagef(LogSeverity::Error, "Json parse failed ({0})", e.what());
+		return false;
 	}
 
 	return true;

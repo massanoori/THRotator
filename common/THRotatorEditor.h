@@ -73,6 +73,9 @@ public:
 	 */
 	void UpdateWindowResolution(int requestedWidth, int requestedHeight, UINT& outBackBufferWidth, UINT& outBackBufferHeight);
 
+	void ApplySetting(const THRotatorSetting& settings);
+	void RetrieveSetting(THRotatorSetting& setting) const;
+
 	~THRotatorEditorContext();
 
 private:
