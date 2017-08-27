@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 #include "THRotatorImGui.h"
+#include "THRotatorSystem.h"
 
 #ifdef TOUHOU_ON_D3D8
 #include "imgui_impl_dx8.h"
@@ -142,6 +143,8 @@ bool THRotatorImGui_Initialize(HWND hWnd, THRotatorImGui_D3DDeviceInterface* dev
 	};
 
 	ImGuiIO& io = ImGui::GetIO();
+	io.IniFilename = nullptr; // Don't save imgui.ini
+
 	for (const auto& fontSource : fontSources)
 	{
 		if (boost::filesystem::exists(fontSource.first))

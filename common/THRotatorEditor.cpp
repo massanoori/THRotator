@@ -454,7 +454,8 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		return;
 	}
 
-	if (!ImGui::Begin("THRotator"))
+	const ImVec2 initialTHRotatorWindowSize(320.0f, 0.0f);
+	if (!ImGui::Begin("THRotator", nullptr, initialTHRotatorWindowSize))
 	{
 		// Early out if the window is collapsed, as an optimization.
 		ImGui::End();
