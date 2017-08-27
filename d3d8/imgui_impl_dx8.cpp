@@ -353,22 +353,22 @@ void ImGui_ImplDX8_RenderDrawLists(ImDrawData* drawData)
 	viewport.MinZ = 0.0f;
 	viewport.MaxZ = 1.0f;
 
-	for (int n = 0; n < drawData->CmdListsCount; n++)
+	for (int commandListIndex = 0; commandListIndex < drawData->CmdListsCount; commandListIndex++)
 	{
-		const ImDrawList* drawCommandList = drawData->CmdLists[n];
-		for (int cmd_i = 0; cmd_i < drawCommandList->CmdBuffer.Size; cmd_i++)
+		const ImDrawList* drawCommandList = drawData->CmdLists[commandListIndex];
+		for (int commandIndex = 0; commandIndex < drawCommandList->CmdBuffer.Size; commandIndex++)
 		{
-			const ImDrawCmd* pcmd = &drawCommandList->CmdBuffer[cmd_i];
-			if (pcmd->UserCallback)
+			const ImDrawCmd* drawCommand = &drawCommandList->CmdBuffer[commandIndex];
+			if (drawCommand->UserCallback)
 			{
-				pcmd->UserCallback(drawCommandList, pcmd);
+				drawCommand->UserCallback(drawCommandList, drawCommand);
 			}
 			else
 			{
-				viewport.X = static_cast<DWORD>(pcmd->ClipRect.x);
-				viewport.Y = static_cast<DWORD>(pcmd->ClipRect.y);
-				viewport.Width = static_cast<DWORD>(pcmd->ClipRect.z - pcmd->ClipRect.x);
-				viewport.Height = static_cast<DWORD>(pcmd->ClipRect.w - pcmd->ClipRect.y);
+				viewport.X = static_cast<DWORD>(drawCommand->ClipRect.x);
+				viewport.Y = static_cast<DWORD>(drawCommand->ClipRect.y);
+				viewport.Width = static_cast<DWORD>(drawCommand->ClipRect.z - drawCommand->ClipRect.x);
+				viewport.Height = static_cast<DWORD>(drawCommand->ClipRect.w - drawCommand->ClipRect.y);
 				g_pd3dDevice->SetViewport(&viewport);
 
 				// Setup orthographic projection matrix
@@ -384,11 +384,12 @@ void ImGui_ImplDX8_RenderDrawLists(ImDrawData* drawData)
 				};
 
 				g_pd3dDevice->SetTransform(D3DTS_PROJECTION, &mat_projection);
-				g_pd3dDevice->SetTexture(0, (LPDIRECT3DTEXTURE8)pcmd->TextureId);
+				g_pd3dDevice->SetTexture(0, (LPDIRECT3DTEXTURE8)drawCommand->TextureId);
 				g_pd3dDevice->SetIndices(g_pIB, vertexBufferOffset);
-				g_pd3dDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, (UINT)drawCommandList->VtxBuffer.Size, indexBufferOffset, pcmd->ElemCount / 3);
+				g_pd3dDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, (UINT)drawCommandList->VtxBuffer.Size,
+					indexBufferOffset, drawCommand->ElemCount / 3);
 			}
-			indexBufferOffset += pcmd->ElemCount;
+			indexBufferOffset += drawCommand->ElemCount;
 		}
 		vertexBufferOffset += drawCommandList->VtxBuffer.Size;
 	}
