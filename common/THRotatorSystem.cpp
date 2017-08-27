@@ -4,6 +4,7 @@
 
 #include "THRotatorSystem.h"
 #include "THRotatorLog.h"
+#include "EncodingUtils.h"
 
 namespace
 {
@@ -53,8 +54,10 @@ public:
 			// or infinite recursion occurs.
 			bFirstCall = false;
 
-			OutputLogMessagef(LogSeverity::Info, L"Player data directory: {0}", touhouProcessStats.playerDataDir.generic_wstring());
-			OutputLogMessagef(LogSeverity::Info, L"Executable filename: {0}", touhouProcessStats.exeFilePath.generic_wstring());
+			OutputLogMessagef(LogSeverity::Info, "Player data directory: {0}",
+				ConvertFromUnicodeToUtf8(touhouProcessStats.playerDataDir.generic_wstring()));
+			OutputLogMessagef(LogSeverity::Info, "Executable filename: {0}",
+				ConvertFromUnicodeToUtf8(touhouProcessStats.exeFilePath.generic_wstring()));
 		}
 
 		return touhouProcessStats;

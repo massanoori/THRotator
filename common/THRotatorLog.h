@@ -10,10 +10,10 @@ enum class LogSeverity
 	Info,
 };
 
-void OutputLogMessage(LogSeverity severity, const std::wstring& message);
+void OutputLogMessage(LogSeverity severity, const std::string& message);
 
 template <typename... ArgsType>
-void OutputLogMessagef(LogSeverity severity, const std::wstring& format, ArgsType&&... args)
+void OutputLogMessagef(LogSeverity severity, const std::string& format, ArgsType&&... args)
 {
 	OutputLogMessage(severity, fmt::format(format, std::forward<ArgsType>(args)...));
 }

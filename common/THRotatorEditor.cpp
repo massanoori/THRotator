@@ -66,7 +66,7 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 
 	double touhouSeriesNumber = GetTouhouSeriesNumber();
 
-	OutputLogMessagef(LogSeverity::Info, L"Initializing THRotatorEditorContext");
+	OutputLogMessagef(LogSeverity::Info, "Initializing THRotatorEditorContext");
 	LoadSettings();
 	m_bEditorShown = m_bEditorShownInitially;
 
@@ -85,7 +85,7 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 	UpdateVisibilitySwitchMenuText();
 	m_bInitialized = true;
 
-	OutputLogMessagef(LogSeverity::Info, L"THRotatorEditorContext has been initialized");
+	OutputLogMessagef(LogSeverity::Info, "THRotatorEditorContext has been initialized");
 }
 
 std::shared_ptr<THRotatorEditorContext> THRotatorEditorContext::CreateOrGetEditorContext(HWND hTouhouWindow)
@@ -169,7 +169,7 @@ bool THRotatorEditorContext::ConsumeScreenCaptureRequest()
 	return true;
 }
 
-LPCTSTR THRotatorEditorContext::GetErrorMessage() const
+const char* THRotatorEditorContext::GetErrorMessage() const
 {
 	LARGE_INTEGER currentClock;
 	::QueryPerformanceCounter(&currentClock);
@@ -203,7 +203,7 @@ THRotatorEditorContext::~THRotatorEditorContext()
 		m_originalTouhouClientSize.cy + (windowRect.bottom - windowRect.top) - (clientRect.bottom - clientRect.top),
 		TRUE);
 
-	OutputLogMessagef(LogSeverity::Info, L"Destructing THRotatorEditorContext");
+	OutputLogMessagef(LogSeverity::Info, "Destructing THRotatorEditorContext");
 }
 
 void THRotatorEditorContext::UpdateVisibilitySwitchMenuText()
@@ -214,13 +214,13 @@ void THRotatorEditorContext::UpdateVisibilitySwitchMenuText()
 	mi.cbSize = sizeof(mi);
 	mi.fMask = MIIM_STRING;
 
-	auto str = LoadTHRotatorString(g_hModule, m_bEditorShown ? IDS_HIDE_EDITOR : IDS_SHOW_EDITOR);
+	auto str = LoadTHRotatorStringUnicode(g_hModule, m_bEditorShown ? IDS_HIDE_EDITOR : IDS_SHOW_EDITOR);
 	mi.dwTypeData = const_cast<LPTSTR>(str.c_str());
 
 	SetMenuItemInfo(m_hSysMenu, ms_switchVisibilityID, FALSE, &mi);
 }
 
-void THRotatorEditorContext::SetNewErrorMessage(std::basic_string<TCHAR>&& message)
+void THRotatorEditorContext::SetNewErrorMessage(std::string&& message)
 {
 	LARGE_INTEGER frequency;
 	::QueryPerformanceFrequency(&frequency);
@@ -249,7 +249,7 @@ bool THRotatorEditorContext::SaveSettings()
 
 	if (!bSaveSuccess)
 	{
-		auto saveFailureMessage = LoadTHRotatorString(g_hModule, IDS_SETTING_FILE_SAVE_FAILED);
+		auto saveFailureMessage = LoadTHRotatorStringUtf8(g_hModule, IDS_SETTING_FILE_SAVE_FAILED);
 #ifdef _UNICODE
 		SetNewErrorMessage(std::move(saveFailureMessage));
 #else
@@ -280,9 +280,9 @@ bool THRotatorEditorContext::LoadSettings()
 
 	if (!bLoadSuccess)
 	{
-		OutputLogMessagef(LogSeverity::Error, L"Failed to load");
+		OutputLogMessagef(LogSeverity::Error, "Failed to load");
 
-		auto loadFailureMessage = LoadTHRotatorString(g_hModule, IDS_SETTING_FILE_LOAD_FAILED);
+		auto loadFailureMessage = LoadTHRotatorStringUtf8(g_hModule, IDS_SETTING_FILE_LOAD_FAILED);
 #ifdef _UNICODE
 		SetNewErrorMessage(std::move(loadFailureMessage));
 #else
@@ -304,7 +304,7 @@ bool THRotatorEditorContext::LoadSettings()
 			 */
 			m_judgeThreshold++;
 
-			OutputLogMessagef(LogSeverity::Info, L"Threshold has been converted");
+			OutputLogMessagef(LogSeverity::Info, "Threshold has been converted");
 		}
 	}
 
@@ -431,7 +431,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 
 			auto durationInClock = m_errorMessageExpirationClock.QuadPart - currentClock.QuadPart;
 
-			ImGui::Text(ConvertFromUnicodeToUtf8(errorMessagePtr).c_str());
+			ImGui::Text(errorMessagePtr);
 			ImGui::Text(fmt::format("This window closes in {} second(s).",
 				durationInClock / clockFrequency.QuadPart + 1).c_str());
 			if (ImGui::Button("OK"))
@@ -778,7 +778,7 @@ void THRotatorEditorContext::UpdateWindowResolution(int requestedWidth, int requ
 	m_modifiedTouhouClientSize.cx = rcModifiedClient.right - rcModifiedClient.left;
 	m_modifiedTouhouClientSize.cy = rcModifiedClient.bottom - rcModifiedClient.top;
 
-	OutputLogMessagef(LogSeverity::Info, L"Tried to update window client size to {0}x{1}", newWidth, newHeight);
-	OutputLogMessagef(LogSeverity::Info, L"Result of updating window client size: {0}x{1}",
+	OutputLogMessagef(LogSeverity::Info, "Tried to update window client size to {0}x{1}", newWidth, newHeight);
+	OutputLogMessagef(LogSeverity::Info, "Result of updating window client size: {0}x{1}",
 		m_modifiedTouhouClientSize.cx, m_modifiedTouhouClientSize.cy);
 }

@@ -17,7 +17,7 @@ boost::filesystem::path CreateTHRotatorLogFilePath()
 
 }
 
-void OutputLogMessage(LogSeverity severity, const std::wstring& message)
+void OutputLogMessage(LogSeverity severity, const std::string& message)
 {
 	std::ofstream ofs;
 	if (bFirstLog)
@@ -62,5 +62,5 @@ void OutputLogMessage(LogSeverity severity, const std::wstring& message)
 		break;
 	}
 
-	ofs << ConvertFromUnicodeToUtf8(message) << std::endl;
+	ofs << message << std::endl;
 }

@@ -47,7 +47,7 @@ public:
 
 	bool ConsumeScreenCaptureRequest();
 
-	LPCTSTR GetErrorMessage() const;
+	const char* GetErrorMessage() const;
 
 	bool IsVerticallyLongWindow() const
 	{
@@ -91,7 +91,7 @@ private:
 
 	static LRESULT CALLBACK MessageHookProc(int nCode, WPARAM wParam, LPARAM lParam);
 
-	void SetNewErrorMessage(std::basic_string<TCHAR>&& message);
+	void SetNewErrorMessage(std::string&& message);
 
 	/****************************************
 	* THRotator parameters
@@ -139,7 +139,7 @@ private:
 	* Error notification
 	****************************************/
 
-	std::basic_string<TCHAR> m_errorMessage;
+	std::string m_errorMessage;
 	LARGE_INTEGER m_errorMessageExpirationClock;
 
 

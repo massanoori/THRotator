@@ -55,7 +55,7 @@ void ReadJsonObjectValueKeepOnFailure(const nlohmann::json& j, const std::string
 	}
 	catch (const std::logic_error& e)
 	{
-		OutputLogMessage(LogSeverity::Error, ConvertFromSjisToUnicode(e.what()));
+		OutputLogMessage(LogSeverity::Error, e.what());
 	}
 }
 
@@ -210,7 +210,7 @@ void from_json(const BasicJsonType& j, THRotatorSetting& setting)
 {
 	if (!j.is_object())
 	{
-		OutputLogMessagef(LogSeverity::Error, L"type must be object, but is {0}", j.type_name());
+		OutputLogMessagef(LogSeverity::Error, "type must be object, but is {0}", j.type_name());
 		return;
 	}
 
@@ -249,7 +249,7 @@ void from_json(const BasicJsonType& j, THRotatorSetting& setting)
 		}
 		catch (const std::logic_error& e)
 		{
-			OutputLogMessagef(LogSeverity::Error, L"Failed to load 'rects[{0}]' ({1})", currentRectIndex, e.what());
+			OutputLogMessagef(LogSeverity::Error, "Failed to load 'rects[{0}]' ({1})", currentRectIndex, e.what());
 		}
 
 		currentRectIndex++;
@@ -287,7 +287,7 @@ void THRotatorSetting::LoadIniFormat(THRotatorSetting& outSetting)
 	namespace proptree = boost::property_tree;
 
 	auto filename = CreateIniFilePath();
-	OutputLogMessagef(LogSeverity::Info, L"Loading {0}", filename.generic_wstring());
+	OutputLogMessagef(LogSeverity::Info, "Loading {0}", ConvertFromUnicodeToUtf8(filename.generic_wstring()));
 
 	proptree::basic_ptree<std::string, std::string> tree;
 	try
@@ -296,7 +296,7 @@ void THRotatorSetting::LoadIniFormat(THRotatorSetting& outSetting)
 	}
 	catch (const proptree::ini_parser_error& e)
 	{
-		OutputLogMessagef(LogSeverity::Error, L"Ini parse error ({0})", ConvertFromSjisToUnicode(e.message()));
+		OutputLogMessagef(LogSeverity::Error, "Ini parse error ({0})", e.message());
 		return;
 	}
 
@@ -375,7 +375,7 @@ void THRotatorSetting::LoadJsonFormat(THRotatorSetting& outSetting,
 {
 	auto filename = CreateJsonFilePath();
 
-	OutputLogMessagef(LogSeverity::Info, L"Loading {0}", filename.generic_wstring());
+	OutputLogMessagef(LogSeverity::Info, "Loading {0}", ConvertFromUnicodeToUtf8(filename.generic_wstring()));
 
 	std::ifstream ifs;
 	ifs.open(filename.generic_wstring());
@@ -383,7 +383,7 @@ void THRotatorSetting::LoadJsonFormat(THRotatorSetting& outSetting,
 	// json.hpp doesn't allow ifstream's exception bit.
 	if (ifs.fail() || ifs.bad())
 	{
-		OutputLogMessagef(LogSeverity::Error, L"Failed to load {0}", filename.generic_wstring());
+		OutputLogMessagef(LogSeverity::Error, "Failed to load {0}", ConvertFromUnicodeToUtf8(filename.generic_wstring()));
 		throw std::ios::failure("");
 	}
 
@@ -405,12 +405,12 @@ bool THRotatorSetting::Load(THRotatorSetting& outSetting,
 	}
 	catch (const std::invalid_argument& e)
 	{
-		OutputLogMessagef(LogSeverity::Error, L"Json parse failed ({0})", ConvertFromSjisToUnicode(e.what()));
+		OutputLogMessagef(LogSeverity::Error, "Json parse failed ({0})", e.what());
 		return false;
 	}
 	catch (const std::ios::failure&)
 	{
-		OutputLogMessagef(LogSeverity::Info, L"Falling back to legacy format v1 loading");
+		OutputLogMessagef(LogSeverity::Info, "Falling back to legacy format v1 loading");
 		THRotatorSetting::LoadIniFormat(outSetting);
 		importedFormatVersion = THRotatorFormatVersion::Version_1;
 	}
@@ -425,12 +425,12 @@ bool THRotatorSetting::Save(const THRotatorSetting& inSetting)
 	objectToWrite = inSetting;
 
 	auto filename = CreateJsonFilePath();
-	OutputLogMessagef(LogSeverity::Info, L"Saving to {0}", filename.generic_wstring());
+	OutputLogMessagef(LogSeverity::Info, "Saving to {0}", ConvertFromUnicodeToUtf8(filename.generic_wstring()));
 	std::ofstream ofs(filename.generic_wstring());
 
 	if (ofs.fail() || ofs.bad())
 	{
-		OutputLogMessagef(LogSeverity::Error, L"Failed to write to {0}", filename.generic_wstring());
+		OutputLogMessagef(LogSeverity::Error, "Failed to write to {0}", ConvertFromUnicodeToUtf8(filename.generic_wstring()));
 		return false;
 	}
 

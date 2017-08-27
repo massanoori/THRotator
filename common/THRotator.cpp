@@ -1899,7 +1899,7 @@ THRotatorDirect3DDevice::THRotatorDirect3DDevice()
 
 THRotatorDirect3DDevice::~THRotatorDirect3DDevice()
 {
-	OutputLogMessagef(LogSeverity::Info, L"Destructing THRotatorDirect3DDevice");
+	OutputLogMessagef(LogSeverity::Info, "Destructing THRotatorDirect3DDevice");
 
 	THRotatorImGui_Shutdown();
 }
@@ -1983,7 +1983,7 @@ HRESULT THRotatorDirect3DDevice::InternalInit(UINT Adapter,
 
 	UpdateResolution(Adapter);
 
-	OutputLogMessagef(LogSeverity::Info, L"Resolution requested: {0}x{1}, Modified resolution: {2}x{3}",
+	OutputLogMessagef(LogSeverity::Info, "Resolution requested: {0}x{1}, Modified resolution: {2}x{3}",
 		m_requestedWidth, m_requestedHeight, m_d3dpp.BackBufferWidth, m_d3dpp.BackBufferHeight);
 
 	HRESULT ret;
@@ -1991,7 +1991,7 @@ HRESULT THRotatorDirect3DDevice::InternalInit(UINT Adapter,
 #ifndef TOUHOU_ON_D3D8
 	if (bIsEx)
 	{
-		OutputLogMessagef(LogSeverity::Info, L"Initializing D3D9 Ex device");
+		OutputLogMessagef(LogSeverity::Info, "Initializing D3D9 Ex device");
 		if (pModeEx == nullptr)
 		{
 			ret = pMyD3D->m_pd3dEx->CreateDeviceEx(Adapter,
@@ -2011,7 +2011,7 @@ HRESULT THRotatorDirect3DDevice::InternalInit(UINT Adapter,
 		
 		if (FAILED(ret))
 		{
-			OutputLogMessagef(LogSeverity::Error, L"Failed to initialize device");
+			OutputLogMessagef(LogSeverity::Error, "Failed to initialize device");
 			return ret;
 		}
 
@@ -2021,9 +2021,9 @@ HRESULT THRotatorDirect3DDevice::InternalInit(UINT Adapter,
 #endif
 	{
 #ifdef TOUHOU_ON_D3D8
-		OutputLogMessagef(LogSeverity::Info, L"Initializing D3D8 device");
+		OutputLogMessagef(LogSeverity::Info, "Initializing D3D8 device");
 #else
-		OutputLogMessagef(LogSeverity::Info, L"Initializing D3D9 device");
+		OutputLogMessagef(LogSeverity::Info, "Initializing D3D9 device");
 #endif
 
 		ret = pMyD3D->m_pd3d->CreateDevice(Adapter,
@@ -2031,7 +2031,7 @@ HRESULT THRotatorDirect3DDevice::InternalInit(UINT Adapter,
 			&m_d3dpp, &m_pd3dDev);
 		if (FAILED(ret))
 		{
-			OutputLogMessagef(LogSeverity::Error, L"Failed to initialize device");
+			OutputLogMessagef(LogSeverity::Error, "Failed to initialize device");
 			return ret;
 		}
 
@@ -2043,7 +2043,7 @@ HRESULT THRotatorDirect3DDevice::InternalInit(UINT Adapter,
 	ret = InitResources();
 	if (FAILED(ret))
 	{
-		OutputLogMessagef(LogSeverity::Error, L"Failed to initialize render resources");
+		OutputLogMessagef(LogSeverity::Error, "Failed to initialize render resources");
 		return ret;
 	}
 
@@ -2058,7 +2058,7 @@ HRESULT THRotatorDirect3DDevice::InternalInit(UINT Adapter,
 
 HRESULT THRotatorDirect3DDevice::InitResources()
 {
-	OutputLogMessagef(LogSeverity::Info, L"Initializing resources");
+	OutputLogMessagef(LogSeverity::Info, "Initializing resources");
 
 	HRESULT hr = m_pd3dDev->CreateTexture(m_requestedWidth, m_requestedHeight, 1,
 		D3DUSAGE_RENDERTARGET, m_d3dpp.BackBufferFormat, D3DPOOL_DEFAULT,
@@ -2069,7 +2069,7 @@ HRESULT THRotatorDirect3DDevice::InitResources()
 #endif
 	if (FAILED(hr))
 	{
-		OutputLogMessagef(LogSeverity::Error, L"Failed to create texture");
+		OutputLogMessagef(LogSeverity::Error, "Failed to create texture");
 		return hr;
 	}
 
@@ -2077,12 +2077,12 @@ HRESULT THRotatorDirect3DDevice::InitResources()
 
 	if (m_pSprite && FAILED(hr = m_pSprite->OnResetDevice()))
 	{
-		OutputLogMessagef(LogSeverity::Error, L"Failed to reset sprite");
+		OutputLogMessagef(LogSeverity::Error, "Failed to reset sprite");
 		return hr;
 	}
 	else if (FAILED(hr = D3DXCreateSprite(m_pd3dDev.Get(), &m_pSprite)))
 	{
-		OutputLogMessagef(LogSeverity::Error, L"Failed to create sprite");
+		OutputLogMessagef(LogSeverity::Error, "Failed to create sprite");
 		return hr;
 	}
 
@@ -2096,7 +2096,7 @@ HRESULT THRotatorDirect3DDevice::InitResources()
 
 	if (FAILED(hr))
 	{
-		OutputLogMessagef(LogSeverity::Error, L"Failed to create render target");
+		OutputLogMessagef(LogSeverity::Error, "Failed to create render target");
 		return hr;
 	}
 
@@ -2104,7 +2104,7 @@ HRESULT THRotatorDirect3DDevice::InitResources()
 
 	if (FAILED(hr = m_pd3dDev->GetDepthStencilSurface(&pSurf)))
 	{
-		OutputLogMessagef(LogSeverity::Info, L"Application has no depth stencil surface");
+		OutputLogMessagef(LogSeverity::Info, "Application has no depth stencil surface");
 		m_pDepthStencil.Reset();
 	}
 	else
@@ -2112,7 +2112,7 @@ HRESULT THRotatorDirect3DDevice::InitResources()
 		D3DSURFACE_DESC surfDesc;
 		if (FAILED(hr = pSurf->GetDesc(&surfDesc)))
 		{
-			OutputLogMessagef(LogSeverity::Error, L"Failed to get descriptor of depth stencil surface");
+			OutputLogMessagef(LogSeverity::Error, "Failed to get descriptor of depth stencil surface");
 			return hr;
 		}
 
@@ -2126,7 +2126,7 @@ HRESULT THRotatorDirect3DDevice::InitResources()
 
 		if (FAILED(hr))
 		{
-			OutputLogMessagef(LogSeverity::Error, L"Failed to create depth stencil surface");
+			OutputLogMessagef(LogSeverity::Error, "Failed to create depth stencil surface");
 			return hr;
 		}
 	}
@@ -2134,31 +2134,31 @@ HRESULT THRotatorDirect3DDevice::InitResources()
 #ifdef TOUHOU_ON_D3D8
 	if (FAILED(hr = m_pd3dDev->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &m_pBackBuffer)))
 	{
-		OutputLogMessagef(LogSeverity::Error, L"Failed to get back buffer");
+		OutputLogMessagef(LogSeverity::Error, "Failed to get back buffer");
 		return hr;
 	}
 
 	if (FAILED(hr = m_pd3dDev->SetRenderTarget(m_pRenderTarget.Get(), m_pDepthStencil.Get())))
 	{
-		OutputLogMessagef(LogSeverity::Error, L"Failed to overwrite render target");
+		OutputLogMessagef(LogSeverity::Error, "Failed to overwrite render target");
 		return hr;
 	}
 #else
 	if (FAILED(hr = m_pd3dDev->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &m_pBackBuffer)))
 	{
-		OutputLogMessagef(LogSeverity::Error, L"Failed to get back buffer");
+		OutputLogMessagef(LogSeverity::Error, "Failed to get back buffer");
 		return hr;
 	}
 
 	if (FAILED(hr = m_pd3dDev->SetRenderTarget(0, m_pRenderTarget.Get())))
 	{
-		OutputLogMessagef(LogSeverity::Error, L"Failed to overwrite render target");
+		OutputLogMessagef(LogSeverity::Error, "Failed to overwrite render target");
 		return hr;
 	}
 
 	if (FAILED(hr = m_pd3dDev->SetDepthStencilSurface(m_pDepthStencil.Get())))
 	{
-		OutputLogMessagef(LogSeverity::Error, L"Failed to overwrite depth stencil surface");
+		OutputLogMessagef(LogSeverity::Error, "Failed to overwrite depth stencil surface");
 		return hr;
 	}
 #endif
@@ -2170,7 +2170,7 @@ HRESULT THRotatorDirect3DDevice::InitResources()
 
 void THRotatorDirect3DDevice::ReleaseResources()
 {
-	OutputLogMessagef(LogSeverity::Info, L"Releasing resources");
+	OutputLogMessagef(LogSeverity::Info, "Releasing resources");
 
 	THRotatorImGui_InvalidateDeviceObjects();
 
@@ -2716,7 +2716,7 @@ HRESULT THRotatorDirect3DDevice::InternalReset(
 {
 	assert(m_bInitialized);
 
-	OutputLogMessagef(LogSeverity::Info, L"Resetting Direct3D device");
+	OutputLogMessagef(LogSeverity::Info, "Resetting Direct3D device");
 
 	ReleaseResources();
 

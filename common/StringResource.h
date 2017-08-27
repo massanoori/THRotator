@@ -3,6 +3,11 @@
 #pragma once
 
 /**
- * Load string from string table resource.
+ * Load string from string table resource (UTF-8).
  */
-std::basic_string<TCHAR> LoadTHRotatorString(HINSTANCE hModule, UINT nID);
+std::string LoadTHRotatorStringUtf8(HINSTANCE hModule, UINT nID);
+
+/**
+ * Load string from string table resource (Unicode).
+ */
+std::wstring LoadTHRotatorStringUnicode(HINSTANCE hModule, UINT nID);
