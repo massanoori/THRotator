@@ -200,18 +200,18 @@ struct ScopedPS
 
 	ScopedPS(DWORD pixelShader)
 	{
-		g_pd3dDevice->GetVertexShader(&previousPixelShader);
-		g_pd3dDevice->SetVertexShader(pixelShader);
+		g_pd3dDevice->GetPixelShader(&previousPixelShader);
+		g_pd3dDevice->SetPixelShader(pixelShader);
 	}
 
 	ScopedPS()
 	{
-		g_pd3dDevice->GetVertexShader(&previousPixelShader);
+		g_pd3dDevice->GetPixelShader(&previousPixelShader);
 	}
 
 	~ScopedPS()
 	{
-		g_pd3dDevice->SetVertexShader(previousPixelShader);
+		g_pd3dDevice->SetPixelShader(previousPixelShader);
 	}
 };
 
