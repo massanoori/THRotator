@@ -127,6 +127,27 @@ struct ScopedTransform
 	}
 };
 
+struct ScopedVP
+{
+	D3DVIEWPORT8 previousViewport;
+
+	ScopedVP(const D3DVIEWPORT8& viewport)
+	{
+		g_pd3dDevice->GetViewport(&previousViewport);
+		g_pd3dDevice->SetViewport(&viewport);
+	}
+
+	ScopedVP()
+	{
+		g_pd3dDevice->GetViewport(&previousViewport);
+	}
+
+	~ScopedVP()
+	{
+		g_pd3dDevice->SetViewport(&previousViewport);
+	}
+};
+
 } // end of anonymous namespace
 
 // This is the main rendering function that you have to implement and provide to ImGui (via setting up 'RenderDrawListsFn' in the ImGuiIO structure)
@@ -187,15 +208,6 @@ void ImGui_ImplDX8_RenderDrawLists(ImDrawData* draw_data)
 
 	// SetFVF() equivalent for D3D8
 	g_pd3dDevice->SetVertexShader(CUSTOMVERTEX::FVF);
-	
-	// Setup viewport
-	D3DVIEWPORT8 vp;
-	vp.X = vp.Y = 0;
-	vp.Width = (DWORD)io.DisplaySize.x;
-	vp.Height = (DWORD)io.DisplaySize.y;
-	vp.MinZ = 0.0f;
-	vp.MaxZ = 1.0f;
-	g_pd3dDevice->SetViewport(&vp);
 
 	// Setup render state: fixed-pipeline, alpha-blending, no face culling, no depth testing
 	g_pd3dDevice->SetPixelShader(NULL);
@@ -236,23 +248,22 @@ void ImGui_ImplDX8_RenderDrawLists(ImDrawData* draw_data)
 	// Setup orthographic projection matrix
 	// Being agnostic of whether <d3DX8.h> or <DirectXMath.h> can be used, we aren't relying on D3DXMatrixIdentity()/D3DXMatrixOrthoOffCenterLH() or DirectX::XMMatrixIdentity()/DirectX::XMMatrixOrthographicOffCenterLH()
 	{
-		const float L = 0.5f, R = io.DisplaySize.x + 0.5f, T = 0.5f, B = io.DisplaySize.y + 0.5f;
 		D3DMATRIX mat_identity = { { 1.0f, 0.0f, 0.0f, 0.0f,  0.0f, 1.0f, 0.0f, 0.0f,  0.0f, 0.0f, 1.0f, 0.0f,  0.0f, 0.0f, 0.0f, 1.0f } };
-		D3DMATRIX mat_projection =
-		{
-			2.0f / (R - L),   0.0f,         0.0f,  0.0f,
-			0.0f,         2.0f / (T - B),   0.0f,  0.0f,
-			0.0f,         0.0f,         0.5f,  0.0f,
-			(L + R) / (L - R),  (T + B) / (B - T),  0.5f,  1.0f,
-		};
+
 		g_pd3dDevice->SetTransform(D3DTS_WORLD, &mat_identity);
 		g_pd3dDevice->SetTransform(D3DTS_VIEW, &mat_identity);
-		g_pd3dDevice->SetTransform(D3DTS_PROJECTION, &mat_projection);
 	}
 
 	// Render command lists
 	int vtx_offset = 0;
 	int idx_offset = 0;
+
+	ScopedVP scopedViewport;
+
+	D3DVIEWPORT8 viewport;
+	viewport.MinZ = 0.0f;
+	viewport.MaxZ = 1.0f;
+
 	for (int n = 0; n < draw_data->CmdListsCount; n++)
 	{
 		const ImDrawList* cmd_list = draw_data->CmdLists[n];
@@ -265,7 +276,25 @@ void ImGui_ImplDX8_RenderDrawLists(ImDrawData* draw_data)
 			}
 			else
 			{
-				const RECT r = { (LONG)pcmd->ClipRect.x, (LONG)pcmd->ClipRect.y, (LONG)pcmd->ClipRect.z, (LONG)pcmd->ClipRect.w };
+				viewport.X = static_cast<DWORD>(pcmd->ClipRect.x);
+				viewport.Y = static_cast<DWORD>(pcmd->ClipRect.y);
+				viewport.Width = static_cast<DWORD>(pcmd->ClipRect.z - pcmd->ClipRect.x);
+				viewport.Height = static_cast<DWORD>(pcmd->ClipRect.w - pcmd->ClipRect.y);
+				g_pd3dDevice->SetViewport(&viewport);
+
+				const float L = 0.5f + viewport.X, R = viewport.Width + 0.5f + viewport.X;
+				const float T = 0.5f + viewport.Y, B = viewport.Height + 0.5f + viewport.Y;
+				D3DMATRIX mat_projection =
+				{
+					2.0f / (R - L),    0.0f,              0.0f,  0.0f,
+					0.0f,              2.0f / (T - B),    0.0f,  0.0f,
+					0.0f,              0.0f,              0.5f,  0.0f,
+					(L + R) / (L - R), (T + B) / (B - T), 0.5f,  1.0f,
+				};
+
+				g_pd3dDevice->SetTransform(D3DTS_PROJECTION, &mat_projection);
+
+				//const RECT r = { (LONG)pcmd->ClipRect.x, (LONG)pcmd->ClipRect.y, (LONG)pcmd->ClipRect.z, (LONG)pcmd->ClipRect.w };
 				g_pd3dDevice->SetTexture(0, (LPDIRECT3DTEXTURE8)pcmd->TextureId);
 				//g_pd3dDevice->SetScissorRect(&r);
 				g_pd3dDevice->SetIndices(g_pIB, vtx_offset);
