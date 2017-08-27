@@ -541,31 +541,18 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 
 	if (ImGui::CollapsingHeader("Other rectangles"))
 	{
-		// TODO: make rectangle name editable
-		// TODO: create array of const char* in advance
-		std::vector<std::string> listItemStrs;
-		std::vector<const char*> listItemStrPtrs;
-		listItemStrs.reserve(m_currentRectTransfers.size());
-		listItemStrPtrs.reserve(listItemStrs.size());
-
-		for (const auto& rectTransfer : m_currentRectTransfers)
-		{
-			listItemStrs.push_back(rectTransfer.name);
-			listItemStrPtrs.push_back(listItemStrs.back().c_str());
-		}
-
-		static int currentItem = 0;
-
 		RectTransferData dummyRectForNoRect;
 
-		currentItem = (std::min)(currentItem, static_cast<int>(m_currentRectTransfers.size()) - 1);
-		auto& selectedRectTransfer = currentItem >= 0 ? m_currentRectTransfers[currentItem] : dummyRectForNoRect;
+		m_GuiContext.selectedRectIndex = (std::min)(m_GuiContext.selectedRectIndex,
+			static_cast<int>(m_currentRectTransfers.size()) - 1);
+		auto& selectedRectTransfer = m_GuiContext.selectedRectIndex >= 0 ?
+			m_currentRectTransfers[m_GuiContext.selectedRectIndex] : dummyRectForNoRect;
 
 		{
 			char nameEditBuffer[128];
 			strcpy_s(nameEditBuffer, selectedRectTransfer.name.c_str());
 			ImGui::InputText("Name", nameEditBuffer, _countof(nameEditBuffer),
-				currentItem >= 0 ? 0 : ImGuiInputTextFlags_ReadOnly);
+				m_GuiContext.selectedRectIndex >= 0 ? 0 : ImGuiInputTextFlags_ReadOnly);
 			selectedRectTransfer.name = nameEditBuffer;
 		}
 
@@ -576,7 +563,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		};
 
 		ImGui::InputInt2("Src Left and Top", srcLeftAndTop,
-			currentItem >= 0 ? 0 : ImGuiInputTextFlags_ReadOnly);
+			m_GuiContext.selectedRectIndex >= 0 ? 0 : ImGuiInputTextFlags_ReadOnly);
 
 		selectedRectTransfer.sourcePosition.x = srcLeftAndTop[0];
 		selectedRectTransfer.sourcePosition.y = srcLeftAndTop[1];
@@ -588,7 +575,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		};
 
 		ImGui::InputInt2("Src Width and Height", srcWidthAndHeight,
-			currentItem >= 0 ? 0 : ImGuiInputTextFlags_ReadOnly);
+			m_GuiContext.selectedRectIndex >= 0 ? 0 : ImGuiInputTextFlags_ReadOnly);
 
 		selectedRectTransfer.sourceSize.cx = srcWidthAndHeight[0];
 		selectedRectTransfer.sourceSize.cy = srcWidthAndHeight[1];
@@ -600,7 +587,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		};
 
 		ImGui::InputInt2("Dst Left and Top", dstLeftAndTop,
-			currentItem >= 0 ? 0 : ImGuiInputTextFlags_ReadOnly);
+			m_GuiContext.selectedRectIndex >= 0 ? 0 : ImGuiInputTextFlags_ReadOnly);
 
 		selectedRectTransfer.destPosition.x = dstLeftAndTop[0];
 		selectedRectTransfer.destPosition.y = dstLeftAndTop[1];
@@ -612,7 +599,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		};
 
 		ImGui::InputInt2("Dst Width and Height", dstWidthAndHeight,
-			currentItem >= 0 ? 0 : ImGuiInputTextFlags_ReadOnly);
+			m_GuiContext.selectedRectIndex >= 0 ? 0 : ImGuiInputTextFlags_ReadOnly);
 
 		selectedRectTransfer.destSize.cx = dstWidthAndHeight[0];
 		selectedRectTransfer.destSize.cy = dstWidthAndHeight[1];
@@ -654,43 +641,55 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 			addedRect.name = std::move(newName);
 			addedRect.sourceSize.cx = addedRect.sourceSize.cy = 10;
 			addedRect.destSize.cx = addedRect.destSize.cy = 10;
-			currentItem = static_cast<int>(m_currentRectTransfers.size() - 1);
+			m_GuiContext.selectedRectIndex = static_cast<int>(m_currentRectTransfers.size() - 1);
 		}
 
-		if (currentItem >= 0)
+		if (m_GuiContext.selectedRectIndex >= 0)
 		{
 			ImGui::SameLine();
 
 			if (ImGui::Button("Delete"))
 			{
-				m_currentRectTransfers.erase(m_currentRectTransfers.begin() + currentItem);
-				currentItem = (std::min)(currentItem, static_cast<int>(m_currentRectTransfers.size()) - 1);
+				m_currentRectTransfers.erase(m_currentRectTransfers.begin() + m_GuiContext.selectedRectIndex);
+				m_GuiContext.selectedRectIndex = (std::min)(m_GuiContext.selectedRectIndex,
+					static_cast<int>(m_currentRectTransfers.size()) - 1);
 			}
 
 			ImGui::SameLine();
 
-			if (ImGui::Button("Up") && currentItem > 0)
+			if (ImGui::Button("Up") && m_GuiContext.selectedRectIndex > 0)
 			{
-				int newItemPosition = currentItem - 1;
-				std::swap(m_currentRectTransfers[currentItem],
+				int newItemPosition = m_GuiContext.selectedRectIndex - 1;
+				std::swap(m_currentRectTransfers[m_GuiContext.selectedRectIndex],
 					m_currentRectTransfers[newItemPosition]);
-				currentItem = newItemPosition;
+				m_GuiContext.selectedRectIndex = newItemPosition;
 			}
 
 			ImGui::SameLine();
 
-			if (ImGui::Button("Down") && currentItem < static_cast<int>(m_currentRectTransfers.size() - 1))
+			if (ImGui::Button("Down")
+				&& m_GuiContext.selectedRectIndex < static_cast<int>(m_currentRectTransfers.size() - 1))
 			{
-				int newItemPosition = currentItem + 1;
-				std::swap(m_currentRectTransfers[currentItem],
+				int newItemPosition = m_GuiContext.selectedRectIndex + 1;
+				std::swap(m_currentRectTransfers[m_GuiContext.selectedRectIndex],
 					m_currentRectTransfers[newItemPosition]);
-				currentItem = newItemPosition;
+				m_GuiContext.selectedRectIndex = newItemPosition;
 			}
 		}
 
-		ImGui::ListBox("Rectangle list",
-			&currentItem, listItemStrPtrs.data(),
-			listItemStrPtrs.size(), 4);
+		if (m_GuiContext.rectListBoxItemBuffer.size() != m_currentRectTransfers.size())
+		{
+			m_GuiContext.rectListBoxItemBuffer = std::vector<const char*>(m_currentRectTransfers.size());
+		}
+
+		for (std::size_t rectIndex = 0; rectIndex < m_currentRectTransfers.size(); rectIndex++)
+		{
+			m_GuiContext.rectListBoxItemBuffer[rectIndex] = m_currentRectTransfers[rectIndex].name.c_str();
+		}
+
+		ImGui::ListBox("Rectangle list", &m_GuiContext.selectedRectIndex,
+			m_GuiContext.rectListBoxItemBuffer.data(),
+			m_GuiContext.rectListBoxItemBuffer.size(), 4);
 	}
 
 	if (ImGui::Button("Reload"))

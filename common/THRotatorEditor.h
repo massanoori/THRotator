@@ -141,4 +141,16 @@ private:
 
 	std::basic_string<TCHAR> m_errorMessage;
 	LARGE_INTEGER m_errorMessageExpirationClock;
+
+
+	// Current context of GUI (such as list box selection)
+	struct GuiContext
+	{
+		int selectedRectIndex;
+
+		// this array is just for buffer for ImGui's list box, may contain dangling pointers.
+		std::vector<const char*> rectListBoxItemBuffer;
+
+		GuiContext() : selectedRectIndex(0) {}
+	} m_GuiContext;
 };
