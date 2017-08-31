@@ -369,7 +369,7 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 						}
 						else
 						{
-							static std::string messageLossOfDataPrevention = LoadTHRotatorStringUtf8(g_hModule, IDS_LOSS_OF_DATA_PREVENTED);
+							static const std::string messageLossOfDataPrevention = LoadTHRotatorStringUtf8(g_hModule, IDS_LOSS_OF_DATA_PREVENTED);
 							context->SetNewErrorMessage(messageLossOfDataPrevention.c_str(), 20);
 						}
 					}
@@ -424,7 +424,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		ImGui::OpenPopup("Error message");
 		if (ImGui::BeginPopupModal("Error message", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
 		{
-			static std::string labelThisWindowClosesInSeconds = LoadTHRotatorStringUtf8(g_hModule, IDS_WINDOW_CLOSES_IN_SECONDS);
+			static const std::string labelThisWindowClosesInSeconds = LoadTHRotatorStringUtf8(g_hModule, IDS_WINDOW_CLOSES_IN_SECONDS);
 
 			LARGE_INTEGER currentClock, clockFrequency;
 			QueryPerformanceCounter(&currentClock);
@@ -477,23 +477,23 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 
 	bool bPreviousVerticalWindow = m_bVerticallyLongWindow;
 	{
-		static std::string labelVerticalWindow = LoadTHRotatorStringUtf8(g_hModule, IDS_VERTICAL_WINDOW);
+		static const std::string labelVerticalWindow = LoadTHRotatorStringUtf8(g_hModule, IDS_VERTICAL_WINDOW);
 		ImGui::Checkbox(labelVerticalWindow.c_str(), &m_bVerticallyLongWindow);
 	}
 
 	{
-		static std::string labelShowFirst = LoadTHRotatorStringUtf8(g_hModule, IDS_SHOW_THROTATOR_FIRST);
-		static std::string labelForceRearrangement = LoadTHRotatorStringUtf8(g_hModule, IDS_FORCE_REARRANGEMENTS);
+		static const std::string labelShowFirst = LoadTHRotatorStringUtf8(g_hModule, IDS_SHOW_THROTATOR_FIRST);
+		static const std::string labelForceRearrangement = LoadTHRotatorStringUtf8(g_hModule, IDS_FORCE_REARRANGEMENTS);
 
 		ImGui::Checkbox(labelShowFirst.c_str(), &m_bEditorShownInitially);
 		ImGui::Checkbox(labelForceRearrangement.c_str(), &m_bHUDRearrangeForced);
 	}
 
-	static std::string labelGameplayDetection = LoadTHRotatorStringUtf8(g_hModule, IDS_GAMEPLAY_DETECTION);
+	static const std::string labelGameplayDetection = LoadTHRotatorStringUtf8(g_hModule, IDS_GAMEPLAY_DETECTION);
 	if (ImGui::CollapsingHeader(labelGameplayDetection.c_str()))
 	{
-		static std::string labelSetVPCount = LoadTHRotatorStringUtf8(g_hModule, IDS_SET_VP_COUNT);
-		static std::string labelThreshold = LoadTHRotatorStringUtf8(g_hModule, IDS_THRESHOLD);
+		static const std::string labelSetVPCount = LoadTHRotatorStringUtf8(g_hModule, IDS_SET_VP_COUNT);
+		static const std::string labelThreshold = LoadTHRotatorStringUtf8(g_hModule, IDS_THRESHOLD);
 
 		const std::string currentSetVPCountText = fmt::format("{}", m_judgeCountPrev).c_str();
 		ImGui::InputText(labelSetVPCount.c_str(),
@@ -513,12 +513,12 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		}
 	}
 
-	static std::string labelMainScreenRegion = LoadTHRotatorStringUtf8(g_hModule, IDS_MAIN_SCREEN_REGION);
+	static const std::string labelMainScreenRegion = LoadTHRotatorStringUtf8(g_hModule, IDS_MAIN_SCREEN_REGION);
 	if (ImGui::CollapsingHeader(labelMainScreenRegion.c_str()))
 	{
-		static std::string labelLeftAndTop = LoadTHRotatorStringUtf8(g_hModule, IDS_LEFT_AND_TOP);
-		static std::string labelWidthAndHeight = LoadTHRotatorStringUtf8(g_hModule, IDS_WIDTH_AND_HEIGHT);
-		static std::string labelYOffset = LoadTHRotatorStringUtf8(g_hModule, IDS_Y_OFFSET);
+		static const std::string labelLeftAndTop = LoadTHRotatorStringUtf8(g_hModule, IDS_LEFT_AND_TOP);
+		static const std::string labelWidthAndHeight = LoadTHRotatorStringUtf8(g_hModule, IDS_WIDTH_AND_HEIGHT);
+		static const std::string labelYOffset = LoadTHRotatorStringUtf8(g_hModule, IDS_Y_OFFSET);
 
 		int leftAndTop[] = { m_mainScreenTopLeft.x, m_mainScreenTopLeft.y };
 		ImGui::InputInt2(labelLeftAndTop.c_str(), leftAndTop);
@@ -541,11 +541,11 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		ImGui::InputInt(labelYOffset.c_str(), &m_yOffset);
 	}
 
-	static std::string labelPixelInterpolation = LoadTHRotatorStringUtf8(g_hModule, IDS_PIXEL_INTERPOLATION);
+	static const std::string labelPixelInterpolation = LoadTHRotatorStringUtf8(g_hModule, IDS_PIXEL_INTERPOLATION);
 	if (ImGui::CollapsingHeader(labelPixelInterpolation.c_str()))
 	{
-		static std::string labelFilterNone = LoadTHRotatorStringUtf8(g_hModule, IDS_FILTER_NONE);
-		static std::string labelFilterBilinear = LoadTHRotatorStringUtf8(g_hModule, IDS_FILTER_BILINEAR);
+		static const std::string labelFilterNone = LoadTHRotatorStringUtf8(g_hModule, IDS_FILTER_NONE);
+		static const std::string labelFilterBilinear = LoadTHRotatorStringUtf8(g_hModule, IDS_FILTER_BILINEAR);
 
 		std::underlying_type<D3DTEXTUREFILTERTYPE>::type rawFilterType = m_filterType;
 		ImGui::PushID("PixelInterpolationSelection");
@@ -555,13 +555,13 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		m_filterType = static_cast<D3DTEXTUREFILTERTYPE>(rawFilterType);
 	}
 
-	static std::string labelOtherRectangles = LoadTHRotatorStringUtf8(g_hModule, IDS_OTHER_RECTANGLES);
+	static const std::string labelOtherRectangles = LoadTHRotatorStringUtf8(g_hModule, IDS_OTHER_RECTANGLES);
 	if (ImGui::CollapsingHeader(labelOtherRectangles.c_str()))
 	{
-		static std::string labelSourceLeftAndTop = LoadTHRotatorStringUtf8(g_hModule, IDS_SOURCE_LEFT_AND_TOP);
-		static std::string labelSourceWidthAndHeight = LoadTHRotatorStringUtf8(g_hModule, IDS_SOURCE_WIDTH_AND_HEIGHT);
-		static std::string labelDestLeftAndTop = LoadTHRotatorStringUtf8(g_hModule, IDS_DEST_LEFT_AND_TOP);
-		static std::string labelDestWidthAndHeight = LoadTHRotatorStringUtf8(g_hModule, IDS_DEST_WIDTH_AND_HEIGHT);
+		static const std::string labelSourceLeftAndTop = LoadTHRotatorStringUtf8(g_hModule, IDS_SOURCE_LEFT_AND_TOP);
+		static const std::string labelSourceWidthAndHeight = LoadTHRotatorStringUtf8(g_hModule, IDS_SOURCE_WIDTH_AND_HEIGHT);
+		static const std::string labelDestLeftAndTop = LoadTHRotatorStringUtf8(g_hModule, IDS_DEST_LEFT_AND_TOP);
+		static const std::string labelDestWidthAndHeight = LoadTHRotatorStringUtf8(g_hModule, IDS_DEST_WIDTH_AND_HEIGHT);
 
 		RectTransferData dummyRectForNoRect;
 
@@ -571,7 +571,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 			m_rectTransfers[m_GuiContext.selectedRectIndex] : dummyRectForNoRect;
 
 		{
-			static std::string labelRectName = LoadTHRotatorStringUtf8(g_hModule, IDS_RECT_NAME);
+			static const std::string labelRectName = LoadTHRotatorStringUtf8(g_hModule, IDS_RECT_NAME);
 
 			char nameEditBuffer[128];
 			strcpy_s(nameEditBuffer, selectedRectTransfer.name.c_str());
@@ -637,8 +637,8 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		ImGui::PopID();
 		selectedRectTransfer.rotation = static_cast<RotationAngle>(rotationAngle);
 
-		static std::string labelAdd = LoadTHRotatorStringUtf8(g_hModule, IDS_ADD);
-		static std::string labelDelete = LoadTHRotatorStringUtf8(g_hModule, IDS_DELETE);
+		static const std::string labelAdd = LoadTHRotatorStringUtf8(g_hModule, IDS_ADD);
+		static const std::string labelDelete = LoadTHRotatorStringUtf8(g_hModule, IDS_DELETE);
 
 		if (ImGui::Button(labelAdd.c_str()))
 		{
@@ -715,17 +715,17 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 			m_GuiContext.rectListBoxItemBuffer[rectIndex] = m_rectTransfers[rectIndex].name.c_str();
 		}
 
-		static std::string labelRectList = LoadTHRotatorStringUtf8(g_hModule, IDS_RECT_LIST);
+		static const std::string labelRectList = LoadTHRotatorStringUtf8(g_hModule, IDS_RECT_LIST);
 
 		ImGui::ListBox(labelRectList.c_str(), &m_GuiContext.selectedRectIndex,
 			m_GuiContext.rectListBoxItemBuffer.data(),
 			m_GuiContext.rectListBoxItemBuffer.size(), 4);
 	}
 
-	static std::string labelReload = LoadTHRotatorStringUtf8(g_hModule, IDS_RELOAD);
-	static std::string labelSave = LoadTHRotatorStringUtf8(g_hModule, IDS_SAVE);
-	static std::string labelAbout = LoadTHRotatorStringUtf8(g_hModule, IDS_ABOUT);
-	static std::string labelAboutTHRotator = LoadTHRotatorStringUtf8(g_hModule, IDS_ABOUT_THROTATOR);
+	static const std::string labelReload = LoadTHRotatorStringUtf8(g_hModule, IDS_RELOAD);
+	static const std::string labelSave = LoadTHRotatorStringUtf8(g_hModule, IDS_SAVE);
+	static const std::string labelAbout = LoadTHRotatorStringUtf8(g_hModule, IDS_ABOUT);
+	static const std::string labelAboutTHRotator = LoadTHRotatorStringUtf8(g_hModule, IDS_ABOUT_THROTATOR);
 
 	if (ImGui::Button(labelReload.c_str()))
 	{
@@ -749,7 +749,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 
 	if (ImGui::BeginPopupModal(labelAboutTHRotator.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize))
 	{
-		static std::string versionInfoString = fmt::format("THRotator {} for Direct3D {}",
+		static const std::string versionInfoString = fmt::format("THRotator {} for Direct3D {}",
 			THROTATOR_VERSION_STRING, DIRECT3D_VERSION >> 8);
 
 		ImGui::Text(versionInfoString.c_str());
