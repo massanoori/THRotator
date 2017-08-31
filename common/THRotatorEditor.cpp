@@ -513,6 +513,10 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		}
 	}
 
+	static const int COORDINATE_MAX = 999;
+	static const int COORDINATE_MIN = 0;
+	static const float COORDINATE_DRAG_SPEED = 0.1f;
+
 	static const std::string labelMainScreenRegion = LoadTHRotatorStringUtf8(g_hModule, IDS_MAIN_SCREEN_REGION);
 	if (ImGui::CollapsingHeader(labelMainScreenRegion.c_str()))
 	{
@@ -521,20 +525,12 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		static const std::string labelYOffset = LoadTHRotatorStringUtf8(g_hModule, IDS_Y_OFFSET);
 
 		int leftAndTop[] = { m_mainScreenTopLeft.x, m_mainScreenTopLeft.y };
-		ImGui::InputInt2(labelLeftAndTop.c_str(), leftAndTop);
-
-		leftAndTop[0] = (std::max)(0, (std::min)(leftAndTop[0], 999));
-		leftAndTop[1] = (std::max)(0, (std::min)(leftAndTop[1], 999));
-
+		ImGui::DragInt2(labelLeftAndTop.c_str(), leftAndTop, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX);
 		m_mainScreenTopLeft.x = leftAndTop[0];
 		m_mainScreenTopLeft.y = leftAndTop[1];
 
 		int widthAndHeight[] = { m_mainScreenSize.cx, m_mainScreenSize.cy };
-		ImGui::InputInt2(labelWidthAndHeight.c_str(), widthAndHeight);
-
-		widthAndHeight[0] = (std::max)(0, (std::min)(widthAndHeight[0], 999));
-		widthAndHeight[1] = (std::max)(0, (std::min)(widthAndHeight[1], 999));
-
+		ImGui::DragInt2(labelWidthAndHeight.c_str(), widthAndHeight, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX);
 		m_mainScreenSize.cx = widthAndHeight[0];
 		m_mainScreenSize.cy = widthAndHeight[1];
 
@@ -586,8 +582,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 			selectedRectTransfer.sourcePosition.y,
 		};
 
-		ImGui::InputInt2(labelSourceLeftAndTop.c_str(), srcLeftAndTop,
-			m_GuiContext.selectedRectIndex >= 0 ? 0 : ImGuiInputTextFlags_ReadOnly);
+		ImGui::DragInt2(labelSourceLeftAndTop.c_str(), srcLeftAndTop, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX);
 
 		selectedRectTransfer.sourcePosition.x = srcLeftAndTop[0];
 		selectedRectTransfer.sourcePosition.y = srcLeftAndTop[1];
@@ -598,8 +593,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 			selectedRectTransfer.sourceSize.cy,
 		};
 
-		ImGui::InputInt2(labelSourceWidthAndHeight.c_str(), srcWidthAndHeight,
-			m_GuiContext.selectedRectIndex >= 0 ? 0 : ImGuiInputTextFlags_ReadOnly);
+		ImGui::DragInt2(labelSourceWidthAndHeight.c_str(), srcWidthAndHeight, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX);
 
 		selectedRectTransfer.sourceSize.cx = srcWidthAndHeight[0];
 		selectedRectTransfer.sourceSize.cy = srcWidthAndHeight[1];
@@ -610,8 +604,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 			selectedRectTransfer.destPosition.y,
 		};
 
-		ImGui::InputInt2(labelDestLeftAndTop.c_str(), dstLeftAndTop,
-			m_GuiContext.selectedRectIndex >= 0 ? 0 : ImGuiInputTextFlags_ReadOnly);
+		ImGui::DragInt2(labelDestLeftAndTop.c_str(), dstLeftAndTop, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX);
 
 		selectedRectTransfer.destPosition.x = dstLeftAndTop[0];
 		selectedRectTransfer.destPosition.y = dstLeftAndTop[1];
@@ -622,8 +615,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 			selectedRectTransfer.destSize.cy,
 		};
 
-		ImGui::InputInt2(labelDestWidthAndHeight.c_str(), dstWidthAndHeight,
-			m_GuiContext.selectedRectIndex >= 0 ? 0 : ImGuiInputTextFlags_ReadOnly);
+		ImGui::DragInt2(labelDestWidthAndHeight.c_str(), dstWidthAndHeight, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX);
 
 		selectedRectTransfer.destSize.cx = dstWidthAndHeight[0];
 		selectedRectTransfer.destSize.cy = dstWidthAndHeight[1];
