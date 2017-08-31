@@ -714,10 +714,19 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 			m_GuiContext.rectListBoxItemBuffer.size(), 4);
 	}
 
+	static const std::string labelHide = LoadTHRotatorStringUtf8(g_hModule, IDS_HIDE_WINDOW);
 	static const std::string labelReload = LoadTHRotatorStringUtf8(g_hModule, IDS_RELOAD);
 	static const std::string labelSave = LoadTHRotatorStringUtf8(g_hModule, IDS_SAVE);
 	static const std::string labelAbout = LoadTHRotatorStringUtf8(g_hModule, IDS_ABOUT);
 	static const std::string labelAboutTHRotator = LoadTHRotatorStringUtf8(g_hModule, IDS_ABOUT_THROTATOR);
+
+	if (ImGui::Button(labelHide.c_str()))
+	{
+		m_bEditorShown = false;
+		UpdateVisibilitySwitchMenuText();
+	}
+
+	ImGui::SameLine();
 
 	if (ImGui::Button(labelReload.c_str()))
 	{
