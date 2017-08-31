@@ -2357,8 +2357,27 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 		m_pRenderTarget.Get(), nullptr, nullptr, D3DX_FILTER_NONE, 0);
 
 	THRotatorImGui_NewFrame();
-	m_pd3dDev->Clear(0, NULL, D3DCLEAR_TARGET, 0x00000000, 1.f, 0);
-	//if( SUCCEEDED( m_pd3dDev->BeginScene() ) )
+
+#ifdef _DEBUG
+	// Shows only GUI of THRotator.
+	// Useful when capturing screen for user's manual without any material from orignal Touhou.
+	static bool bGuiOnly = false;
+	if (ImGui::Begin("THRotator GUI only"))
+	{
+		ImGui::Checkbox("GUI only", &bGuiOnly);
+	}
+
+	ImGui::End();
+
+	DWORD colorForClear = bGuiOnly ? 0x00BFBFBF : 0x00000000;
+#else
+	const bool bGuiOnly = false;
+	const DWORD colorForClear = 0x00000000;
+#endif
+
+	m_pd3dDev->Clear(0, NULL, D3DCLEAR_TARGET, colorForClear, 1.f, 0);
+
+	if (!bGuiOnly)
 	{
 #ifdef TOUHOU_ON_D3D8
 		if (SUCCEEDED(m_pSprite->Begin()))
