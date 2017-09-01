@@ -794,7 +794,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		ShowPreviousItemTooltip("Rectangle list tooltip");
 	}
 
-	static const std::string labelHide = LoadTHRotatorStringUtf8(g_hModule, IDS_HIDE_WINDOW);
+	static const std::string labelHide = LoadTHRotatorStringUtf8(g_hModule, IDS_HIDE_EDITOR_SHORT);
 	static const std::string labelReload = LoadTHRotatorStringUtf8(g_hModule, IDS_RELOAD);
 	static const std::string labelSave = LoadTHRotatorStringUtf8(g_hModule, IDS_SAVE);
 	static const std::string labelAbout = LoadTHRotatorStringUtf8(g_hModule, IDS_ABOUT);
