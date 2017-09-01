@@ -428,6 +428,14 @@ bool CollapsingHeaderWithTooltip(const char* labelText, const char* tooltipText)
 	return bRet;
 }
 
+std::string MakeDragIntTooltipText(UINT stringID)
+{
+	static const std::string tooltipDragInt = std::string("\n\n")
+		+ LoadTHRotatorStringUtf8(g_hModule, IDS_DRAGINT_COMMON_TOOLTIP);
+
+	return LoadTHRotatorStringUtf8(g_hModule, stringID) + tooltipDragInt;
+}
+
 void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 {
 	auto errorMessagePtr = GetErrorMessage();
@@ -571,8 +579,8 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		static const std::string labelWidthAndHeight = LoadTHRotatorStringUtf8(g_hModule, IDS_WIDTH_AND_HEIGHT);
 		static const std::string labelYOffset = LoadTHRotatorStringUtf8(g_hModule, IDS_Y_OFFSET);
 
-		static const std::string tooltipLeftAndTop = LoadTHRotatorStringUtf8(g_hModule, IDS_LEFT_AND_TOP_TOOLTIP);
-		static const std::string tooltipWidthAndHeight = LoadTHRotatorStringUtf8(g_hModule, IDS_WIDTH_AND_HEIGHT_TOOLTIP);
+		static const std::string tooltipLeftAndTop = MakeDragIntTooltipText(IDS_LEFT_AND_TOP_TOOLTIP);
+		static const std::string tooltipWidthAndHeight = MakeDragIntTooltipText(IDS_WIDTH_AND_HEIGHT_TOOLTIP);
 		static const std::string tooltipYOffset = LoadTHRotatorStringUtf8(g_hModule, IDS_Y_OFFSET_TOOLTIP);
 
 		int leftAndTop[] = { m_mainScreenTopLeft.x, m_mainScreenTopLeft.y };
@@ -624,10 +632,10 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		static const std::string labelDestLeftAndTop = LoadTHRotatorStringUtf8(g_hModule, IDS_DEST_LEFT_AND_TOP);
 		static const std::string labelDestWidthAndHeight = LoadTHRotatorStringUtf8(g_hModule, IDS_DEST_WIDTH_AND_HEIGHT);
 
-		static const std::string tooltipSourceLeftAndTop = LoadTHRotatorStringUtf8(g_hModule, IDS_SOURCE_LEFT_AND_TOP_TOOLTIP);
-		static const std::string tooltipSourceWidthAndHeight = LoadTHRotatorStringUtf8(g_hModule, IDS_SOURCE_WIDTH_AND_HEIGHT_TOOLTIP);
-		static const std::string tooltipDestLeftAndTop = LoadTHRotatorStringUtf8(g_hModule, IDS_DEST_LEFT_AND_TOP_TOOLTIP);
-		static const std::string tooltipDestWidthAndHeight = LoadTHRotatorStringUtf8(g_hModule, IDS_DEST_WIDTH_AND_HEIGHT_TOOLTIP);
+		static const std::string tooltipSourceLeftAndTop = MakeDragIntTooltipText(IDS_SOURCE_LEFT_AND_TOP_TOOLTIP);
+		static const std::string tooltipSourceWidthAndHeight = MakeDragIntTooltipText(IDS_SOURCE_WIDTH_AND_HEIGHT_TOOLTIP);
+		static const std::string tooltipDestLeftAndTop = MakeDragIntTooltipText(IDS_DEST_LEFT_AND_TOP_TOOLTIP);
+		static const std::string tooltipDestWidthAndHeight = MakeDragIntTooltipText(IDS_DEST_WIDTH_AND_HEIGHT_TOOLTIP);
 
 		RectTransferData dummyRectForNoRect;
 
