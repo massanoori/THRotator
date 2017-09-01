@@ -480,7 +480,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		return;
 	}
 
-	ImGui::PushItemWidth(-140);
+	ImGui::PushItemWidth(-170);
 
 	// Entire screen rotation angle selection
 	{
