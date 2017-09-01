@@ -410,6 +410,24 @@ void THRotatorEditorContext::SetVerticallyLongWindow(bool bVerticallyLongWindow)
 	m_bVerticallyLongWindow = bVerticallyLongWindow;
 }
 
+void ShowPreviousItemTooltip(const char* tooltipText)
+{
+	if (ImGui::IsItemHovered())
+	{
+		ImGui::BeginTooltip();
+		ImGui::Text(tooltipText);
+		ImGui::EndTooltip();
+	}
+}
+
+bool CollapsingHeaderWithTooltip(const char* labelText, const char* tooltipText)
+{
+	bool bRet = ImGui::CollapsingHeader(labelText);
+	ShowPreviousItemTooltip(tooltipText);
+
+	return bRet;
+}
+
 void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 {
 	auto errorMessagePtr = GetErrorMessage();
@@ -464,13 +482,26 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 
 	ImGui::PushItemWidth(-140);
 
+	// Entire screen rotation angle selection
 	{
 		int rotationAngle = static_cast<int>(m_rotationAngle);
 		ImGui::PushID("MainScreenRotation");
-		ImGui::RadioButton("0\xC2\xB0", reinterpret_cast<int*>(&rotationAngle), Rotation_0); ImGui::SameLine();
-		ImGui::RadioButton("90\xC2\xB0", reinterpret_cast<int*>(&rotationAngle), Rotation_90); ImGui::SameLine();
-		ImGui::RadioButton("180\xC2\xB0", reinterpret_cast<int*>(&rotationAngle), Rotation_180); ImGui::SameLine();
+
+		ImGui::RadioButton("0\xC2\xB0", reinterpret_cast<int*>(&rotationAngle), Rotation_0);
+		ShowPreviousItemTooltip("Test test 0");
+		ImGui::SameLine();
+
+		ImGui::RadioButton("90\xC2\xB0", reinterpret_cast<int*>(&rotationAngle), Rotation_90);
+		ShowPreviousItemTooltip("Test test 90");
+		ImGui::SameLine();
+
+		ImGui::RadioButton("180\xC2\xB0", reinterpret_cast<int*>(&rotationAngle), Rotation_180);
+		ShowPreviousItemTooltip("Test test 180");
+		ImGui::SameLine();
+
 		ImGui::RadioButton("270\xC2\xB0", reinterpret_cast<int*>(&rotationAngle), Rotation_270);
+		ShowPreviousItemTooltip("Test test 270");
+
 		ImGui::PopID();
 		m_rotationAngle = static_cast<RotationAngle>(rotationAngle);
 	}
@@ -479,6 +510,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 	{
 		static const std::string labelVerticalWindow = LoadTHRotatorStringUtf8(g_hModule, IDS_VERTICAL_WINDOW);
 		ImGui::Checkbox(labelVerticalWindow.c_str(), &m_bVerticallyLongWindow);
+		ShowPreviousItemTooltip("Vertical win tooltip");
 	}
 
 	{
@@ -486,11 +518,14 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		static const std::string labelForceRearrangement = LoadTHRotatorStringUtf8(g_hModule, IDS_FORCE_REARRANGEMENTS);
 
 		ImGui::Checkbox(labelShowFirst.c_str(), &m_bEditorShownInitially);
+		ShowPreviousItemTooltip("Show win tooltip");
+
 		ImGui::Checkbox(labelForceRearrangement.c_str(), &m_bHUDRearrangeForced);
+		ShowPreviousItemTooltip("Force rearrangement tooltip");
 	}
 
 	static const std::string labelGameplayDetection = LoadTHRotatorStringUtf8(g_hModule, IDS_GAMEPLAY_DETECTION);
-	if (ImGui::CollapsingHeader(labelGameplayDetection.c_str()))
+	if (CollapsingHeaderWithTooltip(labelGameplayDetection.c_str(), "Gameplay detection tooltip"))
 	{
 		static const std::string labelSetVPCount = LoadTHRotatorStringUtf8(g_hModule, IDS_SET_VP_COUNT);
 		static const std::string labelThreshold = LoadTHRotatorStringUtf8(g_hModule, IDS_THRESHOLD);
@@ -499,8 +534,10 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		ImGui::InputText(labelSetVPCount.c_str(),
 			const_cast<char*>(currentSetVPCountText.c_str()), currentSetVPCountText.length(),
 			ImGuiInputTextFlags_ReadOnly);
+		ShowPreviousItemTooltip("Current VP count tooltip");
 
 		ImGui::InputInt(labelThreshold.c_str(), &m_judgeThreshold);
+		ShowPreviousItemTooltip("Threshold tooltip");
 
 		if (m_judgeThreshold < 0)
 		{
@@ -518,7 +555,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 	static const float COORDINATE_DRAG_SPEED = 0.1f;
 
 	static const std::string labelMainScreenRegion = LoadTHRotatorStringUtf8(g_hModule, IDS_MAIN_SCREEN_REGION);
-	if (ImGui::CollapsingHeader(labelMainScreenRegion.c_str()))
+	if (CollapsingHeaderWithTooltip(labelMainScreenRegion.c_str(), "Main screen tooltip"))
 	{
 		static const std::string labelLeftAndTop = LoadTHRotatorStringUtf8(g_hModule, IDS_LEFT_AND_TOP);
 		static const std::string labelWidthAndHeight = LoadTHRotatorStringUtf8(g_hModule, IDS_WIDTH_AND_HEIGHT);
@@ -526,33 +563,42 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 
 		int leftAndTop[] = { m_mainScreenTopLeft.x, m_mainScreenTopLeft.y };
 		ImGui::DragInt2(labelLeftAndTop.c_str(), leftAndTop, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX);
+		ShowPreviousItemTooltip("Left and top tooltip");
 		m_mainScreenTopLeft.x = leftAndTop[0];
 		m_mainScreenTopLeft.y = leftAndTop[1];
 
 		int widthAndHeight[] = { m_mainScreenSize.cx, m_mainScreenSize.cy };
 		ImGui::DragInt2(labelWidthAndHeight.c_str(), widthAndHeight, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX);
+		ShowPreviousItemTooltip("Width and height tooltip");
 		m_mainScreenSize.cx = widthAndHeight[0];
 		m_mainScreenSize.cy = widthAndHeight[1];
 
 		ImGui::InputInt(labelYOffset.c_str(), &m_yOffset);
+		ShowPreviousItemTooltip("Y offset tooltip");
 	}
 
 	static const std::string labelPixelInterpolation = LoadTHRotatorStringUtf8(g_hModule, IDS_PIXEL_INTERPOLATION);
-	if (ImGui::CollapsingHeader(labelPixelInterpolation.c_str()))
+	if (CollapsingHeaderWithTooltip(labelPixelInterpolation.c_str(), "Pixel interpolation tooltip"))
 	{
 		static const std::string labelFilterNone = LoadTHRotatorStringUtf8(g_hModule, IDS_FILTER_NONE);
 		static const std::string labelFilterBilinear = LoadTHRotatorStringUtf8(g_hModule, IDS_FILTER_BILINEAR);
 
 		std::underlying_type<D3DTEXTUREFILTERTYPE>::type rawFilterType = m_filterType;
 		ImGui::PushID("PixelInterpolationSelection");
-		ImGui::RadioButton(labelFilterNone.c_str(), &rawFilterType, D3DTEXF_NONE); ImGui::SameLine();
+
+		ImGui::RadioButton(labelFilterNone.c_str(), &rawFilterType, D3DTEXF_NONE);
+		ShowPreviousItemTooltip("None tooltip"); 
+		ImGui::SameLine();
+
 		ImGui::RadioButton(labelFilterBilinear.c_str(), &rawFilterType, D3DTEXF_LINEAR);
+		ShowPreviousItemTooltip("Bilinear tooltip");
+
 		ImGui::PopID();
 		m_filterType = static_cast<D3DTEXTUREFILTERTYPE>(rawFilterType);
 	}
 
 	static const std::string labelOtherRectangles = LoadTHRotatorStringUtf8(g_hModule, IDS_OTHER_RECTANGLES);
-	if (ImGui::CollapsingHeader(labelOtherRectangles.c_str()))
+	if (CollapsingHeaderWithTooltip(labelOtherRectangles.c_str(), "Other rectangles tooltip"))
 	{
 		static const std::string labelSourceLeftAndTop = LoadTHRotatorStringUtf8(g_hModule, IDS_SOURCE_LEFT_AND_TOP);
 		static const std::string labelSourceWidthAndHeight = LoadTHRotatorStringUtf8(g_hModule, IDS_SOURCE_WIDTH_AND_HEIGHT);
@@ -573,6 +619,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 			strcpy_s(nameEditBuffer, selectedRectTransfer.name.c_str());
 			ImGui::InputText(labelRectName.c_str(), nameEditBuffer, _countof(nameEditBuffer),
 				m_GuiContext.selectedRectIndex >= 0 ? 0 : ImGuiInputTextFlags_ReadOnly);
+			ShowPreviousItemTooltip("Rect name tooltip");
 			selectedRectTransfer.name = nameEditBuffer;
 		}
 
@@ -583,6 +630,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		};
 
 		ImGui::DragInt2(labelSourceLeftAndTop.c_str(), srcLeftAndTop, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX);
+		ShowPreviousItemTooltip("Src top and left tooltip");
 
 		selectedRectTransfer.sourcePosition.x = srcLeftAndTop[0];
 		selectedRectTransfer.sourcePosition.y = srcLeftAndTop[1];
@@ -594,6 +642,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		};
 
 		ImGui::DragInt2(labelSourceWidthAndHeight.c_str(), srcWidthAndHeight, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX);
+		ShowPreviousItemTooltip("Src width and height tooltip");
 
 		selectedRectTransfer.sourceSize.cx = srcWidthAndHeight[0];
 		selectedRectTransfer.sourceSize.cy = srcWidthAndHeight[1];
@@ -605,6 +654,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		};
 
 		ImGui::DragInt2(labelDestLeftAndTop.c_str(), dstLeftAndTop, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX);
+		ShowPreviousItemTooltip("Dst top and left tooltip");
 
 		selectedRectTransfer.destPosition.x = dstLeftAndTop[0];
 		selectedRectTransfer.destPosition.y = dstLeftAndTop[1];
@@ -616,23 +666,40 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		};
 
 		ImGui::DragInt2(labelDestWidthAndHeight.c_str(), dstWidthAndHeight, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX);
+		ShowPreviousItemTooltip("Dst width and height tooltip");
 
 		selectedRectTransfer.destSize.cx = dstWidthAndHeight[0];
 		selectedRectTransfer.destSize.cy = dstWidthAndHeight[1];
 
 		int rotationAngle = static_cast<int>(selectedRectTransfer.rotation);
 		ImGui::PushID("PerRectRotation");
-		ImGui::RadioButton("0\xC2\xB0", &rotationAngle, Rotation_0); ImGui::SameLine();
-		ImGui::RadioButton("90\xC2\xB0", &rotationAngle, Rotation_90); ImGui::SameLine();
-		ImGui::RadioButton("180\xC2\xB0", &rotationAngle, Rotation_180); ImGui::SameLine();
+
+		ImGui::RadioButton("0\xC2\xB0", &rotationAngle, Rotation_0);
+		ShowPreviousItemTooltip("Test test 0");
+		ImGui::SameLine();
+
+		ImGui::RadioButton("90\xC2\xB0", &rotationAngle, Rotation_90);
+		ShowPreviousItemTooltip("Test test 90");
+		ImGui::SameLine();
+
+		ImGui::RadioButton("180\xC2\xB0", &rotationAngle, Rotation_180);
+		ShowPreviousItemTooltip("Test test 180");
+		ImGui::SameLine();
+
 		ImGui::RadioButton("270\xC2\xB0", &rotationAngle, Rotation_270);
+		ShowPreviousItemTooltip("Test test 270");
+
 		ImGui::PopID();
 		selectedRectTransfer.rotation = static_cast<RotationAngle>(rotationAngle);
 
 		static const std::string labelAdd = LoadTHRotatorStringUtf8(g_hModule, IDS_ADD);
 		static const std::string labelDelete = LoadTHRotatorStringUtf8(g_hModule, IDS_DELETE);
 
-		if (ImGui::Button(labelAdd.c_str()))
+		if (!ImGui::Button(labelAdd.c_str()))
+		{
+			ShowPreviousItemTooltip("Addition tooltip");
+		}
+		else
 		{
 			int newNameSuffix = 1;
 			std::string newName;
@@ -673,6 +740,10 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 				m_GuiContext.selectedRectIndex = (std::min)(m_GuiContext.selectedRectIndex,
 					static_cast<int>(m_rectTransfers.size()) - 1);
 			}
+			else
+			{
+				ShowPreviousItemTooltip("Deletion tooltip");
+			}
 
 			ImGui::SameLine();
 
@@ -684,6 +755,10 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 					m_rectTransfers[newItemPosition]);
 				m_GuiContext.selectedRectIndex = newItemPosition;
 			}
+			else
+			{
+				ShowPreviousItemTooltip("Move up tooltip");
+			}
 
 			ImGui::SameLine();
 
@@ -694,6 +769,10 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 				std::swap(m_rectTransfers[m_GuiContext.selectedRectIndex],
 					m_rectTransfers[newItemPosition]);
 				m_GuiContext.selectedRectIndex = newItemPosition;
+			}
+			else
+			{
+				ShowPreviousItemTooltip("Move down tooltip");
 			}
 		}
 
@@ -712,6 +791,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		ImGui::ListBox(labelRectList.c_str(), &m_GuiContext.selectedRectIndex,
 			m_GuiContext.rectListBoxItemBuffer.data(),
 			m_GuiContext.rectListBoxItemBuffer.size(), 4);
+		ShowPreviousItemTooltip("Rectangle list tooltip");
 	}
 
 	static const std::string labelHide = LoadTHRotatorStringUtf8(g_hModule, IDS_HIDE_WINDOW);
@@ -726,12 +806,16 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		UpdateVisibilitySwitchMenuText();
 	}
 
+	ShowPreviousItemTooltip("Hide button tooltip");
+
 	ImGui::SameLine();
 
 	if (ImGui::Button(labelReload.c_str()))
 	{
 		LoadSettings();
 	}
+
+	ShowPreviousItemTooltip("Reload button tooltip");
 
 	ImGui::SameLine();
 
@@ -741,12 +825,16 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		m_bSaveBySysKeyAllowed = true;
 	}
 
+	ShowPreviousItemTooltip("Save button tooltip");
+
 	ImGui::SameLine();
 	
 	if (ImGui::Button(labelAbout.c_str()))
 	{
 		ImGui::OpenPopup(labelAboutTHRotator.c_str());
 	}
+
+	ShowPreviousItemTooltip("About button tooltip");
 
 	if (ImGui::BeginPopupModal(labelAboutTHRotator.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize))
 	{
