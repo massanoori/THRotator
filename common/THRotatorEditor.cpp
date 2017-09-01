@@ -436,6 +436,38 @@ std::string MakeDragIntTooltipText(UINT stringID)
 	return LoadTHRotatorStringUtf8(g_hModule, stringID) + tooltipDragInt;
 }
 
+bool DragInt2_POINT(const char* label, POINT& inoutPoint,
+	float valueSpeed = 1.0f, int valueMin = 0, int valueMax = 0, const char* displayFormat = "%0.f")
+{
+	int buffer[] =
+	{
+		inoutPoint.x, inoutPoint.y,
+	};
+
+	bool bRet = ImGui::DragInt2(label, buffer, valueSpeed, valueMin, valueMax, displayFormat);
+
+	inoutPoint.x = buffer[0];
+	inoutPoint.y = buffer[1];
+
+	return bRet;
+}
+
+bool DragInt2_SIZE(const char* label, SIZE& inoutSize,
+	float valueSpeed = 1.0f, int valueMin = 0, int valueMax = 0, const char* displayFormat = "%0.f")
+{
+	int buffer[] =
+	{
+		inoutSize.cx, inoutSize.cy,
+	};
+
+	bool bRet = ImGui::DragInt2(label, buffer, valueSpeed, valueMin, valueMax, displayFormat);
+
+	inoutSize.cx = buffer[0];
+	inoutSize.cy = buffer[1];
+
+	return bRet;
+}
+
 void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 {
 	auto errorMessagePtr = GetErrorMessage();
@@ -497,18 +529,22 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		int rotationAngle = static_cast<int>(m_rotationAngle);
 		ImGui::PushID("MainScreenRotation");
 
+		// 0 degrees
 		ImGui::RadioButton("0\xC2\xB0", reinterpret_cast<int*>(&rotationAngle), Rotation_0);
 		ShowPreviousItemTooltip(tooltipEntireRotationAngle.c_str());
 		ImGui::SameLine();
 
+		// 90 degrees
 		ImGui::RadioButton("90\xC2\xB0", reinterpret_cast<int*>(&rotationAngle), Rotation_90);
 		ShowPreviousItemTooltip(tooltipEntireRotationAngle.c_str());
 		ImGui::SameLine();
 
+		// 180 degrees
 		ImGui::RadioButton("180\xC2\xB0", reinterpret_cast<int*>(&rotationAngle), Rotation_180);
 		ShowPreviousItemTooltip(tooltipEntireRotationAngle.c_str());
 		ImGui::SameLine();
 
+		// 270 degrees
 		ImGui::RadioButton("270\xC2\xB0", reinterpret_cast<int*>(&rotationAngle), Rotation_270);
 		ShowPreviousItemTooltip(tooltipEntireRotationAngle.c_str());
 
@@ -583,17 +619,11 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		static const std::string tooltipWidthAndHeight = MakeDragIntTooltipText(IDS_WIDTH_AND_HEIGHT_TOOLTIP);
 		static const std::string tooltipYOffset = LoadTHRotatorStringUtf8(g_hModule, IDS_Y_OFFSET_TOOLTIP);
 
-		int leftAndTop[] = { m_mainScreenTopLeft.x, m_mainScreenTopLeft.y };
-		ImGui::DragInt2(labelLeftAndTop.c_str(), leftAndTop, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX);
+		DragInt2_POINT(labelLeftAndTop.c_str(), m_mainScreenTopLeft, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX);
 		ShowPreviousItemTooltip(tooltipLeftAndTop.c_str());
-		m_mainScreenTopLeft.x = leftAndTop[0];
-		m_mainScreenTopLeft.y = leftAndTop[1];
 
-		int widthAndHeight[] = { m_mainScreenSize.cx, m_mainScreenSize.cy };
-		ImGui::DragInt2(labelWidthAndHeight.c_str(), widthAndHeight, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX);
+		DragInt2_SIZE(labelWidthAndHeight.c_str(), m_mainScreenSize, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX);
 		ShowPreviousItemTooltip(tooltipWidthAndHeight.c_str());
-		m_mainScreenSize.cx = widthAndHeight[0];
-		m_mainScreenSize.cy = widthAndHeight[1];
 
 		ImGui::InputInt(labelYOffset.c_str(), &m_yOffset);
 		ShowPreviousItemTooltip(tooltipYOffset.c_str());
@@ -656,71 +686,41 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 			selectedRectTransfer.name = nameEditBuffer;
 		}
 
-		int srcLeftAndTop[] =
-		{
-			selectedRectTransfer.sourcePosition.x,
-			selectedRectTransfer.sourcePosition.y,
-		};
-
-		ImGui::DragInt2(labelSourceLeftAndTop.c_str(), srcLeftAndTop, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX);
+		DragInt2_POINT(labelSourceLeftAndTop.c_str(), selectedRectTransfer.sourcePosition, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX);
 		ShowPreviousItemTooltip(tooltipSourceLeftAndTop.c_str());
 
-		selectedRectTransfer.sourcePosition.x = srcLeftAndTop[0];
-		selectedRectTransfer.sourcePosition.y = srcLeftAndTop[1];
-
-		int srcWidthAndHeight[] =
-		{
-			selectedRectTransfer.sourceSize.cx,
-			selectedRectTransfer.sourceSize.cy,
-		};
-
-		ImGui::DragInt2(labelSourceWidthAndHeight.c_str(), srcWidthAndHeight, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX);
+		DragInt2_SIZE(labelSourceWidthAndHeight.c_str(), selectedRectTransfer.sourceSize, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX);
 		ShowPreviousItemTooltip(tooltipSourceWidthAndHeight.c_str());
 
-		selectedRectTransfer.sourceSize.cx = srcWidthAndHeight[0];
-		selectedRectTransfer.sourceSize.cy = srcWidthAndHeight[1];
-
-		int dstLeftAndTop[] =
-		{
-			selectedRectTransfer.destPosition.x,
-			selectedRectTransfer.destPosition.y,
-		};
-
-		ImGui::DragInt2(labelDestLeftAndTop.c_str(), dstLeftAndTop, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX);
+		DragInt2_POINT(labelDestLeftAndTop.c_str(), selectedRectTransfer.destPosition, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX);
 		ShowPreviousItemTooltip(tooltipDestLeftAndTop.c_str());
 
-		selectedRectTransfer.destPosition.x = dstLeftAndTop[0];
-		selectedRectTransfer.destPosition.y = dstLeftAndTop[1];
-
-		int dstWidthAndHeight[] =
-		{
-			selectedRectTransfer.destSize.cx,
-			selectedRectTransfer.destSize.cy,
-		};
-
-		ImGui::DragInt2(labelDestWidthAndHeight.c_str(), dstWidthAndHeight, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX);
+		DragInt2_SIZE(labelDestWidthAndHeight.c_str(), selectedRectTransfer.destSize, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX);
 		ShowPreviousItemTooltip(tooltipDestWidthAndHeight.c_str());
 
-		selectedRectTransfer.destSize.cx = dstWidthAndHeight[0];
-		selectedRectTransfer.destSize.cy = dstWidthAndHeight[1];
+		// Per-rect rotation
 
 		int rotationAngle = static_cast<int>(selectedRectTransfer.rotation);
 		ImGui::PushID("PerRectRotation");
 
 		static const std::string tooltipRectRotationTooltip = LoadTHRotatorStringUtf8(g_hModule, IDS_RECT_ROTATION_TOOLTIP);
 
+		// 0 degrees
 		ImGui::RadioButton("0\xC2\xB0", &rotationAngle, Rotation_0);
 		ShowPreviousItemTooltip(tooltipRectRotationTooltip.c_str());
 		ImGui::SameLine();
 
+		// 90 degrees
 		ImGui::RadioButton("90\xC2\xB0", &rotationAngle, Rotation_90);
 		ShowPreviousItemTooltip(tooltipRectRotationTooltip.c_str());
 		ImGui::SameLine();
 
+		// 180 degrees
 		ImGui::RadioButton("180\xC2\xB0", &rotationAngle, Rotation_180);
 		ShowPreviousItemTooltip(tooltipRectRotationTooltip.c_str());
 		ImGui::SameLine();
 
+		// 270 degrees
 		ImGui::RadioButton("270\xC2\xB0", &rotationAngle, Rotation_270);
 		ShowPreviousItemTooltip(tooltipRectRotationTooltip.c_str());
 
