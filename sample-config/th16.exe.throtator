@@ -1,5 +1,4 @@
 {
-  "NumRectTransfers": 12,
   "fileter_type": "linear",
   "format_version": 2,
   "judge_threshold": 20,
@@ -41,13 +40,13 @@
       "rect_rotation": 0,
       "source_height": 18,
       "source_left": 472,
-      "source_top": 22,
+      "source_top": 24,
       "source_width": 108
     },
     {
       "destination_height": 16,
       "destination_left": 0,
-      "destination_top": 496,
+      "destination_top": 497,
       "destination_width": 128,
       "rect_name": "スペルカード欠片",
       "rect_rotation": 0,
@@ -59,7 +58,7 @@
     {
       "destination_height": 16,
       "destination_left": 0,
-      "destination_top": 496,
+      "destination_top": 497,
       "destination_width": 108,
       "rect_name": "スペルカード",
       "rect_rotation": 0,
@@ -69,9 +68,9 @@
       "source_width": 108
     },
     {
-      "destination_height": 13,
+      "destination_height": 16,
       "destination_left": 128,
-      "destination_top": 496,
+      "destination_top": 497,
       "destination_width": 128,
       "rect_name": "残り人数",
       "rect_rotation": 0,
@@ -81,45 +80,45 @@
       "source_width": 128
     },
     {
-      "destination_height": 6,
-      "destination_left": 128,
-      "destination_top": 506,
-      "destination_width": 128,
+      "destination_height": 16,
+      "destination_left": 232,
+      "destination_top": 17,
+      "destination_width": 152,
       "rect_name": "エクステンド",
       "rect_rotation": 0,
-      "source_height": 10,
-      "source_left": 492,
-      "source_top": 118,
-      "source_width": 128
+      "source_height": 16,
+      "source_left": 472,
+      "source_top": 115,
+      "source_width": 152
     },
     {
-      "destination_height": 17,
+      "destination_height": 16,
       "destination_left": 0,
       "destination_top": 17,
-      "destination_width": 192,
+      "destination_width": 116,
       "rect_name": "最大得点",
       "rect_rotation": 0,
-      "source_height": 17,
-      "source_left": 432,
+      "source_height": 16,
+      "source_left": 524,
       "source_top": 204,
-      "source_width": 192
+      "source_width": 116
     },
     {
-      "destination_height": 17,
-      "destination_left": 192,
+      "destination_height": 16,
+      "destination_left": 116,
       "destination_top": 17,
-      "destination_width": 192,
+      "destination_width": 116,
       "rect_name": "グレイズ",
       "rect_rotation": 0,
-      "source_height": 17,
-      "source_left": 432,
-      "source_top": 225,
-      "source_width": 192
+      "source_height": 16,
+      "source_left": 524,
+      "source_top": 226,
+      "source_width": 116
     },
     {
       "destination_height": 16,
       "destination_left": 256,
-      "destination_top": 496,
+      "destination_top": 497,
       "destination_width": 128,
       "rect_name": "霊力",
       "rect_rotation": 0,
@@ -131,7 +130,7 @@
     {
       "destination_height": 12,
       "destination_left": 260,
-      "destination_top": 497,
+      "destination_top": 499,
       "destination_width": 12,
       "rect_name": "霊力アイコン",
       "rect_rotation": 0,
@@ -154,8 +153,7 @@
     }
   ],
   "rotation_angle": 0,
-  "use_modal_editor": false,
   "vertical_window": false,
   "window_visible": false,
-  "y_offset": 36
+  "y_offset": 35
 }
