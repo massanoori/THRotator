@@ -628,10 +628,10 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		static const std::string tooltipWidthAndHeight = MakeDragIntTooltipText(IDS_WIDTH_AND_HEIGHT_TOOLTIP);
 		static const std::string tooltipYOffset = LoadTHRotatorStringUtf8(g_hModule, IDS_Y_OFFSET_TOOLTIP);
 
-		DragInt2_POINT(labelLeftAndTop.c_str(), m_mainScreenTopLeft, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX);
+		DragInt2_POINT(labelLeftAndTop.c_str(), m_mainScreenTopLeft, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX, "%0.f px");
 		ShowPreviousItemTooltip(tooltipLeftAndTop.c_str());
 
-		DragInt2_SIZE(labelWidthAndHeight.c_str(), m_mainScreenSize, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX);
+		DragInt2_SIZE(labelWidthAndHeight.c_str(), m_mainScreenSize, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX, "%0.f px");
 		ShowPreviousItemTooltip(tooltipWidthAndHeight.c_str());
 
 		ImGui::InputInt(labelYOffset.c_str(), &m_yOffset);
@@ -696,16 +696,16 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 			selectedRectTransfer.name = nameEditBuffer;
 		}
 
-		DragInt2_POINT(labelSourceLeftAndTop.c_str(), selectedRectTransfer.sourcePosition, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX);
+		DragInt2_POINT(labelSourceLeftAndTop.c_str(), selectedRectTransfer.sourcePosition, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX, "%0.f px");
 		ShowPreviousItemTooltip(tooltipSourceLeftAndTop.c_str());
 
-		DragInt2_SIZE(labelSourceWidthAndHeight.c_str(), selectedRectTransfer.sourceSize, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX);
+		DragInt2_SIZE(labelSourceWidthAndHeight.c_str(), selectedRectTransfer.sourceSize, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX, "%0.f px");
 		ShowPreviousItemTooltip(tooltipSourceWidthAndHeight.c_str());
 
-		DragInt2_POINT(labelDestLeftAndTop.c_str(), selectedRectTransfer.destPosition, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX);
+		DragInt2_POINT(labelDestLeftAndTop.c_str(), selectedRectTransfer.destPosition, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX, "%0.f px");
 		ShowPreviousItemTooltip(tooltipDestLeftAndTop.c_str());
 
-		DragInt2_SIZE(labelDestWidthAndHeight.c_str(), selectedRectTransfer.destSize, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX);
+		DragInt2_SIZE(labelDestWidthAndHeight.c_str(), selectedRectTransfer.destSize, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX, "%0.f px");
 		ShowPreviousItemTooltip(tooltipDestWidthAndHeight.c_str());
 
 		// Per-rect rotation
