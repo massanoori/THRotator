@@ -28,6 +28,24 @@ HHOOK ms_hHook;
 std::map<HWND, std::weak_ptr<THRotatorEditorContext>> ms_touhouWinToContext;
 UINT ms_switchVisibilityID = 12345u;
 
+template <typename T>
+T Clamp(T value, T minValue, T maxValue)
+{
+	assert(minValue <= maxValue);
+
+	if (value < minValue)
+	{
+		return minValue;
+	}
+
+	if (value > maxValue)
+	{
+		return maxValue;
+	}
+
+	return value;
+}
+
 }
 
 THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
@@ -446,8 +464,8 @@ bool DragInt2_POINT(const char* label, POINT& inoutPoint,
 
 	bool bRet = ImGui::DragInt2(label, buffer, valueSpeed, valueMin, valueMax, displayFormat);
 
-	inoutPoint.x = buffer[0];
-	inoutPoint.y = buffer[1];
+	inoutPoint.x = Clamp(buffer[0], valueMin, valueMax);
+	inoutPoint.y = Clamp(buffer[1], valueMin, valueMax);
 
 	return bRet;
 }
@@ -462,8 +480,8 @@ bool DragInt2_SIZE(const char* label, SIZE& inoutSize,
 
 	bool bRet = ImGui::DragInt2(label, buffer, valueSpeed, valueMin, valueMax, displayFormat);
 
-	inoutSize.cx = buffer[0];
-	inoutSize.cy = buffer[1];
+	inoutSize.cx = Clamp(buffer[0], valueMin, valueMax);
+	inoutSize.cy = Clamp(buffer[1], valueMin, valueMax);
 
 	return bRet;
 }
@@ -591,16 +609,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 
 		ImGui::InputInt(labelThreshold.c_str(), &m_judgeThreshold);
 		ShowPreviousItemTooltip(tooltipThreshold.c_str());
-
-		if (m_judgeThreshold < 0)
-		{
-			m_judgeThreshold = 0;
-		}
-		
-		if (m_judgeThreshold > 999)
-		{
-			m_judgeThreshold = 999;
-		}
+		m_judgeThreshold = Clamp(m_judgeThreshold, 0, 999);
 	}
 
 	static const int COORDINATE_MAX = 999;
@@ -626,6 +635,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		ShowPreviousItemTooltip(tooltipWidthAndHeight.c_str());
 
 		ImGui::InputInt(labelYOffset.c_str(), &m_yOffset);
+		m_yOffset = Clamp(m_yOffset, COORDINATE_MIN, COORDINATE_MAX);
 		ShowPreviousItemTooltip(tooltipYOffset.c_str());
 	}
 
