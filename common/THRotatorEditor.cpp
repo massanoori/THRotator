@@ -403,7 +403,7 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 					}
 					break;
 
-				case 'R':
+				case '0':
 					if ((HIWORD(pMsg->lParam) & KF_ALTDOWN) && !(HIWORD(pMsg->lParam) & KF_REPEAT)
 						&& IsUniquePostedMessage(pMsg))
 					{
