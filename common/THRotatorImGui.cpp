@@ -193,6 +193,26 @@ bool LoadSelectedFontData(HDC hdc, void*& outPointer, DWORD& outSize)
 	return true;
 }
 
+template <typename Predicate>
+int FindFontIndex(const void* fontData, Predicate predicate)
+{
+	int numFonts = stbtt_GetNumberOfFonts(static_cast<const unsigned char*>(fontData));
+	for (int fontIndex = 0; fontIndex < numFonts; fontIndex++)
+	{
+		stbtt_fontinfo fontInfo;
+		auto offset = stbtt_GetFontOffsetForIndex(static_cast<const unsigned char*>(fontData), fontIndex);
+
+		stbtt_InitFont(&fontInfo, static_cast<const unsigned char*>(fontData), offset);
+
+		if (predicate(fontInfo))
+		{
+			return fontIndex;
+		}
+	}
+
+	return -1;
+}
+
 /**
  * Returned pointer is dynamically allocated and is owned by ImGui.
  */
@@ -201,6 +221,9 @@ bool LoadPreferredFontToImGuiMemory(HDC hdc,
 	void*& outPointer, DWORD& outSize, int& outIndex)
 {
 	const std::pair<std::wstring, std::wstring>* fontToFindWithinTTF = nullptr;
+
+	void* fontData = nullptr;
+	DWORD fontDataSize = 0;
 
 	for (const auto& preferredFont : preferredFonts)
 	{
@@ -213,7 +236,7 @@ bool LoadPreferredFontToImGuiMemory(HDC hdc,
 
 		SelectObject(hdc, font);
 
-		bool bLoadSuccessful = LoadSelectedFontData(hdc, outPointer, outSize);
+		bool bLoadSuccessful = LoadSelectedFontData(hdc, fontData, fontDataSize);
 		DeleteObject(font);
 
 		if (bLoadSuccessful)
@@ -230,38 +253,32 @@ bool LoadPreferredFontToImGuiMemory(HDC hdc,
 
 	// Find font index of wanted style within TTF
 
-	int numFonts = stbtt_GetNumberOfFonts(static_cast<const unsigned char*>(outPointer));
-	int foundFontIndex = -1;
-	for (int fontIndex = 0; fontIndex < numFonts; fontIndex++)
+	int fontIndex = FindFontIndex(fontData, [fontToFindWithinTTF](const stbtt_fontinfo& fontInfo)
 	{
-		stbtt_fontinfo fontInfo;
-		auto offset = stbtt_GetFontOffsetForIndex(static_cast<const unsigned char*>(outPointer), fontIndex);
+		// Although we are retrieving Japanese font, we use STBTT_MS_LANG_ENGLISH.
+		// Using STBTT_MS_LANG_JAPANESE just affects the result of stbtt_GetFontNameString().
+		// In addition, using STBTT_MS_LANG_JAPANESE sometimes fails to reach an offset within TTF/TTC.
 
-		stbtt_InitFont(&fontInfo, static_cast<const unsigned char*>(outPointer), offset);
+		// About name ID, https://www.microsoft.com/typography/otspec/name.htm#nameIDs
 
-		std::pair<std::wstring, std::wstring> loadedFontName
-		{
-			// Although we are retrieving Japanese font, we use STBTT_MS_LANG_ENGLISH.
-			// Using STBTT_MS_LANG_JAPANESE just affects the result of stbtt_GetFontNameString().
-			// In addition, using STBTT_MS_LANG_JAPANESE sometimes fails to reach an offset within TTF/TTC.
+		auto fontFamilyName = stbtt_GetFontNameStringHelper(&fontInfo, STBTT_MS_LANG_ENGLISH, 1);
+		auto fontSubfamilyName = stbtt_GetFontNameStringHelper(&fontInfo, STBTT_MS_LANG_ENGLISH, 2);
 
-			// About name ID, https://www.microsoft.com/typography/otspec/name.htm#nameIDs
+		return fontToFindWithinTTF->first == fontFamilyName && fontToFindWithinTTF->second == fontSubfamilyName;
+	});
 
-			// family name (name ID = 1)
-			stbtt_GetFontNameStringHelper(&fontInfo, STBTT_MS_LANG_ENGLISH, 1),
-
-			// subfamily name (name ID = 2)
-			stbtt_GetFontNameStringHelper(&fontInfo, STBTT_MS_LANG_ENGLISH, 2),
-		};
-
-		if (loadedFontName == *fontToFindWithinTTF)
-		{
-			outIndex = fontIndex;
-			return true;
-		}
+	if (fontIndex == -1)
+	{
+		ImGui::MemFree(fontData);
+		fontData = nullptr;
+		return false;
 	}
 
-	return false;
+	outPointer = fontData;
+	outSize = fontDataSize;
+	outIndex = fontIndex;
+
+	return true;
 }
 
 int CALLBACK FindFirstJapaneseFontProc(const LOGFONTW* logicalFont,
@@ -274,7 +291,20 @@ int CALLBACK FindFirstJapaneseFontProc(const LOGFONTW* logicalFont,
 		return TRUE;
 	}
 
+	// Supports Japanese encoding
 	if (logicalFont->lfCharSet != SHIFTJIS_CHARSET)
+	{
+		return TRUE;
+	}
+
+	// Variable pitch to save space
+	if ((logicalFont->lfPitchAndFamily & 0x3) != VARIABLE_PITCH)
+	{
+		return TRUE;
+	}
+
+	// Reject font for vertical writing
+	if (logicalFont->lfFaceName[0] == '@')
 	{
 		return TRUE;
 	}
@@ -323,6 +353,56 @@ int CALLBACK FindFirstJapaneseFontProc(const LOGFONTW* logicalFont,
 	return FALSE;
 }
 
+bool FindFirstJapaneseFont(HDC hdc, void*& outPointer, DWORD& outSize, int& outIndex)
+{
+	std::wstring fontFamilyName;
+	auto enumFontFamUserData = reinterpret_cast<LPARAM>(&fontFamilyName);
+	EnumFontFamiliesExW(hdc, nullptr, (FONTENUMPROCW)&FindFirstJapaneseFontProc, enumFontFamUserData, 0);
+
+	if (fontFamilyName.empty())
+	{
+		return false;
+	}
+
+	void* fontData = nullptr;
+	DWORD fontDataSize = 0;
+
+	auto font = CreateFontW(0, 0, 0, 0, 0, 0, 0, 0, DEFAULT_CHARSET, 0, 0, 0, 0,
+		fontFamilyName.c_str());
+	if (font != NULL)
+	{
+		SelectObject(hdc, font);
+
+		int foundIndex = -1;
+		if (LoadSelectedFontData(hdc, fontData, fontDataSize))
+		{
+			foundIndex = FindFontIndex(fontData, [&fontFamilyName](const stbtt_fontinfo& fontInfo)
+			{
+				auto currentFontFamilyName = stbtt_GetFontNameStringHelper(&fontInfo, STBTT_MS_LANG_JAPANESE, 1);
+				return fontFamilyName == currentFontFamilyName;
+			});
+
+			if (foundIndex == -1)
+			{
+				ImGui::MemFree(fontData);
+				fontData = nullptr;
+			}
+		}
+
+		DeleteObject(font);
+
+		if (foundIndex != -1)
+		{
+			outPointer = fontData;
+			outSize = fontDataSize;
+			outIndex = foundIndex;
+			return true;
+		}
+	}
+
+	return false;
+}
+
 }
 
 bool THRotatorImGui_Initialize(HWND hWnd, THRotatorImGui_D3DDeviceInterface* device)
@@ -355,22 +435,7 @@ bool THRotatorImGui_Initialize(HWND hWnd, THRotatorImGui_D3DDeviceInterface* dev
 		assert(fontData == nullptr);
 
 		// If no preferred font is found, try to find a font that supports Japanese.
-
-		std::wstring fontFamilyName;
-		auto enumFontFamUserData = reinterpret_cast<LPARAM>(&fontFamilyName);
-		EnumFontFamiliesExW(hdc, nullptr, (FONTENUMPROCW)&FindFirstJapaneseFontProc, enumFontFamUserData, 0);
-
-		auto font = CreateFontW(0, 0, 0, 0, 0, 0, 0, 0, DEFAULT_CHARSET, 0, 0, 0, 0,
-			fontFamilyName.c_str());
-		if (font != NULL)
-		{
-			SelectObject(hdc, font);
-			if (LoadSelectedFontData(hdc, fontData, fontDataSize))
-			{
-				fontIndex = 0;
-			}
-			DeleteObject(font);
-		}
+		FindFirstJapaneseFont(hdc, fontData, fontDataSize, fontIndex);
 	}
 
 	DeleteDC(hdc);
@@ -406,6 +471,8 @@ bool THRotatorImGui_Initialize(HWND hWnd, THRotatorImGui_D3DDeviceInterface* dev
 		fontConfig.FontNo = fontIndex;
 
 		io.Fonts->AddFontFromMemoryTTF(fontData, fontDataSize, 16.0f, &fontConfig, japaneseRanges);
+		fontData = nullptr;
+		fontDataSize = 0;
 	}
 
 	return true;
