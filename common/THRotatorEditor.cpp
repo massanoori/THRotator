@@ -241,7 +241,13 @@ void THRotatorEditorContext::UpdateVisibilitySwitchMenuText()
 	mi.fMask = MIIM_STRING;
 
 	auto str = LoadTHRotatorStringUnicode(g_hModule, m_bEditorShown ? IDS_HIDE_EDITOR : IDS_SHOW_EDITOR);
+
+#ifdef _UNICODE
 	mi.dwTypeData = const_cast<LPTSTR>(str.c_str());
+#else
+	std::string strShiftJIS = ConvertFromUnicodeToSjis(str);
+	mi.dwTypeData = const_cast<LPTSTR>(strShiftJIS.c_str());
+#endif
 
 	SetMenuItemInfo(m_hSysMenu, ms_switchVisibilityID, FALSE, &mi);
 }
@@ -266,11 +272,7 @@ bool THRotatorEditorContext::SaveSettings()
 	if (!bSaveSuccess)
 	{
 		auto saveFailureMessage = LoadTHRotatorStringUtf8(g_hModule, IDS_SETTING_FILE_SAVE_FAILED);
-#ifdef _UNICODE
 		SetNewErrorMessage(std::move(saveFailureMessage));
-#else
-		SetNewErrorMessage(ConvertFromUnicodeToSjis(saveFailureMessage));
-#endif
 	}
 
 	return bSaveSuccess;
@@ -289,11 +291,7 @@ bool THRotatorEditorContext::LoadSettings()
 		OutputLogMessagef(LogSeverity::Error, "Failed to load");
 
 		auto loadFailureMessage = LoadTHRotatorStringUtf8(g_hModule, IDS_SETTING_FILE_LOAD_FAILED);
-#ifdef _UNICODE
 		SetNewErrorMessage(std::move(loadFailureMessage));
-#else
-		SetNewErrorMessage(ConvertFromUnicodeToSjis(loadFailureMessage));
-#endif
 
 		return false;
 	}
