@@ -27,4 +27,4 @@ build_script:
     cov-build --dir cov-int msbuild INSTALL.vcxproj /maxcpucount
 artifacts:
 - path: .\build\cov-int
-  name: cov-int-${APPVEYOR_REPO_COMMIT}
+  name: cov-int
