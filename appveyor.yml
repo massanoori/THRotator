@@ -8,14 +8,19 @@ before_build:
 
     git submodule update
 
-    mkdir build-2017
+    mkdir build
 
-    cd build-2017
+    cd build
 
 
-    cmake ../ -DBOOST_INCLUDE_DIR=C:\Libraries\boost_1_64_0 -DBOOST_LIB_DIR=C:\Libraries\boost_1_64_0\lib32-msvc-14.1 -DCMAKE_INSTALL_PREFIX=../install-2017 -G "Visual Studio 15 2017"
+    set THR_CMAKE_BOOST_CONFIG=-DBOOST_INCLUDE_DIR=C:\Libraries\boost_1_64_0 -DBOOST_LIB_DIR=C:\Libraries\boost_1_64_0\lib32-msvc-14.1
+
+    set THR_CMAKE_CONFIG=-DCMAKE_INSTALL_PREFIX=../install-2017 -G "Visual Studio 15 2017"
+
+
+    cmake ../ %THR_CMAKE_BOOST_CONFIG% %THR_CMAKE_CONFIG%
 build:
-  project: build-2017\INSTALL.vcxproj
+  project: build\INSTALL.vcxproj
   parallel: true
   verbosity: minimal
 artifacts:

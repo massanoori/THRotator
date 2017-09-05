@@ -1,0 +1,30 @@
+version: '{build}'
+image: Visual Studio 2017
+configuration: Debug
+platform: x86
+build_script:
+- cmd: >-
+    git submodule init
+
+    git submodule update
+
+    mkdir build
+
+    cd build
+
+
+    set THR_CMAKE_BOOST_CONFIG=-DBOOST_INCLUDE_DIR=C:\Libraries\boost_1_64_0 -DBOOST_LIB_DIR=C:\Libraries\boost_1_64_0\lib32-msvc-14.1
+
+    set THR_CMAKE_CONFIG=-DCMAKE_INSTALL_PREFIX=../install-2017 -G "Visual Studio 15 2017" -DCMAKE_BUILD_TYPE=Debug
+
+
+    "C:/Program Files (x86)/Microsoft Visual Studio/2017/Community/VC/Auxiliary/Build/vcvars32.bat"
+
+
+    cmake ../ %THR_CMAKE_BOOST_CONFIG% %THR_CMAKE_CONFIG%
+
+
+    cov-build --dir cov-int msbuild INSTALL.vcxproj
+artifacts:
+- path: .\build\cov-int
+  name: cov-int-${APPVEYOR_REPO_COMMIT}
