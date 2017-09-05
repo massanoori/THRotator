@@ -24,7 +24,7 @@ build_script:
     cmake ../ %THR_CMAKE_BOOST_CONFIG% %THR_CMAKE_CONFIG%
 
 
-    cov-build --dir cov-int msbuild INSTALL.vcxproj
+    cov-build --dir cov-int msbuild INSTALL.vcxproj /maxcpucount
 artifacts:
 - path: .\build\cov-int
   name: cov-int-${APPVEYOR_REPO_COMMIT}
