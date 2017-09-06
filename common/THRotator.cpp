@@ -371,10 +371,10 @@ private:
 
 private:
 
-	THRotatorDirect3DDevice(const THRotatorDirect3DDevice&) {}
-	THRotatorDirect3DDevice(THRotatorDirect3DDevice&&) {}
-	THRotatorDirect3DDevice& operator=(const THRotatorDirect3DDevice&) {}
-	THRotatorDirect3DDevice& operator=(THRotatorDirect3D&&) {}
+	THRotatorDirect3DDevice(const THRotatorDirect3DDevice&) = delete;
+	THRotatorDirect3DDevice(THRotatorDirect3DDevice&&) = delete;
+	THRotatorDirect3DDevice& operator=(const THRotatorDirect3DDevice&) = delete;
+	THRotatorDirect3DDevice& operator=(THRotatorDirect3D&&) = delete;
 
 	HRESULT InternalInit(UINT Adapter, THRotatorDirect3D* pMyD3D, D3DDEVTYPE DeviceType, HWND hFocusWindow,
 		DWORD BehaviorFlags,
