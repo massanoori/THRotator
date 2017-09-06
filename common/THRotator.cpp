@@ -1881,7 +1881,7 @@ THRotatorDirect3DDevice::THRotatorDirect3DDevice()
 
 THRotatorDirect3DDevice::~THRotatorDirect3DDevice()
 {
-	OutputLogMessagef(LogSeverity::Info, "Destructing THRotatorDirect3DDevice");
+	OutputLogMessage(LogSeverity::Info, "Destructing THRotatorDirect3DDevice");
 
 	THRotatorImGui_Shutdown();
 }
