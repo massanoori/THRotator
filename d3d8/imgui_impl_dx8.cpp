@@ -117,6 +117,7 @@ struct ScopedTransform
 	}
 
 	ScopedTransform(D3DTRANSFORMSTATETYPE inTransformType)
+		: transformStateType(inTransformType)
 	{
 		g_pd3dDevice->GetTransform(transformStateType, &previousTransformMatrix);
 	}
