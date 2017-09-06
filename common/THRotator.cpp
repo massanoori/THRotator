@@ -369,16 +369,6 @@ private:
 	int m_resetRevision; // このデバイスが最後にリセットを行ったのは何番目のリセットか
 
 
-#ifdef _DEBUG
-	/****************************************
-	* Frames per second
-	****************************************/
-
-	LARGE_INTEGER m_freq, m_cur, m_prev;
-	float m_FPSNew, m_FPS;
-	int m_fpsCount;
-#endif
-
 private:
 
 	THRotatorDirect3DDevice(const THRotatorDirect3DDevice&) {}
@@ -1886,15 +1876,7 @@ THRotatorDirect3DDevice::THRotatorDirect3DDevice()
 	, m_requestedWidth(0)
 	, m_requestedHeight(0)
 	, m_resetRevision(0)
-#ifdef _DEBUG
-	, m_FPSNew(60.f)
-	, m_fpsCount(0)
-#endif
 {
-#ifdef _DEBUG
-	QueryPerformanceFrequency(&m_freq);
-	ZeroMemory(&m_prev, sizeof(m_prev));
-#endif
 }
 
 THRotatorDirect3DDevice::~THRotatorDirect3DDevice()
@@ -2691,22 +2673,6 @@ HRESULT THRotatorDirect3DDevice::InternalPresent(CONST RECT *pSourceRect,
 		return D3DERR_DEVICELOST;
 	}
 
-#ifdef _DEBUG
-	QueryPerformanceCounter(&m_cur);
-	float FPS = float(m_freq.QuadPart) / float(m_cur.QuadPart - m_prev.QuadPart);
-	if (FPS < m_FPSNew)
-		m_FPSNew = FPS;
-
-	if (m_fpsCount % 30 == 0)
-	{
-		m_FPS = m_FPSNew;
-		m_FPSNew = 60.f;
-	}
-	m_fpsCount++;
-
-	m_prev = m_cur;
-
-#endif
 	return ret;
 }
 
