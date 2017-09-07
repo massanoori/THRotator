@@ -49,7 +49,8 @@ T Clamp(T value, T minValue, T maxValue)
 }
 
 THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
-	: m_judgeCountPrev(0)
+	: m_judgeCount(0)
+	, m_judgeCountPrev(0)
 	, m_hTouhouWin(hTouhouWin)
 	, m_bHUDRearrangeForced(false)
 	, m_deviceResetRevision(0)
