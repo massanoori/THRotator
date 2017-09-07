@@ -1843,7 +1843,7 @@ THRotatorDirect3DDevice::THRotatorDirect3DDevice()
 	, m_d3dpp{}
 	, m_requestedWidth(0)
 	, m_requestedHeight(0)
-	, m_deviceType(D3DDEVTYPE_NULLREF)
+	, m_deviceType(D3DDEVTYPE_HAL)
 	, m_resetRevision(0)
 {
 }
