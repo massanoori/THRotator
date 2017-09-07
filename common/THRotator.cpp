@@ -1840,8 +1840,10 @@ HRESULT THRotatorDirect3D::CreateDeviceEx(UINT Adapter,
 THRotatorDirect3DDevice::THRotatorDirect3DDevice()
 	: m_bInitialized(false)
 	, m_referenceCount(1)
+	, m_d3dpp{}
 	, m_requestedWidth(0)
 	, m_requestedHeight(0)
+	, m_deviceType(D3DDEVTYPE_NULLREF)
 	, m_resetRevision(0)
 {
 }
