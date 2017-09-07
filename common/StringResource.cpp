@@ -3,16 +3,17 @@
 #include "stdafx.h"
 #include "StringResource.h"
 #include "EncodingUtils.h"
+#include "THRotatorSystem.h"
 
-std::string LoadTHRotatorStringUtf8(HINSTANCE hModule, UINT nID)
+std::string LoadTHRotatorStringUtf8(UINT nID)
 {
-	return ConvertFromUnicodeToUtf8(LoadTHRotatorStringUnicode(hModule, nID));
+	return ConvertFromUnicodeToUtf8(LoadTHRotatorStringUnicode(nID));
 }
 
-std::wstring LoadTHRotatorStringUnicode(HINSTANCE hModule, UINT nID)
+std::wstring LoadTHRotatorStringUnicode(UINT nID)
 {
 	LPWSTR temp;
-	auto bufferLength = LoadStringW(hModule, nID, reinterpret_cast<LPWSTR>(&temp), 0);
+	auto bufferLength = LoadStringW(GetTHRotatorModule(), nID, reinterpret_cast<LPWSTR>(&temp), 0);
 
 	if (bufferLength == 0)
 	{

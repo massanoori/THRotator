@@ -14,8 +14,6 @@ inline bool IsZeroSizedRectTransfer(const RectTransferData& rectTransfer)
 	return IsZeroSize(rectTransfer.sourceSize) || IsZeroSize(rectTransfer.destSize);
 }
 
-extern HINSTANCE g_hModule;
-
 class THRotatorEditorContext
 {
 public:

@@ -66,38 +66,6 @@ const UINT BASE_SCREEN_HEIGHT = 480u;
 
 }
 
-HINSTANCE g_hModule;
-
-#ifdef TOUHOU_ON_D3D8
-
-IDirect3D8* (WINAPI * p_Direct3DCreate8)(UINT);
-
-FARPROC p_ValidatePixelShader;
-FARPROC p_ValidateVertexShader;
-FARPROC p_DebugSetMute;
-
-#else
-
-typedef IDirect3D9* (WINAPI * DIRECT3DCREATE9PROC)(UINT);
-typedef HRESULT(WINAPI * DIRECT3DCREATE9EXPROC)(UINT, Direct3DExBase**);
-
-FARPROC p_Direct3DShaderValidatorCreate9;
-FARPROC p_PSGPError;
-FARPROC p_PSGPSampleTexture;
-FARPROC p_D3DPERF_BeginEvent;
-FARPROC p_D3DPERF_EndEvent;
-FARPROC p_D3DPERF_GetStatus;
-FARPROC p_D3DPERF_QueryRepeatFrame;
-FARPROC p_D3DPERF_SetMarker;
-FARPROC p_D3DPERF_SetOptions;
-FARPROC p_D3DPERF_SetRegion;
-FARPROC p_DebugSetLevel;
-FARPROC p_DebugSetMute;
-DIRECT3DCREATE9PROC p_Direct3DCreate9;
-DIRECT3DCREATE9EXPROC p_Direct3DCreate9Ex;
-
-#endif
-
 class THRotatorDirect3DDevice;
 
 class THRotatorDirect3D : public Direct3DExBase
@@ -113,7 +81,7 @@ public:
 
 	bool Init(UINT v);
 #ifndef TOUHOU_ON_D3D8
-	HRESULT initEx(UINT v);
+	HRESULT InitEx(UINT v);
 #endif
 
 	ULONG WINAPI AddRef(VOID) override;
@@ -1746,25 +1714,24 @@ THRotatorDirect3D::~THRotatorDirect3D()
 
 bool THRotatorDirect3D::Init(UINT v)
 {
-#ifdef TOUHOU_ON_D3D8
-	m_pd3d = p_Direct3DCreate8(v);
-#else
+#ifndef TOUHOU_ON_D3D8
 	if (m_pd3d)
 	{
 		m_pd3d->Release();
 	}
 
 	m_pd3dEx.Reset();
-
-	m_pd3d = p_Direct3DCreate9(v);
 #endif
+
+	m_pd3d = CallOriginalDirect3DCreate(v);
+
 	return m_pd3d != NULL;
 }
 
 #ifndef TOUHOU_ON_D3D8
-HRESULT THRotatorDirect3D::initEx(UINT v)
+HRESULT THRotatorDirect3D::InitEx(UINT v)
 {
-	HRESULT ret = p_Direct3DCreate9Ex(v, &m_pd3dEx);
+	HRESULT ret = CallOriginalDirect3DCreate9Ex(v, &m_pd3dEx);
 	if (FAILED(ret))
 	{
 		return ret;
@@ -2766,31 +2733,14 @@ HRESULT THRotatorDirect3DDevice::InternalReset(
 	return ret;
 }
 
-extern "C" {
-#ifdef TOUHOU_ON_D3D8
-
-	__declspec(naked) void WINAPI d_ValidatePixelShader() { _asm { jmp p_ValidatePixelShader } }
-	__declspec(naked) void WINAPI d_ValidateVertexShader() { _asm { jmp p_ValidateVertexShader } }
-	__declspec(naked) void WINAPI d_DebugSetMute() { _asm { jmp p_DebugSetMute } }
-#else
-	__declspec(naked) void WINAPI d_Direct3DShaderValidatorCreate9() { _asm { jmp p_Direct3DShaderValidatorCreate9 } }
-	__declspec(naked) void WINAPI d_PSGPError() { _asm { jmp p_PSGPError } }
-	__declspec(naked) void WINAPI d_PSGPSampleTexture() { _asm { jmp p_PSGPSampleTexture } }
-	__declspec(naked) void WINAPI d_D3DPERF_BeginEvent() { _asm { jmp p_D3DPERF_BeginEvent } }
-	__declspec(naked) void WINAPI d_D3DPERF_EndEvent() { _asm { jmp p_D3DPERF_EndEvent } }
-	__declspec(naked) void WINAPI d_D3DPERF_GetStatus() { _asm { jmp p_D3DPERF_GetStatus } }
-	__declspec(naked) void WINAPI d_D3DPERF_QueryRepeatFrame() { _asm { jmp p_D3DPERF_QueryRepeatFrame } }
-	__declspec(naked) void WINAPI d_D3DPERF_SetMarker() { _asm { jmp p_D3DPERF_SetMarker } }
-	__declspec(naked) void WINAPI d_D3DPERF_SetOptions() { _asm { jmp p_D3DPERF_SetOptions } }
-	__declspec(naked) void WINAPI d_D3DPERF_SetRegion() { _asm { jmp p_D3DPERF_SetRegion } }
-	__declspec(naked) void WINAPI d_DebugSetLevel() { _asm { jmp p_DebugSetLevel } }
-	__declspec(naked) void WINAPI d_DebugSetMute() { _asm { jmp p_DebugSetMute } }
-
+extern "C"
+{
+#ifndef TOUHOU_ON_D3D8
 	__declspec(dllexport) HRESULT WINAPI d_Direct3DCreate9Ex(UINT v, Direct3DExBase** pp)
 	{
 		auto pd3dEx = new THRotatorDirect3D();
 
-		HRESULT ret = pd3dEx->initEx(v);
+		HRESULT ret = pd3dEx->InitEx(v);
 		if (FAILED(ret))
 		{
 			pd3dEx->Release();
@@ -2800,9 +2750,8 @@ extern "C" {
 		*pp = pd3dEx;
 		return ret;
 	}
-
-
 #endif
+
 	__declspec(dllexport) Direct3DBase* WINAPI
 #ifdef TOUHOU_ON_D3D8
 		d_Direct3DCreate8
@@ -2821,70 +2770,4 @@ extern "C" {
 
 		return pd3d;
 	}
-}
-
-HINSTANCE h_original;
-
-BOOL APIENTRY DllMain(HANDLE hModule,
-	DWORD  fdwReason,
-	LPVOID /* lpReserved */)
-{
-	switch (fdwReason)
-	{
-	case DLL_PROCESS_ATTACH:
-
-		g_hModule = reinterpret_cast<HINSTANCE>(hModule);
-		{
-			TCHAR systemDirectoryRaw[MAX_PATH];
-			GetSystemDirectory(systemDirectoryRaw, MAX_PATH);
-			boost::filesystem::path systemDirectory(systemDirectoryRaw);
-
-#ifdef TOUHOU_ON_D3D8
-			systemDirectory /= L"d3d8.dll";
-#else
-			systemDirectory /= L"d3d9.dll";
-#endif
-			h_original = LoadLibraryW(systemDirectory.generic_wstring().c_str());
-		}
-
-		if (h_original == NULL)
-		{
-			return FALSE;
-		}
-
-#ifdef TOUHOU_ON_D3D8
-		p_ValidatePixelShader = GetProcAddress(h_original, "ValidatePixelShader");
-		p_ValidateVertexShader = GetProcAddress(h_original, "ValidateVertexShader");
-		p_DebugSetMute = GetProcAddress(h_original, "DebugSetMute");
-		p_Direct3DCreate8 = (IDirect3D8*(WINAPI*)(UINT))GetProcAddress(h_original, "Direct3DCreate8");
-#else
-		p_Direct3DShaderValidatorCreate9 = GetProcAddress(h_original, "Direct3DShaderValidatorCreate9");
-		p_PSGPError = GetProcAddress(h_original, "PSGPError");
-		p_PSGPSampleTexture = GetProcAddress(h_original, "PSGPSampleTexture");
-		p_D3DPERF_BeginEvent = GetProcAddress(h_original, "D3DPERF_BeginEvent");
-		p_D3DPERF_EndEvent = GetProcAddress(h_original, "D3DPERF_EndEvent");
-		p_D3DPERF_GetStatus = GetProcAddress(h_original, "D3DPERF_GetStatus");
-		p_D3DPERF_QueryRepeatFrame = GetProcAddress(h_original, "D3DPERF_QueryRepeatFrame");
-		p_D3DPERF_SetMarker = GetProcAddress(h_original, "D3DPERF_SetMarker");
-		p_D3DPERF_SetOptions = GetProcAddress(h_original, "D3DPERF_SetOptions");
-		p_D3DPERF_SetRegion = GetProcAddress(h_original, "D3DPERF_SetRegion");
-		p_DebugSetLevel = GetProcAddress(h_original, "DebugSetLevel");
-		p_DebugSetMute = GetProcAddress(h_original, "DebugSetMute");
-		p_Direct3DCreate9 = reinterpret_cast<DIRECT3DCREATE9PROC>(GetProcAddress(h_original, "Direct3DCreate9"));
-		p_Direct3DCreate9Ex = reinterpret_cast<DIRECT3DCREATE9EXPROC>(GetProcAddress(h_original, "Direct3DCreate9Ex"));
-#endif
-		break;
-
-	case DLL_THREAD_ATTACH:
-	case DLL_THREAD_DETACH:
-		break;
-
-	case DLL_PROCESS_DETACH:
-		FreeLibrary(h_original);
-		break;
-
-	default:
-		break;
-	}
-	return TRUE;
 }

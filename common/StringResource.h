@@ -5,9 +5,9 @@
 /**
  * Load string from string table resource (UTF-8).
  */
-std::string LoadTHRotatorStringUtf8(HINSTANCE hModule, UINT nID);
+std::string LoadTHRotatorStringUtf8(UINT nID);
 
 /**
  * Load string from string table resource (Unicode).
  */
-std::wstring LoadTHRotatorStringUnicode(HINSTANCE hModule, UINT nID);
+std::wstring LoadTHRotatorStringUnicode(UINT nID);

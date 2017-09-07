@@ -241,7 +241,7 @@ void THRotatorEditorContext::UpdateVisibilitySwitchMenuText()
 	mi.cbSize = sizeof(mi);
 	mi.fMask = MIIM_STRING;
 
-	auto str = LoadTHRotatorStringUnicode(g_hModule, m_bEditorShown ? IDS_HIDE_EDITOR : IDS_SHOW_EDITOR);
+	auto str = LoadTHRotatorStringUnicode(m_bEditorShown ? IDS_HIDE_EDITOR : IDS_SHOW_EDITOR);
 
 #ifdef _UNICODE
 	mi.dwTypeData = const_cast<LPTSTR>(str.c_str());
@@ -272,7 +272,7 @@ bool THRotatorEditorContext::SaveSettings()
 
 	if (!bSaveSuccess)
 	{
-		auto saveFailureMessage = LoadTHRotatorStringUtf8(g_hModule, IDS_SETTING_FILE_SAVE_FAILED);
+		auto saveFailureMessage = LoadTHRotatorStringUtf8(IDS_SETTING_FILE_SAVE_FAILED);
 		SetNewErrorMessage(std::move(saveFailureMessage));
 	}
 
@@ -291,7 +291,7 @@ bool THRotatorEditorContext::LoadSettings()
 	{
 		OutputLogMessagef(LogSeverity::Error, "Failed to load");
 
-		auto loadFailureMessage = LoadTHRotatorStringUtf8(g_hModule, IDS_SETTING_FILE_LOAD_FAILED);
+		auto loadFailureMessage = LoadTHRotatorStringUtf8(IDS_SETTING_FILE_LOAD_FAILED);
 		SetNewErrorMessage(std::move(loadFailureMessage));
 
 		return false;
@@ -386,7 +386,7 @@ LRESULT CALLBACK THRotatorEditorContext::MessageHookProc(int nCode, WPARAM wPara
 						}
 						else
 						{
-							static const std::string messageLossOfDataPrevention = LoadTHRotatorStringUtf8(g_hModule, IDS_LOSS_OF_DATA_PREVENTED);
+							static const std::string messageLossOfDataPrevention = LoadTHRotatorStringUtf8(IDS_LOSS_OF_DATA_PREVENTED);
 							context->SetNewErrorMessage(messageLossOfDataPrevention.c_str(), 20);
 						}
 					}
@@ -448,9 +448,9 @@ bool CollapsingHeaderWithTooltip(const char* labelText, const char* tooltipText)
 std::string MakeDragIntTooltipText(UINT stringID)
 {
 	static const std::string tooltipDragInt = std::string("\n\n")
-		+ LoadTHRotatorStringUtf8(g_hModule, IDS_DRAGINT_COMMON_TOOLTIP);
+		+ LoadTHRotatorStringUtf8(IDS_DRAGINT_COMMON_TOOLTIP);
 
-	return LoadTHRotatorStringUtf8(g_hModule, stringID) + tooltipDragInt;
+	return LoadTHRotatorStringUtf8(stringID) + tooltipDragInt;
 }
 
 bool DragInt2_POINT(const char* label, POINT& inoutPoint,
@@ -499,7 +499,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		ImGui::OpenPopup("Error message");
 		if (ImGui::BeginPopupModal("Error message", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
 		{
-			static const std::string labelThisWindowClosesInSeconds = LoadTHRotatorStringUtf8(g_hModule, IDS_WINDOW_CLOSES_IN_SECONDS);
+			static const std::string labelThisWindowClosesInSeconds = LoadTHRotatorStringUtf8(IDS_WINDOW_CLOSES_IN_SECONDS);
 
 			LARGE_INTEGER currentClock, clockFrequency;
 			QueryPerformanceCounter(&currentClock);
@@ -541,7 +541,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 
 	// Entire screen rotation angle selection
 	{
-		static const std::string tooltipEntireRotationAngle = LoadTHRotatorStringUtf8(g_hModule, IDS_ENTIRE_ROTATION_TOOLTIP);
+		static const std::string tooltipEntireRotationAngle = LoadTHRotatorStringUtf8(IDS_ENTIRE_ROTATION_TOOLTIP);
 
 		int rotationAngle = static_cast<int>(m_rotationAngle);
 		ImGui::PushID("MainScreenRotation");
@@ -571,18 +571,18 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 
 	bool bPreviousVerticalWindow = m_bVerticallyLongWindow;
 	{
-		static const std::string labelVerticalWindow = LoadTHRotatorStringUtf8(g_hModule, IDS_VERTICAL_WINDOW);
-		static const std::string tooltipVerticalWindow = LoadTHRotatorStringUtf8(g_hModule, IDS_VERTICAL_WINDOW_TOOLTIP);
+		static const std::string labelVerticalWindow = LoadTHRotatorStringUtf8(IDS_VERTICAL_WINDOW);
+		static const std::string tooltipVerticalWindow = LoadTHRotatorStringUtf8(IDS_VERTICAL_WINDOW_TOOLTIP);
 
 		ImGui::Checkbox(labelVerticalWindow.c_str(), &m_bVerticallyLongWindow);
 		ShowPreviousItemTooltip(tooltipVerticalWindow.c_str());
 	}
 
 	{
-		static const std::string labelShowFirst = LoadTHRotatorStringUtf8(g_hModule, IDS_SHOW_THROTATOR_FIRST);
-		static const std::string labelForceRearrangement = LoadTHRotatorStringUtf8(g_hModule, IDS_FORCE_REARRANGEMENTS);
-		static const std::string tooltipShowFirst = LoadTHRotatorStringUtf8(g_hModule, IDS_SHOW_THROTATOR_FIRST_TOOLTIP);
-		static const std::string tooltipForceRearrangement = LoadTHRotatorStringUtf8(g_hModule, IDS_FORCE_REARRANGEMENTS_TOOLTIP);
+		static const std::string labelShowFirst = LoadTHRotatorStringUtf8(IDS_SHOW_THROTATOR_FIRST);
+		static const std::string labelForceRearrangement = LoadTHRotatorStringUtf8(IDS_FORCE_REARRANGEMENTS);
+		static const std::string tooltipShowFirst = LoadTHRotatorStringUtf8(IDS_SHOW_THROTATOR_FIRST_TOOLTIP);
+		static const std::string tooltipForceRearrangement = LoadTHRotatorStringUtf8(IDS_FORCE_REARRANGEMENTS_TOOLTIP);
 
 		ImGui::Checkbox(labelShowFirst.c_str(), &m_bEditorShownInitially);
 		ShowPreviousItemTooltip(tooltipShowFirst.c_str());
@@ -591,14 +591,14 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		ShowPreviousItemTooltip(tooltipForceRearrangement.c_str());
 	}
 
-	static const std::string labelGameplayDetection = LoadTHRotatorStringUtf8(g_hModule, IDS_GAMEPLAY_DETECTION);
-	static const std::string tooltipGameplayDetection = LoadTHRotatorStringUtf8(g_hModule, IDS_GAMEPLAY_DETECTION_TOOLTIP);
+	static const std::string labelGameplayDetection = LoadTHRotatorStringUtf8(IDS_GAMEPLAY_DETECTION);
+	static const std::string tooltipGameplayDetection = LoadTHRotatorStringUtf8(IDS_GAMEPLAY_DETECTION_TOOLTIP);
 	if (CollapsingHeaderWithTooltip(labelGameplayDetection.c_str(), tooltipGameplayDetection.c_str()))
 	{
-		static const std::string labelSetVPCount = LoadTHRotatorStringUtf8(g_hModule, IDS_SET_VP_COUNT);
-		static const std::string labelThreshold = LoadTHRotatorStringUtf8(g_hModule, IDS_THRESHOLD);
-		static const std::string tooltipSetVPCount = LoadTHRotatorStringUtf8(g_hModule, IDS_SET_VP_COUNT_TOOLTIP);
-		static const std::string tooltipThreshold = LoadTHRotatorStringUtf8(g_hModule, IDS_THRESHOLD_TOOLTIP);
+		static const std::string labelSetVPCount = LoadTHRotatorStringUtf8(IDS_SET_VP_COUNT);
+		static const std::string labelThreshold = LoadTHRotatorStringUtf8(IDS_THRESHOLD);
+		static const std::string tooltipSetVPCount = LoadTHRotatorStringUtf8(IDS_SET_VP_COUNT_TOOLTIP);
+		static const std::string tooltipThreshold = LoadTHRotatorStringUtf8(IDS_THRESHOLD_TOOLTIP);
 
 		const std::string currentSetVPCountText = fmt::format("{}", m_judgeCountPrev).c_str();
 		ImGui::InputText(labelSetVPCount.c_str(),
@@ -615,17 +615,17 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 	static const int COORDINATE_MIN = 0;
 	static const float COORDINATE_DRAG_SPEED = 0.1f;
 
-	static const std::string labelMainScreenRegion = LoadTHRotatorStringUtf8(g_hModule, IDS_MAIN_SCREEN_REGION);
-	static const std::string tooltipMainScreenRegion = LoadTHRotatorStringUtf8(g_hModule, IDS_MAIN_SCREEN_REGION_TOOLTIP);
+	static const std::string labelMainScreenRegion = LoadTHRotatorStringUtf8(IDS_MAIN_SCREEN_REGION);
+	static const std::string tooltipMainScreenRegion = LoadTHRotatorStringUtf8(IDS_MAIN_SCREEN_REGION_TOOLTIP);
 	if (CollapsingHeaderWithTooltip(labelMainScreenRegion.c_str(), tooltipMainScreenRegion.c_str()))
 	{
-		static const std::string labelLeftAndTop = LoadTHRotatorStringUtf8(g_hModule, IDS_LEFT_AND_TOP);
-		static const std::string labelWidthAndHeight = LoadTHRotatorStringUtf8(g_hModule, IDS_WIDTH_AND_HEIGHT);
-		static const std::string labelYOffset = LoadTHRotatorStringUtf8(g_hModule, IDS_Y_OFFSET);
+		static const std::string labelLeftAndTop = LoadTHRotatorStringUtf8(IDS_LEFT_AND_TOP);
+		static const std::string labelWidthAndHeight = LoadTHRotatorStringUtf8(IDS_WIDTH_AND_HEIGHT);
+		static const std::string labelYOffset = LoadTHRotatorStringUtf8(IDS_Y_OFFSET);
 
 		static const std::string tooltipLeftAndTop = MakeDragIntTooltipText(IDS_LEFT_AND_TOP_TOOLTIP);
 		static const std::string tooltipWidthAndHeight = MakeDragIntTooltipText(IDS_WIDTH_AND_HEIGHT_TOOLTIP);
-		static const std::string tooltipYOffset = LoadTHRotatorStringUtf8(g_hModule, IDS_Y_OFFSET_TOOLTIP);
+		static const std::string tooltipYOffset = LoadTHRotatorStringUtf8(IDS_Y_OFFSET_TOOLTIP);
 
 		DragInt2_POINT(labelLeftAndTop.c_str(), m_mainScreenTopLeft, COORDINATE_DRAG_SPEED, COORDINATE_MIN, COORDINATE_MAX, "%0.f px");
 		ShowPreviousItemTooltip(tooltipLeftAndTop.c_str());
@@ -638,15 +638,15 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		ShowPreviousItemTooltip(tooltipYOffset.c_str());
 	}
 
-	static const std::string labelPixelInterpolation = LoadTHRotatorStringUtf8(g_hModule, IDS_PIXEL_INTERPOLATION);
-	static const std::string tooltipPixelInterpolation = LoadTHRotatorStringUtf8(g_hModule, IDS_PIXEL_INTERPOLATION_TOOLTIP);
+	static const std::string labelPixelInterpolation = LoadTHRotatorStringUtf8(IDS_PIXEL_INTERPOLATION);
+	static const std::string tooltipPixelInterpolation = LoadTHRotatorStringUtf8(IDS_PIXEL_INTERPOLATION_TOOLTIP);
 	if (CollapsingHeaderWithTooltip(labelPixelInterpolation.c_str(), tooltipPixelInterpolation.c_str()))
 	{
-		static const std::string labelFilterNone = LoadTHRotatorStringUtf8(g_hModule, IDS_FILTER_NONE);
-		static const std::string labelFilterBilinear = LoadTHRotatorStringUtf8(g_hModule, IDS_FILTER_BILINEAR);
+		static const std::string labelFilterNone = LoadTHRotatorStringUtf8(IDS_FILTER_NONE);
+		static const std::string labelFilterBilinear = LoadTHRotatorStringUtf8(IDS_FILTER_BILINEAR);
 
-		static const std::string tooltipFilterNone = LoadTHRotatorStringUtf8(g_hModule, IDS_FILTER_NONE_TOOLTIP);
-		static const std::string tooltipFilterBilinear = LoadTHRotatorStringUtf8(g_hModule, IDS_FILTER_BILINEAR_TOOLTIP);
+		static const std::string tooltipFilterNone = LoadTHRotatorStringUtf8(IDS_FILTER_NONE_TOOLTIP);
+		static const std::string tooltipFilterBilinear = LoadTHRotatorStringUtf8(IDS_FILTER_BILINEAR_TOOLTIP);
 
 		std::underlying_type<D3DTEXTUREFILTERTYPE>::type rawFilterType = m_filterType;
 		ImGui::PushID("PixelInterpolationSelection");
@@ -662,14 +662,14 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		m_filterType = static_cast<D3DTEXTUREFILTERTYPE>(rawFilterType);
 	}
 
-	static const std::string labelOtherRectangles = LoadTHRotatorStringUtf8(g_hModule, IDS_OTHER_RECTANGLES);
-	static const std::string tooltipOtherRectangles = LoadTHRotatorStringUtf8(g_hModule, IDS_OTHER_RECTANGLES_TOOLTIP);
+	static const std::string labelOtherRectangles = LoadTHRotatorStringUtf8(IDS_OTHER_RECTANGLES);
+	static const std::string tooltipOtherRectangles = LoadTHRotatorStringUtf8(IDS_OTHER_RECTANGLES_TOOLTIP);
 	if (CollapsingHeaderWithTooltip(labelOtherRectangles.c_str(), tooltipOtherRectangles.c_str()))
 	{
-		static const std::string labelSourceLeftAndTop = LoadTHRotatorStringUtf8(g_hModule, IDS_SOURCE_LEFT_AND_TOP);
-		static const std::string labelSourceWidthAndHeight = LoadTHRotatorStringUtf8(g_hModule, IDS_SOURCE_WIDTH_AND_HEIGHT);
-		static const std::string labelDestLeftAndTop = LoadTHRotatorStringUtf8(g_hModule, IDS_DEST_LEFT_AND_TOP);
-		static const std::string labelDestWidthAndHeight = LoadTHRotatorStringUtf8(g_hModule, IDS_DEST_WIDTH_AND_HEIGHT);
+		static const std::string labelSourceLeftAndTop = LoadTHRotatorStringUtf8(IDS_SOURCE_LEFT_AND_TOP);
+		static const std::string labelSourceWidthAndHeight = LoadTHRotatorStringUtf8(IDS_SOURCE_WIDTH_AND_HEIGHT);
+		static const std::string labelDestLeftAndTop = LoadTHRotatorStringUtf8(IDS_DEST_LEFT_AND_TOP);
+		static const std::string labelDestWidthAndHeight = LoadTHRotatorStringUtf8(IDS_DEST_WIDTH_AND_HEIGHT);
 
 		static const std::string tooltipSourceLeftAndTop = MakeDragIntTooltipText(IDS_SOURCE_LEFT_AND_TOP_TOOLTIP);
 		static const std::string tooltipSourceWidthAndHeight = MakeDragIntTooltipText(IDS_SOURCE_WIDTH_AND_HEIGHT_TOOLTIP);
@@ -684,8 +684,8 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 			m_rectTransfers[m_GuiContext.selectedRectIndex] : dummyRectForNoRect;
 
 		{
-			static const std::string labelRectName = LoadTHRotatorStringUtf8(g_hModule, IDS_RECT_NAME);
-			static const std::string tooltipRectName = LoadTHRotatorStringUtf8(g_hModule, IDS_RECT_NAME_TOOLTIP);
+			static const std::string labelRectName = LoadTHRotatorStringUtf8(IDS_RECT_NAME);
+			static const std::string tooltipRectName = LoadTHRotatorStringUtf8(IDS_RECT_NAME_TOOLTIP);
 
 			char nameEditBuffer[128];
 			strcpy_s(nameEditBuffer, selectedRectTransfer.name.c_str());
@@ -712,7 +712,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		int rotationAngle = static_cast<int>(selectedRectTransfer.rotation);
 		ImGui::PushID("PerRectRotation");
 
-		static const std::string tooltipRectRotationTooltip = LoadTHRotatorStringUtf8(g_hModule, IDS_RECT_ROTATION_TOOLTIP);
+		static const std::string tooltipRectRotationTooltip = LoadTHRotatorStringUtf8(IDS_RECT_ROTATION_TOOLTIP);
 
 		// 0 degrees
 		ImGui::RadioButton("0\xC2\xB0", &rotationAngle, Rotation_0);
@@ -736,12 +736,12 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		ImGui::PopID();
 		selectedRectTransfer.rotation = static_cast<RotationAngle>(rotationAngle);
 
-		static const std::string labelAdd = LoadTHRotatorStringUtf8(g_hModule, IDS_ADD);
-		static const std::string labelDelete = LoadTHRotatorStringUtf8(g_hModule, IDS_DELETE);
+		static const std::string labelAdd = LoadTHRotatorStringUtf8(IDS_ADD);
+		static const std::string labelDelete = LoadTHRotatorStringUtf8(IDS_DELETE);
 
 		if (!ImGui::Button(labelAdd.c_str()))
 		{
-			static const std::string tooltipAdd = LoadTHRotatorStringUtf8(g_hModule, IDS_ADDITION_TOOLTIP);
+			static const std::string tooltipAdd = LoadTHRotatorStringUtf8(IDS_ADDITION_TOOLTIP);
 			ShowPreviousItemTooltip(tooltipAdd.c_str());
 		}
 		else
@@ -787,7 +787,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 			}
 			else
 			{
-				static const std::string tooltipDelete = LoadTHRotatorStringUtf8(g_hModule, IDS_DELETION_TOOLTIP);
+				static const std::string tooltipDelete = LoadTHRotatorStringUtf8(IDS_DELETION_TOOLTIP);
 				ShowPreviousItemTooltip(tooltipDelete.c_str());
 			}
 
@@ -803,7 +803,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 			}
 			else
 			{
-				static const std::string tooltipMoveUp = LoadTHRotatorStringUtf8(g_hModule, IDS_MOVEUP_TOOLTIP);
+				static const std::string tooltipMoveUp = LoadTHRotatorStringUtf8(IDS_MOVEUP_TOOLTIP);
 				ShowPreviousItemTooltip(tooltipMoveUp.c_str());
 			}
 
@@ -819,7 +819,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 			}
 			else
 			{
-				static const std::string tooltipMoveDown = LoadTHRotatorStringUtf8(g_hModule, IDS_MOVEDOWN_TOOLTIP);
+				static const std::string tooltipMoveDown = LoadTHRotatorStringUtf8(IDS_MOVEDOWN_TOOLTIP);
 				ShowPreviousItemTooltip(tooltipMoveDown.c_str());
 			}
 		}
@@ -834,8 +834,8 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 			m_GuiContext.rectListBoxItemBuffer[rectIndex] = m_rectTransfers[rectIndex].name.c_str();
 		}
 
-		static const std::string labelRectList = LoadTHRotatorStringUtf8(g_hModule, IDS_RECT_LIST);
-		static const std::string tooltipRectList = LoadTHRotatorStringUtf8(g_hModule, IDS_RECT_LIST_TOOLTIP);
+		static const std::string labelRectList = LoadTHRotatorStringUtf8(IDS_RECT_LIST);
+		static const std::string tooltipRectList = LoadTHRotatorStringUtf8(IDS_RECT_LIST_TOOLTIP);
 
 		ImGui::ListBox(labelRectList.c_str(), &m_GuiContext.selectedRectIndex,
 			m_GuiContext.rectListBoxItemBuffer.data(),
@@ -843,17 +843,17 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		ShowPreviousItemTooltip(tooltipRectList.c_str());
 	}
 
-	static const std::string labelHide = LoadTHRotatorStringUtf8(g_hModule, IDS_HIDE_EDITOR_SHORT);
-	static const std::string labelReload = LoadTHRotatorStringUtf8(g_hModule, IDS_RELOAD);
-	static const std::string labelSave = LoadTHRotatorStringUtf8(g_hModule, IDS_SAVE);
-	static const std::string labelAbout = LoadTHRotatorStringUtf8(g_hModule, IDS_ABOUT);
+	static const std::string labelHide = LoadTHRotatorStringUtf8(IDS_HIDE_EDITOR_SHORT);
+	static const std::string labelReload = LoadTHRotatorStringUtf8(IDS_RELOAD);
+	static const std::string labelSave = LoadTHRotatorStringUtf8(IDS_SAVE);
+	static const std::string labelAbout = LoadTHRotatorStringUtf8(IDS_ABOUT);
 
-	static const std::string tooltipHide = LoadTHRotatorStringUtf8(g_hModule, IDS_HIDE_EDITOR_SHORT_TOOLTIP);
-	static const std::string tooltipReload = LoadTHRotatorStringUtf8(g_hModule, IDS_RELOAD_TOOLTIP);
-	static const std::string tooltipSave = LoadTHRotatorStringUtf8(g_hModule, IDS_SAVE_TOOLTIP);
-	static const std::string tooltipAbout = LoadTHRotatorStringUtf8(g_hModule, IDS_ABOUT_TOOLTIP);
+	static const std::string tooltipHide = LoadTHRotatorStringUtf8(IDS_HIDE_EDITOR_SHORT_TOOLTIP);
+	static const std::string tooltipReload = LoadTHRotatorStringUtf8(IDS_RELOAD_TOOLTIP);
+	static const std::string tooltipSave = LoadTHRotatorStringUtf8(IDS_SAVE_TOOLTIP);
+	static const std::string tooltipAbout = LoadTHRotatorStringUtf8(IDS_ABOUT_TOOLTIP);
 
-	static const std::string labelAboutTHRotator = LoadTHRotatorStringUtf8(g_hModule, IDS_ABOUT_THROTATOR);
+	static const std::string labelAboutTHRotator = LoadTHRotatorStringUtf8(IDS_ABOUT_THROTATOR);
 
 	if (ImGui::Button(labelHide.c_str()))
 	{
