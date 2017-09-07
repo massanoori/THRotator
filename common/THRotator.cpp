@@ -2835,20 +2835,16 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 
 		g_hModule = reinterpret_cast<HINSTANCE>(hModule);
 		{
-			TCHAR sysDir[MAX_PATH];
-			GetSystemDirectory(sysDir, MAX_PATH);
-			TCHAR ch = sysDir[lstrlen(sysDir) - 1];
-			if (ch != '\\' || ch != '/')
-			{
-				sysDir[lstrlen(sysDir) + 1] = '\0';
-				sysDir[lstrlen(sysDir)] = '\\';
-			}
+			TCHAR systemDirectoryRaw[MAX_PATH];
+			GetSystemDirectory(systemDirectoryRaw, MAX_PATH);
+			boost::filesystem::path systemDirectory(systemDirectoryRaw);
+
 #ifdef TOUHOU_ON_D3D8
-			lstrcat(sysDir, _T("d3d8.dll"));
+			systemDirectory /= L"d3d8.dll";
 #else
-			lstrcat(sysDir, _T("d3d9.dll"));
+			systemDirectory /= L"d3d9.dll";
 #endif
-			h_original = LoadLibrary(sysDir);
+			h_original = LoadLibraryW(systemDirectory.generic_wstring().c_str());
 		}
 
 		if (h_original == NULL)
