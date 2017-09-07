@@ -366,7 +366,7 @@ private:
 	 ****************************************/
 
 	std::shared_ptr<THRotatorEditorContext> m_pEditorContext;
-	int m_resetRevision; // このデバイスが最後にリセットを行ったのは何番目のリセットか
+	int m_resetRevision; // revision of last device reset
 
 
 private:
