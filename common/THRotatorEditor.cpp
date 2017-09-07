@@ -230,7 +230,7 @@ THRotatorEditorContext::~THRotatorEditorContext()
 		m_originalTouhouClientSize.cy + (windowRect.bottom - windowRect.top) - (clientRect.bottom - clientRect.top),
 		TRUE);
 
-	OutputLogMessagef(LogSeverity::Info, "Destructing THRotatorEditorContext");
+	OutputLogMessage(LogSeverity::Info, "Destructing THRotatorEditorContext");
 }
 
 void THRotatorEditorContext::UpdateVisibilitySwitchMenuText()
