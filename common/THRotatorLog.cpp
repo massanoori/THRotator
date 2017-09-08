@@ -5,30 +5,53 @@
 #include "THRotatorSystem.h"
 #include "EncodingUtils.h"
 
+#include <sstream>
+
 namespace
 {
-
-bool bFirstLog = true;
 
 boost::filesystem::path CreateTHRotatorLogFilePath()
 {
 	return GetTouhouPlayerDataDirectory() / L"throtator-log.txt";
 }
 
+std::ostream& GetLogOutputStream()
+{
+	static std::ostringstream temporaryOutputStream;
+
+	try
+	{
+		static std::ofstream ofs;
+
+		if (!ofs.is_open())
+		{
+			if (!(ofs.exceptions() & std::ios::failbit))
+			{
+				ofs.exceptions(std::ios::failbit);
+			}
+
+			ofs.open(CreateTHRotatorLogFilePath().generic_wstring());
+		}
+
+		if (temporaryOutputStream.tellp() > std::streampos(0))
+		{
+			ofs << temporaryOutputStream.str();
+			temporaryOutputStream = std::ostringstream();
+		}
+
+		return ofs;
+	}
+	catch (const std::ios::failure&)
+	{
+		return temporaryOutputStream;
+	}
+}
+
 }
 
 void OutputLogMessage(LogSeverity severity, const std::string& message)
 {
-	std::ofstream ofs;
-	if (bFirstLog)
-	{
-		ofs.open(CreateTHRotatorLogFilePath().generic_wstring());
-		bFirstLog = false;
-	}
-	else
-	{
-		ofs.open(CreateTHRotatorLogFilePath().generic_wstring(), std::ios::app);
-	}
+	auto& logStream = GetLogOutputStream();
 
 	auto now = std::time(nullptr);
 	tm localNow;
@@ -40,27 +63,27 @@ void OutputLogMessage(LogSeverity severity, const std::string& message)
 			timeStringBuffer.resize(timeStringBuffer.size() * 2);
 		}
 
-		ofs << timeStringBuffer.data();
+		logStream << timeStringBuffer.data();
 	}
 
 	switch (severity)
 	{
 	case LogSeverity::Fatal:
-		ofs << "Fatal:   ";
+		logStream << "Fatal:   ";
 		break;
 
 	case LogSeverity::Error:
-		ofs << "Error:   ";
+		logStream << "Error:   ";
 		break;
 
 	case LogSeverity::Warning:
-		ofs << "Warning: ";
+		logStream << "Warning: ";
 		break;
 
 	case LogSeverity::Info:
-		ofs << "Info:    ";
+		logStream << "Info:    ";
 		break;
 	}
 
-	ofs << message << std::endl;
+	logStream << message << std::endl;
 }
