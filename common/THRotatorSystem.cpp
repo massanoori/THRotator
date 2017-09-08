@@ -96,9 +96,9 @@ private:
 	}
 };
 
-HINSTANCE g_hModule;
+HINSTANCE hTHRotatorModule;
 
-}
+} // end of anonymous namespace
 
 double GetTouhouSeriesNumber()
 {
@@ -128,7 +128,7 @@ bool IsTouhouWithoutScreenCapture()
 
 HINSTANCE GetTHRotatorModule()
 {
-	return g_hModule;
+	return hTHRotatorModule;
 }
 
 namespace
@@ -164,20 +164,20 @@ DIRECT3DCREATE9EXPROC p_Direct3DCreate9Ex;
 
 #endif
 
-}
+} // end of anonymous namespace
 
 
 BOOL APIENTRY DllMain(HANDLE hModule,
 	DWORD  fdwReason,
 	LPVOID /* lpReserved */)
 {
-	static HINSTANCE hOriginalDirect3D;
+	static HINSTANCE hOriginalDirect3DLibrary;
 
 	switch (fdwReason)
 	{
 	case DLL_PROCESS_ATTACH:
 
-		g_hModule = reinterpret_cast<HINSTANCE>(hModule);
+		hTHRotatorModule = reinterpret_cast<HINSTANCE>(hModule);
 		{
 			TCHAR systemDirectoryRaw[MAX_PATH];
 			GetSystemDirectory(systemDirectoryRaw, MAX_PATH);
@@ -188,34 +188,34 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 #else
 			systemDirectory /= L"d3d9.dll";
 #endif
-			hOriginalDirect3D = LoadLibraryW(systemDirectory.generic_wstring().c_str());
+			hOriginalDirect3DLibrary = LoadLibraryW(systemDirectory.generic_wstring().c_str());
 		}
 
-		if (hOriginalDirect3D == NULL)
+		if (hOriginalDirect3DLibrary == NULL)
 		{
 			return FALSE;
 		}
 
 #ifdef TOUHOU_ON_D3D8
-		p_ValidatePixelShader = GetProcAddress(hOriginalDirect3D, "ValidatePixelShader");
-		p_ValidateVertexShader = GetProcAddress(hOriginalDirect3D, "ValidateVertexShader");
-		p_DebugSetMute = GetProcAddress(hOriginalDirect3D, "DebugSetMute");
-		p_Direct3DCreate8 = (IDirect3D8*(WINAPI*)(UINT))GetProcAddress(hOriginalDirect3D, "Direct3DCreate8");
+		p_ValidatePixelShader = GetProcAddress(hOriginalDirect3DLibrary, "ValidatePixelShader");
+		p_ValidateVertexShader = GetProcAddress(hOriginalDirect3DLibrary, "ValidateVertexShader");
+		p_DebugSetMute = GetProcAddress(hOriginalDirect3DLibrary, "DebugSetMute");
+		p_Direct3DCreate8 = (IDirect3D8*(WINAPI*)(UINT))GetProcAddress(hOriginalDirect3DLibrary, "Direct3DCreate8");
 #else
-		p_Direct3DShaderValidatorCreate9 = GetProcAddress(hOriginalDirect3D, "Direct3DShaderValidatorCreate9");
-		p_PSGPError = GetProcAddress(hOriginalDirect3D, "PSGPError");
-		p_PSGPSampleTexture = GetProcAddress(hOriginalDirect3D, "PSGPSampleTexture");
-		p_D3DPERF_BeginEvent = GetProcAddress(hOriginalDirect3D, "D3DPERF_BeginEvent");
-		p_D3DPERF_EndEvent = GetProcAddress(hOriginalDirect3D, "D3DPERF_EndEvent");
-		p_D3DPERF_GetStatus = GetProcAddress(hOriginalDirect3D, "D3DPERF_GetStatus");
-		p_D3DPERF_QueryRepeatFrame = GetProcAddress(hOriginalDirect3D, "D3DPERF_QueryRepeatFrame");
-		p_D3DPERF_SetMarker = GetProcAddress(hOriginalDirect3D, "D3DPERF_SetMarker");
-		p_D3DPERF_SetOptions = GetProcAddress(hOriginalDirect3D, "D3DPERF_SetOptions");
-		p_D3DPERF_SetRegion = GetProcAddress(hOriginalDirect3D, "D3DPERF_SetRegion");
-		p_DebugSetLevel = GetProcAddress(hOriginalDirect3D, "DebugSetLevel");
-		p_DebugSetMute = GetProcAddress(hOriginalDirect3D, "DebugSetMute");
-		p_Direct3DCreate9 = reinterpret_cast<DIRECT3DCREATE9PROC>(GetProcAddress(hOriginalDirect3D, "Direct3DCreate9"));
-		p_Direct3DCreate9Ex = reinterpret_cast<DIRECT3DCREATE9EXPROC>(GetProcAddress(hOriginalDirect3D, "Direct3DCreate9Ex"));
+		p_Direct3DShaderValidatorCreate9 = GetProcAddress(hOriginalDirect3DLibrary, "Direct3DShaderValidatorCreate9");
+		p_PSGPError = GetProcAddress(hOriginalDirect3DLibrary, "PSGPError");
+		p_PSGPSampleTexture = GetProcAddress(hOriginalDirect3DLibrary, "PSGPSampleTexture");
+		p_D3DPERF_BeginEvent = GetProcAddress(hOriginalDirect3DLibrary, "D3DPERF_BeginEvent");
+		p_D3DPERF_EndEvent = GetProcAddress(hOriginalDirect3DLibrary, "D3DPERF_EndEvent");
+		p_D3DPERF_GetStatus = GetProcAddress(hOriginalDirect3DLibrary, "D3DPERF_GetStatus");
+		p_D3DPERF_QueryRepeatFrame = GetProcAddress(hOriginalDirect3DLibrary, "D3DPERF_QueryRepeatFrame");
+		p_D3DPERF_SetMarker = GetProcAddress(hOriginalDirect3DLibrary, "D3DPERF_SetMarker");
+		p_D3DPERF_SetOptions = GetProcAddress(hOriginalDirect3DLibrary, "D3DPERF_SetOptions");
+		p_D3DPERF_SetRegion = GetProcAddress(hOriginalDirect3DLibrary, "D3DPERF_SetRegion");
+		p_DebugSetLevel = GetProcAddress(hOriginalDirect3DLibrary, "DebugSetLevel");
+		p_DebugSetMute = GetProcAddress(hOriginalDirect3DLibrary, "DebugSetMute");
+		p_Direct3DCreate9 = reinterpret_cast<DIRECT3DCREATE9PROC>(GetProcAddress(hOriginalDirect3DLibrary, "Direct3DCreate9"));
+		p_Direct3DCreate9Ex = reinterpret_cast<DIRECT3DCREATE9EXPROC>(GetProcAddress(hOriginalDirect3DLibrary, "Direct3DCreate9Ex"));
 #endif
 		break;
 
@@ -224,8 +224,8 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 		break;
 
 	case DLL_PROCESS_DETACH:
-		FreeLibrary(hOriginalDirect3D);
-		hOriginalDirect3D = NULL;
+		FreeLibrary(hOriginalDirect3DLibrary);
+		hOriginalDirect3DLibrary = NULL;
 		break;
 
 	default:
