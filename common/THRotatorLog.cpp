@@ -6,6 +6,7 @@
 #include "EncodingUtils.h"
 
 #include <sstream>
+#include <iostream>
 
 namespace
 {
@@ -17,20 +18,19 @@ boost::filesystem::path CreateTHRotatorLogFilePath()
 
 std::ostream& GetLogOutputStream()
 {
-	static std::ostringstream temporaryOutputStream;
-
 	try
 	{
 		static std::ofstream ofs;
+		static std::ostringstream temporaryOutputStream;
 
 		if (!ofs.is_open())
 		{
-			if (!(ofs.exceptions() & std::ios::failbit))
-			{
-				ofs.exceptions(std::ios::failbit);
-			}
-
 			ofs.open(CreateTHRotatorLogFilePath().generic_wstring());
+		}
+
+		if (!ofs.is_open())
+		{
+			return temporaryOutputStream;
 		}
 
 		if (temporaryOutputStream.tellp() > std::streampos(0))
@@ -43,7 +43,7 @@ std::ostream& GetLogOutputStream()
 	}
 	catch (const std::ios::failure&)
 	{
-		return temporaryOutputStream;
+		return std::cout;
 	}
 }
 
