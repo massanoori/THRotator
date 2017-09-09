@@ -18,6 +18,11 @@ Instructions are given at online manual.
 * English: <http://throtator-manual.readthedocs.io/en/stable/>.
 * “ú–{Œê: <http://throtator-manual.readthedocs.io/ja/stable/>.
 
+Repository of manual
+=====
+
+<https://github.com/massanoori/THRotator-manual>.
+
 License
 =====
 
