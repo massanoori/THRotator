@@ -6,9 +6,11 @@ THRotator
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 THRotator allows screen rotation of Touhou Project.
-The user can customize the positions of HUD elements.
+The user can customize the positions of HUD elements by following GUI.
 
-THRotator works on D3D8-based works (Th06-95) and D3D9-based works (Th10 and later).
+![Screenshot on Hidden Star in Four Seasons](http://throtator-manual.readthedocs.io/en/latest/_images/HSiFS-screenshot-en.png)
+
+THRotator works on D3D8-based works (Touhou 6-9.5) and D3D9-based works (Touhou 10 and later).
 
 How to install and use
 =====
