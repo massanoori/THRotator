@@ -1,8 +1,7 @@
 {
-  "NumRectTransfers": 14,
   "fileter_type": "linear",
   "format_version": 2,
-  "judge_threshold": 15,
+  "judge_threshold": 17,
   "main_screen_height": 512,
   "main_screen_left": 32,
   "main_screen_top": 16,
@@ -178,7 +177,6 @@
     }
   ],
   "rotation_angle": 0,
-  "use_modal_editor": false,
   "vertical_window": false,
   "window_visible": false,
   "y_offset": 36
