@@ -13,7 +13,10 @@ THRotator works on D3D8-based works (Th06-95) and D3D9-based works (Th10 and lat
 How to install and use
 =====
 
-Instructions are given at <https://massanoori.github.io/THRotator/>.
+Instructions are given at online manual.
+
+* English: <http://throtator-manual.readthedocs.io/en/stable/>.
+* “ú–{Œê: <http://throtator-manual.readthedocs.io/ja/stable/>.
 
 License
 =====

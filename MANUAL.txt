@@ -3,11 +3,11 @@
 
 インストール方法、使い方は下記ページを参照してください。
 
-* オンラインマニュアル(日本語): https://massanoori.github.io/THRotator/ja/
+* オンラインマニュアル(日本語): http://throtator-manual.readthedocs.io/ja/stable/
 
 To install and use THRotator, visit the following URI.
 
-* Online manual (English): https://massanoori.github.io/THRotator/en/
+* Online manual (English): http://throtator-manual.readthedocs.io/en/stable/
 
 
 Source code: https://github.com/massanoori/THRotator
