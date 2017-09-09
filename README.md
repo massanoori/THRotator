@@ -16,7 +16,7 @@ How to install and use
 Instructions are given at online manual.
 
 * English: <http://throtator-manual.readthedocs.io/en/stable/>.
-* “ú–{Œê: <http://throtator-manual.readthedocs.io/ja/stable/>.
+* æ—¥æœ¬èªž: <http://throtator-manual.readthedocs.io/ja/stable/>.
 
 Repository of manual
 =====
