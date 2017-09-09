@@ -22,7 +22,7 @@
 namespace
 {
 
-const char* THROTATOR_VERSION_STRING = "2.0.0";
+const char* THROTATOR_VERSION_STRING = "2.0.1";
 
 HHOOK ms_hHook;
 std::map<HWND, std::weak_ptr<THRotatorEditorContext>> ms_touhouWinToContext;
