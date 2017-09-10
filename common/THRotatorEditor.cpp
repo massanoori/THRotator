@@ -615,6 +615,9 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 	static const int COORDINATE_MIN = 0;
 	static const float COORDINATE_DRAG_SPEED = 0.1f;
 
+	static const int Y_OFFSET_MAX =  999;
+	static const int Y_OFFSET_MIN = -999;
+
 	static const std::string labelMainScreenRegion = LoadTHRotatorStringUtf8(IDS_MAIN_SCREEN_REGION);
 	static const std::string tooltipMainScreenRegion = LoadTHRotatorStringUtf8(IDS_MAIN_SCREEN_REGION_TOOLTIP);
 	if (CollapsingHeaderWithTooltip(labelMainScreenRegion.c_str(), tooltipMainScreenRegion.c_str()))
@@ -634,7 +637,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 		ShowPreviousItemTooltip(tooltipWidthAndHeight.c_str());
 
 		ImGui::InputInt(labelYOffset.c_str(), &m_yOffset);
-		m_yOffset = Clamp(m_yOffset, COORDINATE_MIN, COORDINATE_MAX);
+		m_yOffset = Clamp(m_yOffset, Y_OFFSET_MIN, Y_OFFSET_MAX);
 		ShowPreviousItemTooltip(tooltipYOffset.c_str());
 	}
 
