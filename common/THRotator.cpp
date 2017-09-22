@@ -3,6 +3,7 @@
 #include "stdafx.h"
 
 #include <wrl.h>
+#include <DirectXMath.h>
 
 #include "THRotatorEditor.h"
 #include "THRotatorSystem.h"
@@ -63,6 +64,42 @@ namespace
 
 const UINT BASE_SCREEN_WIDTH = 640u;
 const UINT BASE_SCREEN_HEIGHT = 480u;
+
+struct THRotatorSpriteVertex
+{
+	DirectX::XMFLOAT3 position;
+	DirectX::XMFLOAT2 uv;
+
+	enum
+	{
+		FVF = D3DFVF_XYZ | D3DFVF_TEX1,
+	};
+
+	static const THRotatorSpriteVertex vertexBufferContent[4];
+	static const D3DPRIMITIVETYPE vertexBufferPrimitiveType;
+	static const UINT vertexBufferPrimitiveCount;
+};
+
+const THRotatorSpriteVertex THRotatorSpriteVertex::vertexBufferContent[4] =
+{
+	{ DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), DirectX::XMFLOAT2(0.0f, 0.0f) },
+	{ DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f), DirectX::XMFLOAT2(1.0f, 0.0f) },
+	{ DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f), DirectX::XMFLOAT2(0.0f, 1.0f) },
+	{ DirectX::XMFLOAT3(1.0f, 1.0f, 0.0f), DirectX::XMFLOAT2(1.0f, 1.0f) },
+};
+
+const D3DPRIMITIVETYPE THRotatorSpriteVertex::vertexBufferPrimitiveType = D3DPT_TRIANGLESTRIP;
+const UINT THRotatorSpriteVertex::vertexBufferPrimitiveCount = _countof(THRotatorSpriteVertex::vertexBufferContent) - 2u;
+
+D3DMATRIX ToD3DMATRIX(const DirectX::XMMATRIX& matrix)
+{
+	D3DMATRIX outMatrix;
+	static_assert(sizeof(outMatrix) == sizeof(matrix), "XMMATRIX and D3DMATRIX are assumed to have same size.");
+
+	memcpy(&outMatrix, &matrix, sizeof(matrix));
+
+	return outMatrix;
+}
 
 }
 
@@ -303,6 +340,8 @@ private:
 	ComPtr<Direct3DDeviceBase> m_pd3dDev;
 	ComPtr<Direct3DDeviceExBase> m_pd3dDevEx;
 	ComPtr<ID3DXSprite> m_pSprite;
+
+	ComPtr<Direct3DVertexBufferBase> m_pSpriteVertexBuffer;
 
 	// Original underlying back buffer.
 	ComPtr<Direct3DSurfaceBase> m_pBackBuffer;
@@ -2037,6 +2076,40 @@ HRESULT THRotatorDirect3DDevice::InitResources()
 		return hr;
 	}
 
+	hr = m_pd3dDev->CreateVertexBuffer(sizeof(THRotatorSpriteVertex::vertexBufferContent),
+		0, THRotatorSpriteVertex::FVF, D3DPOOL_DEFAULT,
+#ifdef TOUHOU_ON_D3D8
+		&m_pSpriteVertexBuffer);
+#else
+		&m_pSpriteVertexBuffer, nullptr);
+#endif
+	if (FAILED(hr))
+	{
+		OutputLogMessagef(LogSeverity::Error, "Failed to create vertex buffer");
+		return hr;
+	}
+
+	void* pLockedSpriteVertexBufferMemory = nullptr;
+
+#ifdef TOUHOU_ON_D3D8
+	auto ppLockedBufferMemory = reinterpret_cast<BYTE**>(&pLockedSpriteVertexBufferMemory);
+#else
+	auto ppLockedBufferMemory = reinterpret_cast<void**>(&pLockedSpriteVertexBufferMemory);
+#endif
+
+	hr = m_pSpriteVertexBuffer->Lock(0, 0, ppLockedBufferMemory, D3DLOCK_DISCARD);
+	if (FAILED(hr))
+	{
+		OutputLogMessagef(LogSeverity::Error, "Failed to lock vertex buffer");
+		return hr;
+	}
+
+	memcpy(pLockedSpriteVertexBufferMemory, THRotatorSpriteVertex::vertexBufferContent,
+		sizeof(THRotatorSpriteVertex::vertexBufferContent));
+
+	pLockedSpriteVertexBufferMemory = nullptr;
+	m_pSpriteVertexBuffer->Unlock();
+
 	hr = m_pd3dDev->CreateRenderTarget(m_requestedWidth, m_requestedHeight,
 		m_d3dpp.BackBufferFormat, m_d3dpp.MultiSampleType,
 #ifdef TOUHOU_ON_D3D8
@@ -2133,6 +2206,8 @@ void THRotatorDirect3DDevice::ReleaseResources()
 		m_pSprite->OnLostDevice();
 	}
 #endif
+
+	m_pSpriteVertexBuffer.Reset();
 
 	m_pDepthStencil.Reset();
 	m_pRenderTarget.Reset();
@@ -2469,26 +2544,7 @@ void THRotatorDirect3DDevice::EndSceneInternal()
 		const SIZE& mainScreenSize,
 		RotationAngle rotation)
 	{
-		POINT correctedSrcPos = srcPos;
-		SIZE correctedSrcSize = srcSize;
-
 		SIZE srcRectTopLeftOffset = {};
-#ifdef TOUHOU_ON_D3D8
-		// Truncate negative coordinate since D3DX8 skips such a sprite.
-		if (correctedSrcPos.x < 0)
-		{
-			srcRectTopLeftOffset.cx = -correctedSrcPos.x;
-			correctedSrcPos.x = 0;
-			correctedSrcSize.cx -= srcRectTopLeftOffset.cx;
-		}
-
-		if (correctedSrcPos.y < 0)
-		{
-			srcRectTopLeftOffset.cy = -correctedSrcPos.y;
-			correctedSrcPos.y = 0;
-			correctedSrcSize.cy -= srcRectTopLeftOffset.cy;
-		}
-#endif
 
 		D3DXMATRIX translateSrcCenterToOrigin;
 		D3DXMatrixTranslation(&translateSrcCenterToOrigin,
@@ -2520,20 +2576,46 @@ void THRotatorDirect3DDevice::EndSceneInternal()
 		RECT scaledSourceRect;
 		float scaleFactorForSourceX = static_cast<float>(m_requestedWidth) / correctedBaseScreenWidth;
 		float scaleFactorForSourceY = static_cast<float>(m_requestedHeight) / correctedBaseScreenHeight;
-		scaledSourceRect.left = static_cast<LONG>(correctedSrcPos.x * scaleFactorForSourceX);
-		scaledSourceRect.right = static_cast<LONG>((correctedSrcPos.x + correctedSrcSize.cx) * scaleFactorForSourceX);
-		scaledSourceRect.top = static_cast<LONG>(correctedSrcPos.y * scaleFactorForSourceY);
-		scaledSourceRect.bottom = static_cast<LONG>((correctedSrcPos.y + correctedSrcSize.cy) * scaleFactorForSourceY);
+		scaledSourceRect.left = static_cast<LONG>(srcPos.x * scaleFactorForSourceX);
+		scaledSourceRect.right = static_cast<LONG>((srcPos.x + srcSize.cx) * scaleFactorForSourceX);
+		scaledSourceRect.top = static_cast<LONG>(srcPos.y * scaleFactorForSourceY);
+		scaledSourceRect.bottom = static_cast<LONG>((srcPos.y + srcSize.cy) * scaleFactorForSourceY);
+
+		D3DXMATRIX finalMatrix2, spriteVertexScale;
+		D3DXMatrixScaling(&spriteVertexScale, srcSize.cx * scaleFactorForSourceX, srcSize.cy * scaleFactorForSourceY, 1.0f);
+		D3DXMatrixMultiply(&finalMatrix2, &spriteVertexScale, &finalTransform);
+		m_pd3dDev->SetTransform(D3DTS_WORLD, &finalMatrix2);
+
+		D3DXMATRIX textureMatrixScale;
+		D3DXMatrixScaling(&textureMatrixScale, srcSize.cx * scaleFactorForSourceX / m_requestedWidth, srcSize.cy * scaleFactorForSourceY / m_requestedHeight, 1.0f);
+		textureMatrixScale.m[2][0] = srcPos.x * scaleFactorForSourceX / m_requestedWidth;
+		textureMatrixScale.m[2][1] = srcPos.y * scaleFactorForSourceY / m_requestedHeight;
+
+		m_pd3dDev->SetTransform(D3DTS_TEXTURE0, &textureMatrixScale);
+
+		m_pd3dDev->DrawPrimitive(THRotatorSpriteVertex::vertexBufferPrimitiveType, 0, THRotatorSpriteVertex::vertexBufferPrimitiveCount);
+	};
+
+	auto matrixProjection = DirectX::XMMatrixOrthographicOffCenterLH(
+		0.0f, static_cast<float>(m_d3dpp.BackBufferWidth),
+		static_cast<float>(m_d3dpp.BackBufferHeight), 0.0f,
+		0.0f, 1.0f);
+	auto matrixView = DirectX::XMMatrixLookAtLH(DirectX::XMVectorSet(0.5f, 0.5f, -1.0f, 1.0f),
+		DirectX::XMVectorSet(0.5f, 0.5f, 0.0f, 1.0f), DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
+
+	m_pd3dDev->SetTransform(D3DTS_PROJECTION, &ToD3DMATRIX(matrixProjection));
+	m_pd3dDev->SetTransform(D3DTS_VIEW, &ToD3DMATRIX(matrixView));
+
+	m_pd3dDev->SetTexture(0, m_pTex.Get());
+	m_pd3dDev->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_COUNT2);
 
 #ifdef TOUHOU_ON_D3D8
-		m_pSprite->DrawTransform(m_pTex.Get(), &scaledSourceRect, &finalTransform, 0xffffffff);
+	m_pd3dDev->SetStreamSource(0, m_pSpriteVertexBuffer.Get(), sizeof(THRotatorSpriteVertex));
+	m_pd3dDev->SetVertexShader(THRotatorSpriteVertex::FVF);
 #else
-		m_pSprite->SetTransform(&finalTransform);
-
-		D3DXVECTOR3 zeroVector(0.0f, 0.0f, 0.0f);
-		m_pSprite->Draw(m_pTex.Get(), &scaledSourceRect, &zeroVector, NULL, 0xffffffff);
+	m_pd3dDev->SetStreamSource(0, m_pSpriteVertexBuffer.Get(), 0, sizeof(THRotatorSpriteVertex));
+	m_pd3dDev->SetFVF(THRotatorSpriteVertex::FVF);
 #endif
-	};
 
 	if (!bNeedsRearrangeHUD)
 	{
