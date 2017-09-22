@@ -2,7 +2,6 @@
 
 #include "stdafx.h"
 
-#include <wrl.h>
 #include <DirectXMath.h>
 
 #include "THRotatorEditor.h"
@@ -12,6 +11,7 @@
 #include "resource.h"
 
 #include "THRotatorImGui.h"
+#include "Direct3DUtils.h"
 
 #ifdef TOUHOU_ON_D3D8
 
@@ -22,32 +22,85 @@
 #pragma comment(lib, "legacy_stdio_definitions.lib")
 #endif
 
-typedef IDirect3D8 Direct3DBase;
-typedef IDirect3D8 Direct3DExBase;
-typedef IDirect3DDevice8 Direct3DDeviceBase;
-typedef IDirect3DDevice8 Direct3DDeviceExBase;
-typedef IDirect3DSurface8 Direct3DSurfaceBase;
-typedef IDirect3DTexture8 Direct3DTextureBase;
-typedef IDirect3DBaseTexture8 Direct3DBaseTextureBase;
-typedef IDirect3DVertexBuffer8 Direct3DVertexBufferBase;
-typedef IDirect3DIndexBuffer8 Direct3DIndexBufferBase;
-typedef IDirect3DSwapChain8 Direct3DSwapChainBase;
+#define DECLARE_POSSIBLY_SCOPED_STATE(suffix) \
+using PossiblyScoped##suffix = Scoped##suffix;
+
+DECLARE_POSSIBLY_SCOPED_STATE(RS)
+DECLARE_POSSIBLY_SCOPED_STATE(TSS)
+DECLARE_POSSIBLY_SCOPED_STATE(Tex)
+DECLARE_POSSIBLY_SCOPED_STATE(Transform)
+DECLARE_POSSIBLY_SCOPED_STATE(StreamSource)
+DECLARE_POSSIBLY_SCOPED_STATE(Indices)
+DECLARE_POSSIBLY_SCOPED_STATE(FVF)
+
+#undef DECLARE_POSSIBLY_SCOPED_STATE
 
 #else
 
 #include <d3dx9.h>
 #pragma comment(lib,"d3dx9.lib")
 
-typedef IDirect3D9 Direct3DBase;
-typedef IDirect3D9Ex Direct3DExBase;
-typedef IDirect3DDevice9 Direct3DDeviceBase;
-typedef IDirect3DDevice9Ex Direct3DDeviceExBase;
-typedef IDirect3DSurface9 Direct3DSurfaceBase;
-typedef IDirect3DTexture9 Direct3DTextureBase;
-typedef IDirect3DBaseTexture9 Direct3DBaseTextureBase;
-typedef IDirect3DVertexBuffer9 Direct3DVertexBufferBase;
-typedef IDirect3DIndexBuffer9 Direct3DIndexBufferBase;
-typedef IDirect3DSwapChain9 Direct3DSwapChainBase;
+struct PossiblyScopedRS
+{
+	PossiblyScopedRS(Direct3DDeviceBase* inDevice, D3DRENDERSTATETYPE inRenderStateType, DWORD value)
+	{
+		inDevice->SetRenderState(inRenderStateType, value);
+	}
+};
+
+struct PossiblyScopedTSS
+{
+	PossiblyScopedTSS(Direct3DDeviceBase* inDevice, DWORD inTextureStage, D3DTEXTURESTAGESTATETYPE inTextureStageStateType, DWORD value)
+	{
+		inDevice->SetTextureStageState(inTextureStage, inTextureStageStateType, value);
+	}
+};
+
+struct PossiblyScopedTex
+{
+	PossiblyScopedTex(Direct3DDeviceBase* inDevice, DWORD inTextureStage, Direct3DBaseTextureBase* texture)
+	{
+		inDevice->SetTexture(inTextureStage, texture);
+	}
+};
+
+struct PossiblyScopedTransform
+{
+	PossiblyScopedTransform(Direct3DDeviceBase* inDevice, D3DTRANSFORMSTATETYPE inTransformType, const D3DMATRIX& transformMatrix)
+	{
+		inDevice->SetTransform(inTransformType, &transformMatrix);
+	}
+
+	PossiblyScopedTransform(Direct3DDeviceBase* inDevice, D3DTRANSFORMSTATETYPE inTransformType)
+	{
+	}
+};
+
+struct PossiblyScopedStreamSource
+{
+	PossiblyScopedStreamSource(Direct3DDeviceBase* inDevice, UINT inStreamNumber, Direct3DVertexBufferBase* vertexBuffer, UINT stride)
+	{
+		inDevice->SetStreamSource(inStreamNumber, vertexBuffer, 0, stride);
+	}
+};
+
+struct PossiblyScopedFVF
+{
+	PossiblyScopedFVF(Direct3DDeviceBase* inDevice, DWORD FVF)
+	{
+		inDevice->SetFVF(FVF);
+	}
+};
+
+struct PossiblyScopedIndices
+{
+	PossiblyScopedIndices(Direct3DDeviceBase* inDevice, Direct3DIndexBufferBase* indices, UINT offset)
+	{
+		UNREFERENCED_PARAMETER(offset);
+
+		inDevice->SetIndices(indices);
+	}
+};
 
 #endif
 
@@ -339,7 +392,6 @@ private:
 
 	ComPtr<Direct3DDeviceBase> m_pd3dDev;
 	ComPtr<Direct3DDeviceExBase> m_pd3dDevEx;
-	ComPtr<ID3DXSprite> m_pSprite;
 
 	ComPtr<Direct3DVertexBufferBase> m_pSpriteVertexBuffer;
 
@@ -2065,17 +2117,6 @@ HRESULT THRotatorDirect3DDevice::InitResources()
 
 	m_pTex->GetSurfaceLevel(0, &m_pTexSurface);
 
-	if (m_pSprite && FAILED(hr = m_pSprite->OnResetDevice()))
-	{
-		OutputLogMessagef(LogSeverity::Error, "Failed to reset sprite");
-		return hr;
-	}
-	else if (FAILED(hr = D3DXCreateSprite(m_pd3dDev.Get(), &m_pSprite)))
-	{
-		OutputLogMessagef(LogSeverity::Error, "Failed to create sprite");
-		return hr;
-	}
-
 	hr = m_pd3dDev->CreateVertexBuffer(sizeof(THRotatorSpriteVertex::vertexBufferContent),
 		0, THRotatorSpriteVertex::FVF, D3DPOOL_DEFAULT,
 #ifdef TOUHOU_ON_D3D8
@@ -2197,15 +2238,6 @@ void THRotatorDirect3DDevice::ReleaseResources()
 	OutputLogMessagef(LogSeverity::Info, "Releasing resources");
 
 	THRotatorImGui_InvalidateDeviceObjects();
-
-#ifdef TOUHOU_ON_D3D8
-	m_pSprite.Reset();
-#else
-	if (m_pSprite)
-	{
-		m_pSprite->OnLostDevice();
-	}
-#endif
 
 	m_pSpriteVertexBuffer.Reset();
 
@@ -2405,15 +2437,94 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 
 	if (!bGuiOnly)
 	{
-#ifdef TOUHOU_ON_D3D8
-		if (SUCCEEDED(m_pSprite->Begin()))
-#else
-		if (SUCCEEDED(m_pSprite->Begin(D3DXSPRITE_ALPHABLEND)))
+#ifndef TOUHOU_ON_D3D8
+		ComPtr<IDirect3DStateBlock9> pStateBlock;
+		m_pd3dDev->CreateStateBlock(D3DSBT_ALL, &pStateBlock);
+
+		m_pd3dDev->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
+		m_pd3dDev->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
+		m_pd3dDev->SetSamplerState(0, D3DSAMP_MAGFILTER, m_pEditorContext->GetFilterType());
+		m_pd3dDev->SetSamplerState(0, D3DSAMP_MINFILTER, m_pEditorContext->GetFilterType());
+		m_pd3dDev->SetSamplerState(0, D3DSAMP_MIPFILTER, m_pEditorContext->GetFilterType());
+		m_pd3dDev->SetSamplerState(0, D3DSAMP_MAXMIPLEVEL, 0);
+		m_pd3dDev->SetSamplerState(0, D3DSAMP_MAXANISOTROPY, 0);
+		m_pd3dDev->SetSamplerState(0, D3DSAMP_MIPMAPLODBIAS, 0);
+		m_pd3dDev->SetSamplerState(0, D3DSAMP_SRGBTEXTURE, 0);
 #endif
+
+		PossiblyScopedRS scopedRenderStates[] =
 		{
-			EndSceneInternal();
-			m_pSprite->End();
-		}
+			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_ALPHABLENDENABLE, TRUE),
+			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_ALPHAFUNC, D3DCMP_GREATER),
+			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_ALPHATESTENABLE, FALSE),
+			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_BLENDOP, D3DBLENDOP_ADD),
+			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_CLIPPING, TRUE),
+			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_CLIPPLANEENABLE, FALSE),
+			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_ALPHA | D3DCOLORWRITEENABLE_BLUE | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_RED),
+			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_CULLMODE, D3DCULL_NONE),
+			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA),
+			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_COLOR1),
+			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_FILLMODE, D3DFILL_SOLID),
+			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_FOGENABLE, FALSE),
+			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_INDEXEDVERTEXBLENDENABLE, FALSE),
+			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_LIGHTING, FALSE),
+			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_RANGEFOGENABLE, FALSE),
+			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_SHADEMODE, D3DSHADE_GOURAUD),
+			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_SPECULARENABLE, FALSE),
+			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_SRCBLEND, D3DBLEND_SRCALPHA),
+			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_STENCILENABLE, FALSE),
+			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_VERTEXBLEND, FALSE),
+			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_WRAP0, 0),
+		};
+
+		PossiblyScopedTSS scopedTextureStageStates[] =
+		{
+			PossiblyScopedTSS(m_pd3dDev.Get(), 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE),
+			PossiblyScopedTSS(m_pd3dDev.Get(), 0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE),
+			PossiblyScopedTSS(m_pd3dDev.Get(), 0, D3DTSS_ALPHAOP, D3DTOP_DISABLE),
+			PossiblyScopedTSS(m_pd3dDev.Get(), 0, D3DTSS_COLORARG1, D3DTA_TEXTURE),
+			PossiblyScopedTSS(m_pd3dDev.Get(), 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE),
+			PossiblyScopedTSS(m_pd3dDev.Get(), 0, D3DTSS_COLOROP, D3DTOP_MODULATE),
+			PossiblyScopedTSS(m_pd3dDev.Get(), 0, D3DTSS_TEXCOORDINDEX, 0),
+			PossiblyScopedTSS(m_pd3dDev.Get(), 0, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_COUNT2),
+			PossiblyScopedTSS(m_pd3dDev.Get(), 1, D3DTSS_ALPHAOP, D3DTOP_DISABLE),
+			PossiblyScopedTSS(m_pd3dDev.Get(), 1, D3DTSS_COLOROP, D3DTOP_DISABLE),
+#ifdef TOUHOU_ON_D3D8
+			PossiblyScopedTSS(m_pd3dDev.Get(), 0, D3DTSS_ADDRESSU, D3DTADDRESS_CLAMP),
+			PossiblyScopedTSS(m_pd3dDev.Get(), 0, D3DTSS_ADDRESSV, D3DTADDRESS_CLAMP),
+			PossiblyScopedTSS(m_pd3dDev.Get(), 0, D3DTSS_MAGFILTER, m_pEditorContext->GetFilterType()),
+			PossiblyScopedTSS(m_pd3dDev.Get(), 0, D3DTSS_MINFILTER, m_pEditorContext->GetFilterType()),
+			PossiblyScopedTSS(m_pd3dDev.Get(), 0, D3DTSS_MIPFILTER, m_pEditorContext->GetFilterType()),
+			PossiblyScopedTSS(m_pd3dDev.Get(), 0, D3DTSS_MAXMIPLEVEL, 0),
+			PossiblyScopedTSS(m_pd3dDev.Get(), 0, D3DTSS_MAXANISOTROPY, 0),
+			PossiblyScopedTSS(m_pd3dDev.Get(), 0, D3DTSS_MIPMAPLODBIAS, 0),
+#endif
+		};
+
+		PossiblyScopedTex scopedTexture(m_pd3dDev.Get(), 0, m_pTex.Get());
+		PossiblyScopedStreamSource scopedStreamSource(m_pd3dDev.Get(), 0, m_pSpriteVertexBuffer.Get(), sizeof(THRotatorSpriteVertex));
+		PossiblyScopedFVF scopedFVF(m_pd3dDev.Get(), THRotatorSpriteVertex::FVF);
+
+		auto matrixProjection = DirectX::XMMatrixOrthographicOffCenterLH(
+			0.0f, static_cast<float>(m_d3dpp.BackBufferWidth),
+			static_cast<float>(m_d3dpp.BackBufferHeight), 0.0f,
+			0.0f, 1.0f);
+		auto matrixView = DirectX::XMMatrixLookAtLH(DirectX::XMVectorSet(0.5f, 0.5f, -1.0f, 1.0f),
+			DirectX::XMVectorSet(0.5f, 0.5f, 0.0f, 1.0f), DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
+
+		PossiblyScopedTransform scopedTransforms[] =
+		{
+			PossiblyScopedTransform(m_pd3dDev.Get(), D3DTS_PROJECTION, ToD3DMATRIX(matrixProjection)),
+			PossiblyScopedTransform(m_pd3dDev.Get(), D3DTS_VIEW, ToD3DMATRIX(matrixView)),
+			PossiblyScopedTransform(m_pd3dDev.Get(), D3DTS_WORLD),
+			PossiblyScopedTransform(m_pd3dDev.Get(), D3DTS_TEXTURE0),
+		};
+
+		EndSceneInternal();
+
+#ifndef TOUHOU_ON_D3D8
+		pStateBlock->Apply();
+#endif
 	}
 
 	// Dirty texture transform matrix glitches ImGui.
@@ -2438,20 +2549,6 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 
 void THRotatorDirect3DDevice::EndSceneInternal()
 {
-#ifdef TOUHOU_ON_D3D8
-	D3DTEXTUREFILTERTYPE prevFilter, prevFilter2;
-	m_pd3dDev->GetTextureStageState(0, D3DTSS_MAGFILTER, (DWORD*)&prevFilter);
-	m_pd3dDev->GetTextureStageState(0, D3DTSS_MINFILTER, (DWORD*)&prevFilter2);
-	m_pd3dDev->SetTextureStageState(0, D3DTSS_MAGFILTER, m_pEditorContext->GetFilterType());
-	m_pd3dDev->SetTextureStageState(0, D3DTSS_MINFILTER, m_pEditorContext->GetFilterType());
-
-#else
-	m_pd3dDev->SetSamplerState(0, D3DSAMP_MAGFILTER, m_pEditorContext->GetFilterType());
-	m_pd3dDev->SetSamplerState(0, D3DSAMP_MINFILTER, m_pEditorContext->GetFilterType());
-#endif
-
-	m_pd3dDev->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
-
 	auto rotationAngle = m_pEditorContext->GetRotationAngle();
 
 	bool aspectLessThanRequested;
@@ -2596,27 +2693,6 @@ void THRotatorDirect3DDevice::EndSceneInternal()
 		m_pd3dDev->DrawPrimitive(THRotatorSpriteVertex::vertexBufferPrimitiveType, 0, THRotatorSpriteVertex::vertexBufferPrimitiveCount);
 	};
 
-	auto matrixProjection = DirectX::XMMatrixOrthographicOffCenterLH(
-		0.0f, static_cast<float>(m_d3dpp.BackBufferWidth),
-		static_cast<float>(m_d3dpp.BackBufferHeight), 0.0f,
-		0.0f, 1.0f);
-	auto matrixView = DirectX::XMMatrixLookAtLH(DirectX::XMVectorSet(0.5f, 0.5f, -1.0f, 1.0f),
-		DirectX::XMVectorSet(0.5f, 0.5f, 0.0f, 1.0f), DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
-
-	m_pd3dDev->SetTransform(D3DTS_PROJECTION, &ToD3DMATRIX(matrixProjection));
-	m_pd3dDev->SetTransform(D3DTS_VIEW, &ToD3DMATRIX(matrixView));
-
-	m_pd3dDev->SetTexture(0, m_pTex.Get());
-	m_pd3dDev->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_COUNT2);
-
-#ifdef TOUHOU_ON_D3D8
-	m_pd3dDev->SetStreamSource(0, m_pSpriteVertexBuffer.Get(), sizeof(THRotatorSpriteVertex));
-	m_pd3dDev->SetVertexShader(THRotatorSpriteVertex::FVF);
-#else
-	m_pd3dDev->SetStreamSource(0, m_pSpriteVertexBuffer.Get(), 0, sizeof(THRotatorSpriteVertex));
-	m_pd3dDev->SetFVF(THRotatorSpriteVertex::FVF);
-#endif
-
 	if (!bNeedsRearrangeHUD)
 	{
 		POINT pointZero = {};
@@ -2639,11 +2715,6 @@ void THRotatorDirect3DDevice::EndSceneInternal()
 				mainScreenSize, rectData.rotation);
 		}
 	}
-
-#ifdef TOUHOU_ON_D3D8
-	m_pd3dDev->SetTextureStageState(0, D3DTSS_MAGFILTER, prevFilter);
-	m_pd3dDev->SetTextureStageState(0, D3DTSS_MINFILTER, prevFilter2);
-#endif
 }
 
 HRESULT WINAPI THRotatorDirect3DDevice::Present(CONST RECT *pSourceRect,

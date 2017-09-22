@@ -13,3 +13,5 @@
 #endif
 
 #include <fmt/format.h>
+
+#include <wrl.h>

@@ -16,6 +16,8 @@
 
 #include <wrl.h>
 
+#include "Direct3DUtils.h"
+
 using Microsoft::WRL::ComPtr;
 
 namespace
@@ -38,204 +40,6 @@ struct CUSTOMVERTEX
 	float    uv[2];
 
 	enum : DWORD { FVF = D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1 };
-};
-
-// Structs for updating and restoring device states by RAII
-
-struct ScopedRS
-{
-	D3DRENDERSTATETYPE renderStateType;
-	DWORD previousValue;
-
-	ScopedRS(D3DRENDERSTATETYPE inRenderStateType, DWORD value)
-		: renderStateType(inRenderStateType)
-	{
-		g_pd3dDevice->GetRenderState(renderStateType, &previousValue);
-		g_pd3dDevice->SetRenderState(renderStateType, value);
-	}
-
-	~ScopedRS()
-	{
-		g_pd3dDevice->SetRenderState(renderStateType, previousValue);
-	}
-};
-
-struct ScopedTSS
-{
-	DWORD textureStage;
-	D3DTEXTURESTAGESTATETYPE textureStageStateType;
-	DWORD previousValue;
-
-	ScopedTSS(DWORD inTextureStage, D3DTEXTURESTAGESTATETYPE inTextureStageStateType, DWORD value)
-		: textureStage(inTextureStage)
-		, textureStageStateType(inTextureStageStateType)
-	{
-		g_pd3dDevice->GetTextureStageState(textureStage, textureStageStateType, &previousValue);
-		g_pd3dDevice->SetTextureStageState(textureStage, textureStageStateType, value);
-	}
-
-	~ScopedTSS()
-	{
-		g_pd3dDevice->SetTextureStageState(textureStage, textureStageStateType, previousValue);
-	}
-};
-
-struct ScopedTex
-{
-	DWORD textureStage;
-	ComPtr<IDirect3DBaseTexture8> previousTexture;
-
-	ScopedTex(DWORD inTextureStage, IDirect3DBaseTexture8* texture)
-		: textureStage(inTextureStage)
-	{
-		g_pd3dDevice->GetTexture(textureStage, &previousTexture);
-		g_pd3dDevice->SetTexture(textureStage, texture);
-	}
-
-	ScopedTex(DWORD inTextureStage)
-		: textureStage(inTextureStage)
-	{
-		g_pd3dDevice->GetTexture(textureStage, &previousTexture);
-	}
-
-	~ScopedTex()
-	{
-		g_pd3dDevice->SetTexture(textureStage, previousTexture.Get());
-	}
-};
-
-struct ScopedTransform
-{
-	D3DTRANSFORMSTATETYPE transformStateType;
-	D3DMATRIX previousTransformMatrix;
-
-	ScopedTransform(D3DTRANSFORMSTATETYPE inTransformType, const D3DMATRIX& transformMatrix)
-		: transformStateType(inTransformType)
-	{
-		g_pd3dDevice->GetTransform(transformStateType, &previousTransformMatrix);
-		g_pd3dDevice->SetTransform(transformStateType, &transformMatrix);
-	}
-
-	ScopedTransform(D3DTRANSFORMSTATETYPE inTransformType)
-		: transformStateType(inTransformType)
-	{
-		g_pd3dDevice->GetTransform(transformStateType, &previousTransformMatrix);
-	}
-
-	~ScopedTransform()
-	{
-		g_pd3dDevice->SetTransform(transformStateType, &previousTransformMatrix);
-	}
-};
-
-struct ScopedVP
-{
-	D3DVIEWPORT8 previousViewport;
-
-	ScopedVP(const D3DVIEWPORT8& viewport)
-	{
-		g_pd3dDevice->GetViewport(&previousViewport);
-		g_pd3dDevice->SetViewport(&viewport);
-	}
-
-	ScopedVP()
-	{
-		g_pd3dDevice->GetViewport(&previousViewport);
-	}
-
-	~ScopedVP()
-	{
-		g_pd3dDevice->SetViewport(&previousViewport);
-	}
-};
-
-struct ScopedStreamSource
-{
-	ComPtr<IDirect3DVertexBuffer8> previousVertexBuffer;
-	UINT streamNumber;
-	UINT previousStride;
-
-	ScopedStreamSource(UINT inStreamNumber, IDirect3DVertexBuffer8* vertexBuffer, UINT stride)
-		: streamNumber(inStreamNumber)
-	{
-		g_pd3dDevice->GetStreamSource(streamNumber, &previousVertexBuffer, &previousStride);
-		g_pd3dDevice->SetStreamSource(streamNumber, vertexBuffer, stride);
-	}
-
-	ScopedStreamSource(UINT inStreamNumber)
-		: streamNumber(inStreamNumber)
-	{
-		g_pd3dDevice->GetStreamSource(streamNumber, &previousVertexBuffer, &previousStride);
-	}
-
-	~ScopedStreamSource()
-	{
-		g_pd3dDevice->SetStreamSource(streamNumber, previousVertexBuffer.Get(), previousStride);
-	}
-};
-
-struct ScopedVS
-{
-	DWORD previousVertexShader;
-
-	ScopedVS(DWORD vertexShader)
-	{
-		g_pd3dDevice->GetVertexShader(&previousVertexShader);
-		g_pd3dDevice->SetVertexShader(vertexShader);
-	}
-
-	ScopedVS()
-	{
-		g_pd3dDevice->GetVertexShader(&previousVertexShader);
-	}
-
-	~ScopedVS()
-	{
-		g_pd3dDevice->SetVertexShader(previousVertexShader);
-	}
-};
-
-struct ScopedPS
-{
-	DWORD previousPixelShader;
-
-	ScopedPS(DWORD pixelShader)
-	{
-		g_pd3dDevice->GetPixelShader(&previousPixelShader);
-		g_pd3dDevice->SetPixelShader(pixelShader);
-	}
-
-	ScopedPS()
-	{
-		g_pd3dDevice->GetPixelShader(&previousPixelShader);
-	}
-
-	~ScopedPS()
-	{
-		g_pd3dDevice->SetPixelShader(previousPixelShader);
-	}
-};
-
-struct ScopedIndices
-{
-	ComPtr<IDirect3DIndexBuffer8> previousIndexBuffer;
-	UINT previousOffset;
-
-	ScopedIndices(IDirect3DIndexBuffer8* indices, UINT offset)
-	{
-		g_pd3dDevice->GetIndices(&previousIndexBuffer, &previousOffset);
-		g_pd3dDevice->SetIndices(indices, offset);
-	}
-
-	ScopedIndices()
-	{
-		g_pd3dDevice->GetIndices(&previousIndexBuffer, &previousOffset);
-	}
-
-	~ScopedIndices()
-	{
-		g_pd3dDevice->SetIndices(previousIndexBuffer.Get(), previousOffset);
-	}
 };
 
 } // end of anonymous namespace
@@ -295,47 +99,47 @@ void ImGui_ImplDX8_RenderDrawLists(ImDrawData* drawData)
 	g_pVB->Unlock();
 	g_pIB->Unlock();
 
-	ScopedStreamSource scopedStreamSource(0, g_pVB, sizeof(CUSTOMVERTEX));
-	ScopedIndices scopedIndices;
+	ScopedStreamSource scopedStreamSource(g_pd3dDevice, 0, g_pVB, sizeof(CUSTOMVERTEX));
+	ScopedIndices scopedIndices(g_pd3dDevice);
 
 	// SetFVF() equivalent for D3D8
-	ScopedVS scopedVS(CUSTOMVERTEX::FVF);
+	ScopedVS scopedVS(g_pd3dDevice, CUSTOMVERTEX::FVF);
 
 	// Setup render state: fixed-pipeline, alpha-blending, no face culling, no depth testing
 	ScopedPS scopedPS(0);
 
 	ScopedRS scopedRenderStates[] =
 	{
-		ScopedRS(D3DRS_CULLMODE, D3DCULL_NONE),
-		ScopedRS(D3DRS_LIGHTING, false),
-		ScopedRS(D3DRS_ZENABLE, false),
-		ScopedRS(D3DRS_ALPHABLENDENABLE, true),
-		ScopedRS(D3DRS_ALPHATESTENABLE, false),
-		ScopedRS(D3DRS_BLENDOP, D3DBLENDOP_ADD),
-		ScopedRS(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA),
-		ScopedRS(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA),
+		ScopedRS(g_pd3dDevice, D3DRS_CULLMODE, D3DCULL_NONE),
+		ScopedRS(g_pd3dDevice, D3DRS_LIGHTING, false),
+		ScopedRS(g_pd3dDevice, D3DRS_ZENABLE, false),
+		ScopedRS(g_pd3dDevice, D3DRS_ALPHABLENDENABLE, true),
+		ScopedRS(g_pd3dDevice, D3DRS_ALPHATESTENABLE, false),
+		ScopedRS(g_pd3dDevice, D3DRS_BLENDOP, D3DBLENDOP_ADD),
+		ScopedRS(g_pd3dDevice, D3DRS_SRCBLEND, D3DBLEND_SRCALPHA),
+		ScopedRS(g_pd3dDevice, D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA),
 	};
 
 	ScopedTSS scopedTextureStageStates[] =
 	{
-		ScopedTSS(0, D3DTSS_COLOROP, D3DTOP_MODULATE),
-		ScopedTSS(0, D3DTSS_COLORARG1, D3DTA_TEXTURE),
-		ScopedTSS(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE),
-		ScopedTSS(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE),
-		ScopedTSS(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE),
-		ScopedTSS(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE),
-		ScopedTSS(0, D3DTSS_MINFILTER, D3DTEXF_LINEAR),
-		ScopedTSS(0, D3DTSS_MAGFILTER, D3DTEXF_LINEAR),
+		ScopedTSS(g_pd3dDevice, 0, D3DTSS_COLOROP, D3DTOP_MODULATE),
+		ScopedTSS(g_pd3dDevice, 0, D3DTSS_COLORARG1, D3DTA_TEXTURE),
+		ScopedTSS(g_pd3dDevice, 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE),
+		ScopedTSS(g_pd3dDevice, 0, D3DTSS_ALPHAOP, D3DTOP_MODULATE),
+		ScopedTSS(g_pd3dDevice, 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE),
+		ScopedTSS(g_pd3dDevice, 0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE),
+		ScopedTSS(g_pd3dDevice, 0, D3DTSS_MINFILTER, D3DTEXF_LINEAR),
+		ScopedTSS(g_pd3dDevice, 0, D3DTSS_MAGFILTER, D3DTEXF_LINEAR),
 	};
 
 	ScopedTransform scopedTransforms[] =
 	{
-		ScopedTransform(D3DTS_WORLD),
-		ScopedTransform(D3DTS_VIEW),
-		ScopedTransform(D3DTS_PROJECTION),
+		ScopedTransform(g_pd3dDevice, D3DTS_WORLD),
+		ScopedTransform(g_pd3dDevice, D3DTS_VIEW),
+		ScopedTransform(g_pd3dDevice, D3DTS_PROJECTION),
 	};
 
-	ScopedTex scopedTexture(0);
+	ScopedTex scopedTexture(g_pd3dDevice, 0);
 
 	{
 		D3DMATRIX matIdentity = { { 1.0f, 0.0f, 0.0f, 0.0f,  0.0f, 1.0f, 0.0f, 0.0f,  0.0f, 0.0f, 1.0f, 0.0f,  0.0f, 0.0f, 0.0f, 1.0f } };
@@ -348,7 +152,7 @@ void ImGui_ImplDX8_RenderDrawLists(ImDrawData* drawData)
 	int vertexBufferOffset = 0;
 	int indexBufferOffset = 0;
 
-	ScopedVP scopedViewport;
+	ScopedVP scopedViewport(g_pd3dDevice);
 
 	D3DVIEWPORT8 viewport;
 	viewport.MinZ = 0.0f;
