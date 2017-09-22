@@ -106,7 +106,7 @@ void ImGui_ImplDX8_RenderDrawLists(ImDrawData* drawData)
 	ScopedVS scopedVS(g_pd3dDevice, CUSTOMVERTEX::FVF);
 
 	// Setup render state: fixed-pipeline, alpha-blending, no face culling, no depth testing
-	ScopedPS scopedPS(0);
+	ScopedPS scopedPS(g_pd3dDevice, 0);
 
 	ScopedRS scopedRenderStates[] =
 	{
