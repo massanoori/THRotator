@@ -109,7 +109,7 @@ using Microsoft::WRL::ComPtr;
 static float RotationAngleToRadian(RotationAngle rotation)
 {
 	assert(0 <= rotation && rotation < Rotation_Num);
-	return static_cast<float>(rotation) * D3DX_PI * 0.5f;
+	return static_cast<float>(rotation) * DirectX::XM_PIDIV2;
 }
 
 namespace
@@ -2605,32 +2605,28 @@ void THRotatorDirect3DDevice::EndSceneInternal()
 
 	*****/
 
-	D3DXMATRIX preRectTransform;
+	using namespace DirectX;
+
+	XMMATRIX preRectTransform;
 	{
 		// step 1
-		D3DXMATRIX baseSrcScale;
-		D3DXMatrixScaling(&baseSrcScale, correctedBaseScreenWidth / static_cast<float>(m_requestedWidth), correctedBaseScreenHeight / static_cast<float>(m_requestedHeight), 1.0f);
+		XMMATRIX baseSrcScale = XMMatrixScaling(correctedBaseScreenWidth / static_cast<float>(m_requestedWidth), correctedBaseScreenHeight / static_cast<float>(m_requestedHeight), 1.0f);
 
 		preRectTransform = baseSrcScale;
 	}
 
-	D3DXMATRIX postRectTransform;
+	XMMATRIX postRectTransform;
 	{
 		float baseDestScaleScalar = rotationAngle % 2 == 0 ?
 			(std::min)(m_d3dpp.BackBufferWidth / static_cast<float>(baseDestRectWidth), m_d3dpp.BackBufferHeight / static_cast<float>(baseDestRectHeight)) :
 			(std::min)(m_d3dpp.BackBufferWidth / static_cast<float>(baseDestRectHeight), m_d3dpp.BackBufferHeight / static_cast<float>(baseDestRectWidth));
-		D3DXMATRIX baseDestScale;
-		D3DXMatrixScaling(&baseDestScale, baseDestScaleScalar, baseDestScaleScalar, 1.0f);
+		XMMATRIX baseDestScale = XMMatrixScaling(baseDestScaleScalar, baseDestScaleScalar, 1.0f);
 
-		D3DXMATRIX rotation;
-		D3DXMatrixRotationZ(&rotation, RotationAngleToRadian(rotationAngle));
+		XMMATRIX rotation = XMMatrixRotationZ(RotationAngleToRadian(rotationAngle));
 
-		D3DXMATRIX baseDestTranslation;
-		D3DXMatrixTranslation(&baseDestTranslation, 0.5f * m_d3dpp.BackBufferWidth, 0.5f * m_d3dpp.BackBufferHeight, 0.0f);
+		XMMATRIX baseDestTranslation = XMMatrixTranslation(0.5f * m_d3dpp.BackBufferWidth, 0.5f * m_d3dpp.BackBufferHeight, 0.0f);
 
-		D3DXMATRIX temp;
-		D3DXMatrixMultiply(&temp, &baseDestScale, &rotation);
-		D3DXMatrixMultiply(&postRectTransform, &temp, &baseDestTranslation);
+		postRectTransform = baseDestScale * rotation * baseDestTranslation;
 	}
 
 	auto rectDrawer = [this, &preRectTransform, &postRectTransform, correctedBaseScreenWidth, correctedBaseScreenHeight](
@@ -2643,32 +2639,28 @@ void THRotatorDirect3DDevice::EndSceneInternal()
 	{
 		SIZE srcRectTopLeftOffset = {};
 
-		D3DXMATRIX translateSrcCenterToOrigin;
-		D3DXMatrixTranslation(&translateSrcCenterToOrigin,
+		XMMATRIX translateSrcCenterToOrigin = XMMatrixTranslation(
 			-0.5f * srcSize.cx + srcRectTopLeftOffset.cx,
 			-0.5f * srcSize.cy + srcRectTopLeftOffset.cy, 0.0f);
 
-		D3DXMATRIX rectScaleSrcInv;
-		D3DXMatrixScaling(&rectScaleSrcInv, 1.0f / srcSize.cx, 1.0f / srcSize.cy, 1.0f);
+		XMMATRIX rectScaleSrcInv = XMMatrixScaling(1.0f / srcSize.cx, 1.0f / srcSize.cy, 1.0f);
 
-		D3DXMATRIX rectRotation;
-		D3DXMatrixRotationZ(&rectRotation, RotationAngleToRadian(rotation));
+		XMMATRIX rectRotation = XMMatrixRotationZ(RotationAngleToRadian(rotation));
 
-		D3DXMATRIX rectScaleDest;
-		D3DXMatrixScaling(&rectScaleDest, static_cast<float>(destSize.cx), static_cast<float>(destSize.cy), 1.0f);
+		XMMATRIX rectScaleDest = XMMatrixScaling(static_cast<float>(destSize.cx), static_cast<float>(destSize.cy), 1.0f);
 
-		D3DXMATRIX rectTranslation;
-		D3DXMatrixTranslation(&rectTranslation,
+		XMMATRIX rectTranslation = XMMatrixTranslation(
 			static_cast<float>(destPos.x) + 0.5f * (destSize.cx - mainScreenSize.cx),
 			static_cast<float>(destPos.y) + 0.5f * (destSize.cy - mainScreenSize.cy), 0.0f);
 
-		D3DXMATRIX finalTransform, temp;
-		D3DXMatrixMultiply(&temp, &preRectTransform, &translateSrcCenterToOrigin);
-		D3DXMatrixMultiply(&finalTransform, &temp, &rectScaleSrcInv);
-		D3DXMatrixMultiply(&temp, &finalTransform, &rectRotation);
-		D3DXMatrixMultiply(&finalTransform, &temp, &rectScaleDest);
-		D3DXMatrixMultiply(&temp, &finalTransform, &rectTranslation);
-		D3DXMatrixMultiply(&finalTransform, &temp, &postRectTransform);
+		XMMATRIX finalTransform
+			= preRectTransform
+			* translateSrcCenterToOrigin
+			* rectScaleSrcInv
+			* rectRotation
+			* rectScaleDest
+			* rectTranslation
+			* postRectTransform;
 
 		RECT scaledSourceRect;
 		float scaleFactorForSourceX = static_cast<float>(m_requestedWidth) / correctedBaseScreenWidth;
@@ -2678,17 +2670,16 @@ void THRotatorDirect3DDevice::EndSceneInternal()
 		scaledSourceRect.top = static_cast<LONG>(srcPos.y * scaleFactorForSourceY);
 		scaledSourceRect.bottom = static_cast<LONG>((srcPos.y + srcSize.cy) * scaleFactorForSourceY);
 
-		D3DXMATRIX finalMatrix2, spriteVertexScale;
-		D3DXMatrixScaling(&spriteVertexScale, srcSize.cx * scaleFactorForSourceX, srcSize.cy * scaleFactorForSourceY, 1.0f);
-		D3DXMatrixMultiply(&finalMatrix2, &spriteVertexScale, &finalTransform);
-		m_pd3dDev->SetTransform(D3DTS_WORLD, &finalMatrix2);
+		XMMATRIX spriteVertexScale = XMMatrixScaling(srcSize.cx * scaleFactorForSourceX, srcSize.cy * scaleFactorForSourceY, 1.0f);
+		finalTransform = spriteVertexScale * finalTransform;
+		m_pd3dDev->SetTransform(D3DTS_WORLD, &ToD3DMATRIX(finalTransform));
 
-		D3DXMATRIX textureMatrixScale;
-		D3DXMatrixScaling(&textureMatrixScale, srcSize.cx * scaleFactorForSourceX / m_requestedWidth, srcSize.cy * scaleFactorForSourceY / m_requestedHeight, 1.0f);
+		XMFLOAT4X4A textureMatrixScale;
+		XMStoreFloat4x4A(&textureMatrixScale, XMMatrixScaling(srcSize.cx * scaleFactorForSourceX / m_requestedWidth, srcSize.cy * scaleFactorForSourceY / m_requestedHeight, 1.0f));
 		textureMatrixScale.m[2][0] = srcPos.x * scaleFactorForSourceX / m_requestedWidth;
 		textureMatrixScale.m[2][1] = srcPos.y * scaleFactorForSourceY / m_requestedHeight;
 
-		m_pd3dDev->SetTransform(D3DTS_TEXTURE0, &textureMatrixScale);
+		m_pd3dDev->SetTransform(D3DTS_TEXTURE0, reinterpret_cast<const D3DMATRIX*>(&textureMatrixScale));
 
 		m_pd3dDev->DrawPrimitive(THRotatorSpriteVertex::vertexBufferPrimitiveType, 0, THRotatorSpriteVertex::vertexBufferPrimitiveCount);
 	};
