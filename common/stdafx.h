@@ -1,3 +1,5 @@
+﻿// (c) 2017 massanoori
+
 #pragma once
 
 #include <vector>

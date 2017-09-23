@@ -1,4 +1,4 @@
-file(GLOB throtator_source_files "${CMAKE_CURRENT_LIST_DIR}/*.cpp")
+﻿file(GLOB throtator_source_files "${CMAKE_CURRENT_LIST_DIR}/*.cpp")
 file(GLOB throtator_other_files "${CMAKE_CURRENT_LIST_DIR}/*.h" "${CMAKE_CURRENT_LIST_DIR}/*.rc")
 file(GLOB imgui_source_files "${CMAKE_CURRENT_LIST_DIR}/../imgui/*.cpp")
 file(GLOB imgui_header_files "${CMAKE_CURRENT_LIST_DIR}/../imgui/*.h")

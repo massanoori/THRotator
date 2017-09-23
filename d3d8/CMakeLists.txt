@@ -1,4 +1,4 @@
-set(throtator_target d3d8)
+﻿set(throtator_target d3d8)
 
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /SAFESEH:NO /NODEFAULTLIB:libci")
 

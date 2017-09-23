@@ -1,4 +1,4 @@
-// (c) 2017 massanoori
+﻿// (c) 2017 massanoori
 
 #pragma once
 

@@ -1,4 +1,4 @@
-file(GLOB source_files "${CMAKE_CURRENT_LIST_DIR}/*.cpp" "${CMAKE_CURRENT_LIST_DIR}/*.h")
+﻿file(GLOB source_files "${CMAKE_CURRENT_LIST_DIR}/*.cpp" "${CMAKE_CURRENT_LIST_DIR}/*.h")
 
 set(localization_target localization_${language})
 

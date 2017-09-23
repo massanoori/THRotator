@@ -1,4 +1,4 @@
-ï»¿THRotator
+THRotator
 =====
 
 [![Build status](https://ci.appveyor.com/api/projects/status/hh62maoopv602fm5?svg=true)](https://ci.appveyor.com/project/massanoori/throtator)
@@ -18,7 +18,7 @@ How to install and use
 Instructions are given at online manual.
 
 * English: <http://throtator-manual.readthedocs.io/en/stable/>.
-* æ—¥æœ¬èªž: <http://throtator-manual.readthedocs.io/ja/stable/>.
+* “ú–{Œê: <http://throtator-manual.readthedocs.io/ja/stable/>.
 
 Repository of manual
 =====
