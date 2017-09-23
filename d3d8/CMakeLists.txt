@@ -1,6 +1,5 @@
 set(throtator_target d3d8)
 
-link_directories("d3d8/lib/")
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /SAFESEH:NO /NODEFAULTLIB:libci")
 
 set(throtator_dll_def my_d3d8.def)

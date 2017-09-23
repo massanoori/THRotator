@@ -16,12 +16,8 @@
 
 #ifdef TOUHOU_ON_D3D8
 
-#include <d3dx8.h>
-#pragma comment(lib, "d3dx8.lib")
-
-#if _MSC_VER >= 1900
-#pragma comment(lib, "legacy_stdio_definitions.lib")
-#endif
+// For IID_IDirect3D8, IID_IDirect3DDevice8.
+#pragma comment(lib, "dxguid.lib")
 
 #define DECLARE_POSSIBLY_SCOPED_STATE(suffix) \
 using PossiblyScoped##suffix = Scoped##suffix;
@@ -37,9 +33,6 @@ DECLARE_POSSIBLY_SCOPED_STATE(FVF)
 #undef DECLARE_POSSIBLY_SCOPED_STATE
 
 #else
-
-#include <d3dx9.h>
-#pragma comment(lib,"d3dx9.lib")
 
 struct PossiblyScopedRS
 {
