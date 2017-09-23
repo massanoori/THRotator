@@ -2411,8 +2411,24 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 	m_pd3dDev->SetRenderTarget(0, m_pBackBuffer.Get());
 	m_pd3dDev->SetDepthStencilSurface(nullptr);
 #endif
-	D3DXLoadSurfaceFromSurface(m_pTexSurface.Get(), nullptr, nullptr,
-		m_pRenderTarget.Get(), nullptr, nullptr, D3DX_FILTER_NONE, 0);
+
+	{
+		// Copying surface from dummy target to texture as surface
+
+#ifdef TOUHOU_ON_D3D8
+		RECT sourceRectToCopy;
+		sourceRectToCopy.left = 0;
+		sourceRectToCopy.top = 0;
+		sourceRectToCopy.right = m_requestedWidth;
+		sourceRectToCopy.bottom = m_requestedHeight;
+
+		POINT destRectPoint{};
+
+		m_pd3dDev->CopyRects(m_pRenderTarget.Get(), &sourceRectToCopy, 1, m_pTexSurface.Get(), &destRectPoint);
+#else
+		m_pd3dDev->StretchRect(m_pRenderTarget.Get(), nullptr, m_pTexSurface.Get(), nullptr, D3DTEXF_NONE);
+#endif
+	}
 
 	THRotatorImGui_NewFrame();
 
