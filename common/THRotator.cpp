@@ -2777,27 +2777,36 @@ HRESULT THRotatorDirect3DDevice::InternalPresent(CONST RECT *pSourceRect,
 
 	if (m_pEditorContext->ConsumeScreenCaptureRequest())
 	{
-		namespace fs = boost::filesystem;
-		TCHAR fname[MAX_PATH];
+		D3DSURFACE_DESC renderTargetDesc;
+		m_pRenderTarget->GetDesc(&renderTargetDesc);
 
-		fs::create_directory(GetTouhouPlayerDataDirectory() / _T("snapshot"));
-		for (int i = 0; i >= 0; ++i)
+		D3DLOCKED_RECT lockedRect;
+		if (SUCCEEDED(m_pRenderTarget->LockRect(&lockedRect, nullptr, D3DLOCK_READONLY)))
 		{
-			wsprintf(fname, (GetTouhouPlayerDataDirectory() / _T("snapshot/thRot%03d.bmp")).string<std::basic_string<TCHAR>>().c_str(), i);
-			if (!fs::exists(fname))
-			{
-				D3DSURFACE_DESC renderTargetDesc;
-				m_pRenderTarget->GetDesc(&renderTargetDesc);
+			namespace fs = boost::filesystem;
 
-				D3DLOCKED_RECT lockedRect;
-				if (SUCCEEDED(m_pRenderTarget->LockRect(&lockedRect, nullptr, D3DLOCK_READONLY)))
+			auto snapshotDirectory = GetTouhouPlayerDataDirectory() / L"snapshot";
+
+			fs::create_directory(snapshotDirectory);
+
+			// search for available filename
+			for (int i = 0; i >= 0; ++i)
+			{
+				fs::path filename = snapshotDirectory / fmt::format(L"throt{:03d}.bmp", i);
+				if (fs::exists(filename))
 				{
-					SaveBitmapImage(fname, renderTargetDesc.Format, lockedRect.pBits, m_requestedWidth, m_requestedHeight, lockedRect.Pitch);
-					m_pRenderTarget->UnlockRect();
+					continue;
 				}
+
+				SaveBitmapImage(filename.generic_wstring(),
+					renderTargetDesc.Format, lockedRect.pBits,
+					m_requestedWidth, m_requestedHeight,
+					lockedRect.Pitch);
 
 				break;
 			}
+
+			m_pRenderTarget->UnlockRect();
 		}
 	}
 
