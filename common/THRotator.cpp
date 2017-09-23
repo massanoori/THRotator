@@ -12,6 +12,7 @@
 
 #include "THRotatorImGui.h"
 #include "Direct3DUtils.h"
+#include "ImageIO.h"
 
 #ifdef TOUHOU_ON_D3D8
 
@@ -2027,6 +2028,7 @@ HRESULT THRotatorDirect3DDevice::InternalInit(UINT Adapter,
 
 	OutputLogMessagef(LogSeverity::Info, "Resolution requested: {0}x{1}, Modified resolution: {2}x{3}",
 		m_requestedWidth, m_requestedHeight, m_d3dpp.BackBufferWidth, m_d3dpp.BackBufferHeight);
+	OutputLogMessagef(LogSeverity::Info, "Back buffer format: {}", m_d3dpp.BackBufferFormat);
 
 	HRESULT ret;
 
@@ -2791,7 +2793,16 @@ HRESULT THRotatorDirect3DDevice::InternalPresent(CONST RECT *pSourceRect,
 			wsprintf(fname, (GetTouhouPlayerDataDirectory() / _T("snapshot/thRot%03d.bmp")).string<std::basic_string<TCHAR>>().c_str(), i);
 			if (!fs::exists(fname))
 			{
-				::D3DXSaveSurfaceToFile(fname, D3DXIFF_BMP, m_pRenderTarget.Get(), nullptr, nullptr);
+				D3DSURFACE_DESC renderTargetDesc;
+				m_pRenderTarget->GetDesc(&renderTargetDesc);
+
+				D3DLOCKED_RECT lockedRect;
+				if (SUCCEEDED(m_pRenderTarget->LockRect(&lockedRect, nullptr, D3DLOCK_READONLY)))
+				{
+					SaveBitmapImage(fname, renderTargetDesc.Format, lockedRect.pBits, m_requestedWidth, m_requestedHeight, lockedRect.Pitch);
+					m_pRenderTarget->UnlockRect();
+				}
+
 				break;
 			}
 		}
