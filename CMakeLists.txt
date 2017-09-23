@@ -38,5 +38,5 @@ add_subdirectory(localization_en-US)
 
 install(DIRECTORY sample-config DESTINATION .)
 install(FILES MANUAL.txt DESTINATION .)
-install(FILES EXTERNAL-LICENSES.txt DESTINATION .)
+install(FILES EXTERNAL-LIBRARIES.txt DESTINATION .)
 install(FILES LICENSE.txt DESTINATION .)

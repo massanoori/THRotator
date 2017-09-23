@@ -1,4 +1,4 @@
-THRotator
+﻿THRotator
 =====
 
 [![Build status](https://ci.appveyor.com/api/projects/status/hh62maoopv602fm5?svg=true)](https://ci.appveyor.com/project/massanoori/throtator)
@@ -25,7 +25,7 @@ Repository of manual
 
 <https://github.com/massanoori/THRotator-manual>.
 
-License
+Redistribution
 =====
 
 Configuration files
