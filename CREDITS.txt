@@ -1,5 +1,5 @@
-﻿json.hpp
-========
+﻿JSON for Modern C++
+===================
 
 MIT License 
 
@@ -52,8 +52,8 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-ImGui
-========
+Dear ImGui
+==========
 
 The MIT License (MIT)
 
