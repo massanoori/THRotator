@@ -4,34 +4,32 @@
 
 #ifdef TOUHOU_ON_D3D8
 
-typedef IDirect3D8 Direct3DBase;
-typedef IDirect3D8 Direct3DExBase;
-typedef IDirect3DDevice8 Direct3DDeviceBase;
-typedef IDirect3DDevice8 Direct3DDeviceExBase;
-typedef IDirect3DSurface8 Direct3DSurfaceBase;
-typedef IDirect3DTexture8 Direct3DTextureBase;
-typedef IDirect3DBaseTexture8 Direct3DBaseTextureBase;
-typedef IDirect3DVertexBuffer8 Direct3DVertexBufferBase;
-typedef IDirect3DIndexBuffer8 Direct3DIndexBufferBase;
-typedef IDirect3DSwapChain8 Direct3DSwapChainBase;
-
+using Direct3DBase = IDirect3D8;
+using Direct3DExBase = IDirect3D8;
+using Direct3DDeviceBase = IDirect3DDevice8;
+using Direct3DDeviceExBase = IDirect3DDevice8;
+using Direct3DSurfaceBase = IDirect3DSurface8;
+using Direct3DTextureBase = IDirect3DTexture8;
+using Direct3DBaseTextureBase = IDirect3DBaseTexture8;
+using Direct3DVertexBufferBase = IDirect3DVertexBuffer8;
+using Direct3DIndexBufferBase = IDirect3DIndexBuffer8;
+using Direct3DSwapChainBase = IDirect3DSwapChain8;
 using LockedPointer = BYTE*;
 
 #define ARG_NULL_SHARED_HANDLE
 
 #else
 
-typedef IDirect3D9 Direct3DBase;
-typedef IDirect3D9Ex Direct3DExBase;
-typedef IDirect3DDevice9 Direct3DDeviceBase;
-typedef IDirect3DDevice9Ex Direct3DDeviceExBase;
-typedef IDirect3DSurface9 Direct3DSurfaceBase;
-typedef IDirect3DTexture9 Direct3DTextureBase;
-typedef IDirect3DBaseTexture9 Direct3DBaseTextureBase;
-typedef IDirect3DVertexBuffer9 Direct3DVertexBufferBase;
-typedef IDirect3DIndexBuffer9 Direct3DIndexBufferBase;
-typedef IDirect3DSwapChain9 Direct3DSwapChainBase;
-
+using Direct3DBase = IDirect3D9;
+using Direct3DExBase = IDirect3D9Ex;
+using Direct3DDeviceBase = IDirect3DDevice9;
+using Direct3DDeviceExBase = IDirect3DDevice9Ex;
+using Direct3DSurfaceBase = IDirect3DSurface9;
+using Direct3DTextureBase = IDirect3DTexture9;
+using Direct3DBaseTextureBase = IDirect3DBaseTexture9;
+using Direct3DVertexBufferBase = IDirect3DVertexBuffer9;
+using Direct3DIndexBufferBase = IDirect3DIndexBuffer9;
+using Direct3DSwapChainBase = IDirect3DSwapChain9;
 using LockedPointer = void*;
 
 #define ARG_NULL_SHARED_HANDLE , nullptr
