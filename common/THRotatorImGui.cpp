@@ -448,7 +448,8 @@ void THRotatorImGui_RenderDrawLists(ImDrawData* drawData)
 		pUserData->vertexBuffer.Reset();
 		pUserData->vertexBufferCapacity = drawData->TotalVtxCount + 5000;
 		if (FAILED(pUserData->device->CreateVertexBuffer(pUserData->vertexBufferCapacity * sizeof(THRotatorImGui_Vertex),
-			D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, THRotatorImGui_Vertex::FVF, D3DPOOL_DEFAULT, &pUserData->vertexBuffer ARG_NULL_SHARED_HANDLE)))
+			D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, THRotatorImGui_Vertex::FVF, D3DPOOL_DEFAULT, &pUserData->vertexBuffer
+			ARG_PASS_SHARED_HANDLE(nullptr))))
 		{
 			return;
 		}
@@ -460,7 +461,8 @@ void THRotatorImGui_RenderDrawLists(ImDrawData* drawData)
 		pUserData->indexBufferCapacity = drawData->TotalIdxCount + 10000;
 		if (FAILED(pUserData->device->CreateIndexBuffer(pUserData->indexBufferCapacity * sizeof(ImDrawIdx),
 			D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, sizeof(ImDrawIdx) == 2 ? D3DFMT_INDEX16 : D3DFMT_INDEX32,
-			D3DPOOL_DEFAULT, &pUserData->indexBuffer ARG_NULL_SHARED_HANDLE)))
+			D3DPOOL_DEFAULT, &pUserData->indexBuffer
+			ARG_PASS_SHARED_HANDLE(nullptr))))
 		{
 			return;
 		}
@@ -827,7 +829,8 @@ bool THRotatorImGui_CreateDeviceObjects()
 	pUserData->fontTexture.Reset();
 	if (FAILED(pUserData->device->CreateTexture(
 		width, height, 1, D3DUSAGE_DYNAMIC, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,
-		&pUserData->fontTexture ARG_NULL_SHARED_HANDLE)))
+		&pUserData->fontTexture
+		ARG_PASS_SHARED_HANDLE(nullptr))))
 	{
 		return false;
 	}

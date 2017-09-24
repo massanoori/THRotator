@@ -443,61 +443,42 @@ public:
 		DWORD Usage,
 		D3DFORMAT Format,
 		D3DPOOL Pool,
-#ifdef TOUHOU_ON_D3D8
-		IDirect3DCubeTexture8 **ppCubeTexture) override
-#else
-		IDirect3DCubeTexture9 **ppCubeTexture,
-		HANDLE* pHandle) override
-#endif
+		Direct3DCubeTextureBase** ppCubeTexture
+		ARG_DECLARE_SHARED_HANDLE(pHandle)) override
 	{
-		return m_pd3dDev->CreateCubeTexture(EdgeLength, Levels, Usage, Format, Pool,
-#ifdef TOUHOU_ON_D3D8
-			ppCubeTexture);
-#else
-			ppCubeTexture, pHandle);
-#endif
+		return m_pd3dDev->CreateCubeTexture(EdgeLength, Levels, Usage, Format, Pool, ppCubeTexture
+			ARG_PASS_SHARED_HANDLE(pHandle));
 	}
 
 	HRESULT WINAPI CreateDepthStencilSurface(UINT Width,
 		UINT Height,
 		D3DFORMAT Format,
 		D3DMULTISAMPLE_TYPE MultiSample,
-#ifdef TOUHOU_ON_D3D8
-		Direct3DSurfaceBase** ppSurface) override
-#else
+#ifndef TOUHOU_ON_D3D8
 		DWORD MultisampleQuality,
 		BOOL Discard,
-		Direct3DSurfaceBase** ppSurface,
-		HANDLE* pHandle) override
 #endif
+		Direct3DSurfaceBase** ppSurface
+		ARG_DECLARE_SHARED_HANDLE(pHandle)) override
 	{
 		return m_pd3dDev->CreateDepthStencilSurface(Width,
 			Height, Format, MultiSample,
-#ifdef TOUHOU_ON_D3D8
-			ppSurface);
-#else
+#ifndef TOUHOU_ON_D3D8
 			MultisampleQuality,
-			Discard, ppSurface, pHandle);
+			Discard,
 #endif
+			ppSurface
+			ARG_PASS_SHARED_HANDLE(pHandle));
 	}
 
 	HRESULT WINAPI CreateIndexBuffer(UINT Length,
 		DWORD Usage,
 		D3DFORMAT Format,
 		D3DPOOL Pool,
-#ifdef TOUHOU_ON_D3D8
-		Direct3DIndexBufferBase** ppIndexBuffer) override
-#else
-		Direct3DIndexBufferBase** ppIndexBuffer,
-		HANDLE* pHandle) override
-#endif
+		Direct3DIndexBufferBase** ppIndexBuffer
+		ARG_DECLARE_SHARED_HANDLE(pHandle)) override
 	{
-		return m_pd3dDev->CreateIndexBuffer(Length, Usage, Format, Pool,
-#ifdef TOUHOU_ON_D3D8
-			ppIndexBuffer);
-#else
-			ppIndexBuffer, pHandle);
-#endif
+		return m_pd3dDev->CreateIndexBuffer(Length, Usage, Format, Pool, ppIndexBuffer ARG_PASS_SHARED_HANDLE(pHandle));
 	}
 
 	HRESULT WINAPI CreatePixelShader(CONST DWORD *pFunction,
@@ -523,20 +504,15 @@ public:
 		DWORD MultisampleQuality,
 #endif
 		BOOL Lockable,
-#ifdef TOUHOU_ON_D3D8
-		Direct3DSurfaceBase** ppSurface) override
-#else
-		Direct3DSurfaceBase** ppSurface,
-		HANDLE* pHandle) override
-#endif
+		Direct3DSurfaceBase** ppSurface
+		ARG_DECLARE_SHARED_HANDLE(pHandle)) override
 	{
 		return m_pd3dDev->CreateRenderTarget(Width, Height, Format, MultiSample,
-#ifdef TOUHOU_ON_D3D8
-			Lockable, ppSurface);
-#else
+#ifndef TOUHOU_ON_D3D8
 			MultisampleQuality,
-			Lockable, ppSurface, pHandle);
 #endif
+			Lockable, ppSurface
+			ARG_PASS_SHARED_HANDLE(pHandle));
 	}
 
 	HRESULT WINAPI CreateStateBlock(D3DSTATEBLOCKTYPE Type,
@@ -560,40 +536,24 @@ public:
 		DWORD Usage,
 		D3DFORMAT Format,
 		D3DPOOL Pool,
-#ifdef TOUHOU_ON_D3D8
-		Direct3DTextureBase** ppTexture) override
-#else
-		Direct3DTextureBase** ppTexture,
-		HANDLE* pHandle) override
-#endif
+		Direct3DTextureBase** ppTexture
+		ARG_DECLARE_SHARED_HANDLE(pHandle)) override
 	{
 		return m_pd3dDev->CreateTexture(Width, Height, Levels,
-			Usage, Format, Pool,
-#ifdef TOUHOU_ON_D3D8
-			ppTexture);
-#else
-			ppTexture, pHandle);
-#endif
+			Usage, Format, Pool, ppTexture
+			ARG_PASS_SHARED_HANDLE(pHandle));
 	}
 
 	HRESULT WINAPI CreateVertexBuffer(UINT Length,
 		DWORD Usage,
 		DWORD FVF,
 		D3DPOOL Pool,
-#ifdef TOUHOU_ON_D3D8
-		Direct3DVertexBufferBase** ppVertexBuffer) override
-#else
-		Direct3DVertexBufferBase** ppVertexBuffer,
-		HANDLE* pHandle) override
-#endif
+		Direct3DVertexBufferBase** ppVertexBuffer
+		ARG_DECLARE_SHARED_HANDLE(pHandle)) override
 	{
 		return m_pd3dDev->CreateVertexBuffer(Length,
-			Usage, FVF, Pool,
-#ifdef TOUHOU_ON_D3D8
-			ppVertexBuffer);
-#else
-			ppVertexBuffer, pHandle);
-#endif
+			Usage, FVF, Pool, ppVertexBuffer
+			ARG_PASS_SHARED_HANDLE(pHandle));
 	}
 
 	HRESULT WINAPI CreateVertexShader(
@@ -619,20 +579,12 @@ public:
 		DWORD Usage,
 		D3DFORMAT Format,
 		D3DPOOL Pool,
-#ifdef TOUHOU_ON_D3D8
-		IDirect3DVolumeTexture8** ppVolumeTexture) override
-#else
-		IDirect3DVolumeTexture9** ppVolumeTexture,
-		HANDLE* pHandle) override
-#endif
+		Direct3DVolumeTextureBase** ppVolumeTexture
+		ARG_DECLARE_SHARED_HANDLE(pHandle)) override
 	{
 		return m_pd3dDev->CreateVolumeTexture(Width, Height, Depth,
-			Levels, Usage, Format, Pool,
-#ifdef TOUHOU_ON_D3D8
-			ppVolumeTexture);
-#else
-			ppVolumeTexture, pHandle);
-#endif
+			Levels, Usage, Format, Pool, ppVolumeTexture
+			ARG_PASS_SHARED_HANDLE(pHandle));
 	}
 
 	HRESULT WINAPI DeletePatch(UINT Handle) override
@@ -2022,11 +1974,7 @@ HRESULT THRotatorDirect3DDevice::InitResources()
 
 	HRESULT hr = m_pd3dDev->CreateTexture(m_requestedWidth, m_requestedHeight, 1,
 		D3DUSAGE_RENDERTARGET, m_d3dpp.BackBufferFormat, D3DPOOL_DEFAULT,
-#ifdef TOUHOU_ON_D3D8
-		&m_pTex);
-#else
-		&m_pTex, NULL);
-#endif
+		&m_pTex ARG_PASS_SHARED_HANDLE(nullptr));
 	if (FAILED(hr))
 	{
 		OutputLogMessagef(LogSeverity::Error, "Failed to create texture");
@@ -2037,11 +1985,7 @@ HRESULT THRotatorDirect3DDevice::InitResources()
 
 	hr = m_pd3dDev->CreateVertexBuffer(sizeof(THRotatorSpriteVertex::vertexBufferContent),
 		0, THRotatorSpriteVertex::FVF, D3DPOOL_DEFAULT,
-#ifdef TOUHOU_ON_D3D8
-		&m_pSpriteVertexBuffer);
-#else
-		&m_pSpriteVertexBuffer, nullptr);
-#endif
+		&m_pSpriteVertexBuffer ARG_PASS_SHARED_HANDLE(nullptr));
 	if (FAILED(hr))
 	{
 		OutputLogMessagef(LogSeverity::Error, "Failed to create vertex buffer");
@@ -2049,14 +1993,7 @@ HRESULT THRotatorDirect3DDevice::InitResources()
 	}
 
 	void* pLockedSpriteVertexBufferMemory = nullptr;
-
-#ifdef TOUHOU_ON_D3D8
-	auto ppLockedBufferMemory = reinterpret_cast<BYTE**>(&pLockedSpriteVertexBufferMemory);
-#else
-	auto ppLockedBufferMemory = reinterpret_cast<void**>(&pLockedSpriteVertexBufferMemory);
-#endif
-
-	hr = m_pSpriteVertexBuffer->Lock(0, 0, ppLockedBufferMemory, D3DLOCK_DISCARD);
+	hr = m_pSpriteVertexBuffer->Lock(0, 0, reinterpret_cast<LockedPointer*>(pLockedSpriteVertexBufferMemory), D3DLOCK_DISCARD);
 	if (FAILED(hr))
 	{
 		OutputLogMessagef(LogSeverity::Error, "Failed to lock vertex buffer");
@@ -2071,11 +2008,10 @@ HRESULT THRotatorDirect3DDevice::InitResources()
 
 	hr = m_pd3dDev->CreateRenderTarget(m_requestedWidth, m_requestedHeight,
 		m_d3dpp.BackBufferFormat, m_d3dpp.MultiSampleType,
-#ifdef TOUHOU_ON_D3D8
-		TRUE, &m_pRenderTarget);
-#else
-		m_d3dpp.MultiSampleQuality, TRUE, &m_pRenderTarget, nullptr);
+#ifndef TOUHOU_ON_D3D8
+		m_d3dpp.MultiSampleQuality,
 #endif
+		TRUE, &m_pRenderTarget ARG_PASS_SHARED_HANDLE(nullptr));
 
 	if (FAILED(hr))
 	{
@@ -2101,11 +2037,10 @@ HRESULT THRotatorDirect3DDevice::InitResources()
 
 		hr = m_pd3dDev->CreateDepthStencilSurface(m_requestedWidth, m_requestedHeight,
 			surfDesc.Format, surfDesc.MultiSampleType,
-#ifdef TOUHOU_ON_D3D8
-			&m_pDepthStencil);
-#else
-			surfDesc.MultiSampleQuality, m_d3dpp.Flags & D3DPRESENTFLAG_DISCARD_DEPTHSTENCIL ? TRUE : FALSE, &m_pDepthStencil, nullptr);
+#ifndef TOUHOU_ON_D3D8
+			surfDesc.MultiSampleQuality, m_d3dpp.Flags & D3DPRESENTFLAG_DISCARD_DEPTHSTENCIL ? TRUE : FALSE,
 #endif
+			&m_pDepthStencil ARG_PASS_SHARED_HANDLE(nullptr));
 
 		if (FAILED(hr))
 		{
