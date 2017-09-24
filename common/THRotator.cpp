@@ -2444,19 +2444,19 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 
 	m_pEditorContext->RenderAndUpdateEditor(!m_d3dpp.Windowed);
 
-#ifdef TOUHOU_ON_D3D8
-	m_pd3dDev->SetRenderTarget(m_pRenderTarget.Get(), m_pDepthStencil.Get());
-#else
-	m_pd3dDev->SetRenderTarget(0, m_pRenderTarget.Get());
-	m_pd3dDev->SetDepthStencilSurface(m_pDepthStencil.Get());
-#endif
-
 	// Restore previous device states
 #ifdef TOUHOU_ON_D3D8
 	m_pd3dDev->ApplyStateBlock(stateBlock);
 	m_pd3dDev->DeleteStateBlock(stateBlock);
 #else
 	stateBlock->Apply();
+#endif
+
+#ifdef TOUHOU_ON_D3D8
+	m_pd3dDev->SetRenderTarget(m_pRenderTarget.Get(), m_pDepthStencil.Get());
+#else
+	m_pd3dDev->SetRenderTarget(0, m_pRenderTarget.Get());
+	m_pd3dDev->SetDepthStencilSurface(m_pDepthStencil.Get());
 #endif
 
 	return m_pd3dDev->EndScene();
