@@ -21,6 +21,8 @@ using LockedPointer = BYTE*;
 #define ARG_DECLARE_SHARED_HANDLE(handleVarName)
 #define ARG_PASS_SHARED_HANDLE(handleVarName)
 
+#define INVALID_STATE_BLOCK_HANDLE 0xFFFFFFFF
+
 #else
 
 using Direct3DBase = IDirect3D9;
