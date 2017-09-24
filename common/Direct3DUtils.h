@@ -255,4 +255,81 @@ struct ScopedVP
 	}
 };
 
+#define DECLARE_POSSIBLY_SCOPED_STATE(suffix) \
+using PossiblyScoped##suffix = Scoped##suffix;
+
+DECLARE_POSSIBLY_SCOPED_STATE(RS)
+DECLARE_POSSIBLY_SCOPED_STATE(TSS)
+DECLARE_POSSIBLY_SCOPED_STATE(Tex)
+DECLARE_POSSIBLY_SCOPED_STATE(Transform)
+DECLARE_POSSIBLY_SCOPED_STATE(StreamSource)
+DECLARE_POSSIBLY_SCOPED_STATE(Indices)
+DECLARE_POSSIBLY_SCOPED_STATE(FVF)
+
+#undef DECLARE_POSSIBLY_SCOPED_STATE
+
+#else
+
+struct PossiblyScopedRS
+{
+	PossiblyScopedRS(Direct3DDeviceBase* inDevice, D3DRENDERSTATETYPE inRenderStateType, DWORD value)
+	{
+		inDevice->SetRenderState(inRenderStateType, value);
+	}
+};
+
+struct PossiblyScopedTSS
+{
+	PossiblyScopedTSS(Direct3DDeviceBase* inDevice, DWORD inTextureStage, D3DTEXTURESTAGESTATETYPE inTextureStageStateType, DWORD value)
+	{
+		inDevice->SetTextureStageState(inTextureStage, inTextureStageStateType, value);
+	}
+};
+
+struct PossiblyScopedTex
+{
+	PossiblyScopedTex(Direct3DDeviceBase* inDevice, DWORD inTextureStage, Direct3DBaseTextureBase* texture)
+	{
+		inDevice->SetTexture(inTextureStage, texture);
+	}
+};
+
+struct PossiblyScopedTransform
+{
+	PossiblyScopedTransform(Direct3DDeviceBase* inDevice, D3DTRANSFORMSTATETYPE inTransformType, const D3DMATRIX& transformMatrix)
+	{
+		inDevice->SetTransform(inTransformType, &transformMatrix);
+	}
+
+	PossiblyScopedTransform(Direct3DDeviceBase* inDevice, D3DTRANSFORMSTATETYPE inTransformType)
+	{
+	}
+};
+
+struct PossiblyScopedStreamSource
+{
+	PossiblyScopedStreamSource(Direct3DDeviceBase* inDevice, UINT inStreamNumber, Direct3DVertexBufferBase* vertexBuffer, UINT stride)
+	{
+		inDevice->SetStreamSource(inStreamNumber, vertexBuffer, 0, stride);
+	}
+};
+
+struct PossiblyScopedFVF
+{
+	PossiblyScopedFVF(Direct3DDeviceBase* inDevice, DWORD FVF)
+	{
+		inDevice->SetFVF(FVF);
+	}
+};
+
+struct PossiblyScopedIndices
+{
+	PossiblyScopedIndices(Direct3DDeviceBase* inDevice, Direct3DIndexBufferBase* indices, UINT offset)
+	{
+		UNREFERENCED_PARAMETER(offset);
+
+		inDevice->SetIndices(indices);
+	}
+};
+
 #endif
