@@ -514,13 +514,15 @@ void THRotatorImGui_RenderDrawLists(ImDrawData* drawData)
 
 	pUserData->indexBuffer->Unlock();
 
-#ifndef TOUHOU_ON_D3D8
+#ifdef TOUHOU_ON_D3D8
+	DWORD stateBlock;
+#else
 	ComPtr<IDirect3DStateBlock9> stateBlock;
+#endif
 	if (FAILED(pUserData->device->CreateStateBlock(D3DSBT_ALL, &stateBlock)))
 	{
 		return;
 	}
-#endif
 
 	auto rawDevice = pUserData->device.Get();
 
@@ -528,53 +530,50 @@ void THRotatorImGui_RenderDrawLists(ImDrawData* drawData)
 	// On D3D8, states are reset in RAII way.
 	// On D3D9, states are reset by IDirect3DStateBlock.
 
-	PossiblyScopedStreamSource scopedSS(rawDevice, 0, pUserData->vertexBuffer.Get(), sizeof(THRotatorImGui_Vertex));
-	PossiblyScopedFVF scopedFVF(rawDevice, THRotatorImGui_Vertex::FVF);
-	PossiblyScopedVP scopedVP(rawDevice);
-	PossiblyScopedTex scopedTex(rawDevice, 0);
-
-	PossiblyScopedRS scopedRenderStates[] =
-	{
-		PossiblyScopedRS(rawDevice, D3DRS_CULLMODE, D3DCULL_NONE),
-		PossiblyScopedRS(rawDevice, D3DRS_LIGHTING, FALSE),
-		PossiblyScopedRS(rawDevice, D3DRS_ZENABLE, FALSE),
-		PossiblyScopedRS(rawDevice, D3DRS_ALPHABLENDENABLE, TRUE),
-		PossiblyScopedRS(rawDevice, D3DRS_ALPHATESTENABLE, FALSE),
-		PossiblyScopedRS(rawDevice, D3DRS_BLENDOP, D3DBLENDOP_ADD),
-		PossiblyScopedRS(rawDevice, D3DRS_SRCBLEND, D3DBLEND_SRCALPHA),
-		PossiblyScopedRS(rawDevice, D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA),
+	rawDevice->SetStreamSource(0, pUserData->vertexBuffer.Get(),
 #ifndef TOUHOU_ON_D3D8
-		PossiblyScopedRS(rawDevice, D3DRS_SCISSORTESTENABLE, TRUE),
+		0,
 #endif
-	};
+		sizeof(THRotatorImGui_Vertex));
+
+#if TOUHOU_ON_D3D8
+	rawDevice->SetVertexShader(THRotatorImGui_Vertex::FVF);
+#else
+	rawDevice->SetFVF(THRotatorImGui_Vertex::FVF);
+#endif
+
+	rawDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+	rawDevice->SetRenderState(D3DRS_LIGHTING, FALSE);
+	rawDevice->SetRenderState(D3DRS_ZENABLE, FALSE);
+	rawDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+	rawDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
+	rawDevice->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
+	rawDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+	rawDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+#ifndef TOUHOU_ON_D3D8
+	rawDevice->SetRenderState(D3DRS_SCISSORTESTENABLE, TRUE);
+#endif
 
 	D3DMATRIX matIdentity;
 	DirectX::XMStoreFloat4x4(reinterpret_cast<DirectX::XMFLOAT4X4*>(&matIdentity), DirectX::XMMatrixIdentity());
 
-	PossiblyScopedTransform scopedTransforms[] =
-	{
-		PossiblyScopedTransform(rawDevice, D3DTS_WORLD, matIdentity),
-		PossiblyScopedTransform(rawDevice, D3DTS_VIEW, matIdentity),
-		PossiblyScopedTransform(rawDevice, D3DTS_PROJECTION),
-	};
+	rawDevice->SetTransform(D3DTS_WORLD, &matIdentity);
+	rawDevice->SetTransform(D3DTS_VIEW, &matIdentity);
 
-	PossiblyScopedTSS scopedTextureStageStates[] =
-	{
-		PossiblyScopedTSS(rawDevice, 0, D3DTSS_COLOROP, D3DTOP_MODULATE),
-		PossiblyScopedTSS(rawDevice, 0, D3DTSS_COLORARG1, D3DTA_TEXTURE),
-		PossiblyScopedTSS(rawDevice, 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE),
-		PossiblyScopedTSS(rawDevice, 0, D3DTSS_ALPHAOP, D3DTOP_MODULATE),
-		PossiblyScopedTSS(rawDevice, 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE),
-		PossiblyScopedTSS(rawDevice, 0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE),
-		PossiblyScopedTSS(rawDevice, 0, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_DISABLE),
+	rawDevice->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
+	rawDevice->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+	rawDevice->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
+	rawDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
+	rawDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+	rawDevice->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
+	rawDevice->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_DISABLE);
 #ifdef TOUHOU_ON_D3D8
-		PossiblyScopedTSS(rawDevice, 0, D3DTSS_MINFILTER, D3DTEXF_LINEAR),
-		PossiblyScopedTSS(rawDevice, 0, D3DTSS_MAGFILTER, D3DTEXF_LINEAR),
+	rawDevice->SetTextureStageState(0, D3DTSS_MINFILTER, D3DTEXF_LINEAR);
+	rawDevice->SetTextureStageState(0, D3DTSS_MAGFILTER, D3DTEXF_LINEAR);
 #endif
-	};
 
 #ifdef TOUHOU_ON_D3D8
-	ScopedPS scopedPS(rawDevice, 0);
+	rawDevice->SetPixelShader(0);
 #else
 	rawDevice->SetIndices(pUserData->indexBuffer.Get());
 	rawDevice->SetPixelShader(nullptr);
@@ -650,7 +649,10 @@ void THRotatorImGui_RenderDrawLists(ImDrawData* drawData)
 		vertexBufferOffset += commandList->VtxBuffer.Size;
 	}
 
-#ifndef TOUHOU_ON_D3D8
+#ifdef TOUHOU_ON_D3D8
+	rawDevice->ApplyStateBlock(stateBlock);
+	rawDevice->DeleteStateBlock(stateBlock);
+#else
 	stateBlock->Apply();
 #endif
 }

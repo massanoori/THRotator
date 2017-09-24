@@ -1993,7 +1993,7 @@ HRESULT THRotatorDirect3DDevice::InitResources()
 	}
 
 	void* pLockedSpriteVertexBufferMemory = nullptr;
-	hr = m_pSpriteVertexBuffer->Lock(0, 0, reinterpret_cast<LockedPointer*>(pLockedSpriteVertexBufferMemory), D3DLOCK_DISCARD);
+	hr = m_pSpriteVertexBuffer->Lock(0, 0, reinterpret_cast<LockedPointer*>(&pLockedSpriteVertexBufferMemory), D3DLOCK_DISCARD);
 	if (FAILED(hr))
 	{
 		OutputLogMessagef(LogSeverity::Error, "Failed to lock vertex buffer");
@@ -2306,10 +2306,57 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 
 	if (!bGuiOnly)
 	{
-#ifndef TOUHOU_ON_D3D8
-		ComPtr<IDirect3DStateBlock9> pStateBlock;
-		m_pd3dDev->CreateStateBlock(D3DSBT_ALL, &pStateBlock);
+#ifdef TOUHOU_ON_D3D8
+		DWORD stateBlock;
+#else
+		ComPtr<IDirect3DStateBlock9> stateBlock;
+#endif
+		m_pd3dDev->CreateStateBlock(D3DSBT_ALL, &stateBlock);
 
+		m_pd3dDev->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+		m_pd3dDev->SetRenderState(D3DRS_ALPHAFUNC, D3DCMP_GREATER);
+		m_pd3dDev->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
+		m_pd3dDev->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
+		m_pd3dDev->SetRenderState(D3DRS_CLIPPING, TRUE);
+		m_pd3dDev->SetRenderState(D3DRS_CLIPPLANEENABLE, FALSE);
+		m_pd3dDev->SetRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_ALPHA | D3DCOLORWRITEENABLE_BLUE | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_RED);
+		m_pd3dDev->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+		m_pd3dDev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		m_pd3dDev->SetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_COLOR1);
+		m_pd3dDev->SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
+		m_pd3dDev->SetRenderState(D3DRS_FOGENABLE, FALSE);
+		m_pd3dDev->SetRenderState(D3DRS_INDEXEDVERTEXBLENDENABLE, FALSE);
+		m_pd3dDev->SetRenderState(D3DRS_LIGHTING, FALSE);
+		m_pd3dDev->SetRenderState(D3DRS_RANGEFOGENABLE, FALSE);
+		m_pd3dDev->SetRenderState(D3DRS_SHADEMODE, D3DSHADE_GOURAUD);
+		m_pd3dDev->SetRenderState(D3DRS_SPECULARENABLE, FALSE);
+		m_pd3dDev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+		m_pd3dDev->SetRenderState(D3DRS_STENCILENABLE, FALSE);
+		m_pd3dDev->SetRenderState(D3DRS_VERTEXBLEND, FALSE);
+		m_pd3dDev->SetRenderState(D3DRS_WRAP0, 0);
+
+		m_pd3dDev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+		m_pd3dDev->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
+		m_pd3dDev->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
+		m_pd3dDev->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+		m_pd3dDev->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
+		m_pd3dDev->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
+		m_pd3dDev->SetTextureStageState(0, D3DTSS_TEXCOORDINDEX, 0);
+		m_pd3dDev->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_COUNT2);
+		m_pd3dDev->SetTextureStageState(1, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
+		m_pd3dDev->SetTextureStageState(1, D3DTSS_COLOROP, D3DTOP_DISABLE);
+
+#ifdef TOUHOU_ON_D3D8
+		m_pd3dDev->SetTextureStageState(0, D3DTSS_ADDRESSU, D3DTADDRESS_CLAMP);
+		m_pd3dDev->SetTextureStageState(0, D3DTSS_ADDRESSV, D3DTADDRESS_CLAMP);
+		m_pd3dDev->SetTextureStageState(0, D3DTSS_MAGFILTER, m_pEditorContext->GetFilterType());
+		m_pd3dDev->SetTextureStageState(0, D3DTSS_MINFILTER, m_pEditorContext->GetFilterType());
+		m_pd3dDev->SetTextureStageState(0, D3DTSS_MIPFILTER, m_pEditorContext->GetFilterType());
+		m_pd3dDev->SetTextureStageState(0, D3DTSS_MAXMIPLEVEL, 0);
+		m_pd3dDev->SetTextureStageState(0, D3DTSS_MAXANISOTROPY, 0);
+		m_pd3dDev->SetTextureStageState(0, D3DTSS_MIPMAPLODBIAS, 0);
+
+#else
 		m_pd3dDev->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
 		m_pd3dDev->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
 		m_pd3dDev->SetSamplerState(0, D3DSAMP_MAGFILTER, m_pEditorContext->GetFilterType());
@@ -2321,58 +2368,18 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 		m_pd3dDev->SetSamplerState(0, D3DSAMP_SRGBTEXTURE, 0);
 #endif
 
-		PossiblyScopedRS scopedRenderStates[] =
-		{
-			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_ALPHABLENDENABLE, TRUE),
-			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_ALPHAFUNC, D3DCMP_GREATER),
-			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_ALPHATESTENABLE, FALSE),
-			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_BLENDOP, D3DBLENDOP_ADD),
-			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_CLIPPING, TRUE),
-			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_CLIPPLANEENABLE, FALSE),
-			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_ALPHA | D3DCOLORWRITEENABLE_BLUE | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_RED),
-			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_CULLMODE, D3DCULL_NONE),
-			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA),
-			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_COLOR1),
-			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_FILLMODE, D3DFILL_SOLID),
-			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_FOGENABLE, FALSE),
-			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_INDEXEDVERTEXBLENDENABLE, FALSE),
-			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_LIGHTING, FALSE),
-			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_RANGEFOGENABLE, FALSE),
-			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_SHADEMODE, D3DSHADE_GOURAUD),
-			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_SPECULARENABLE, FALSE),
-			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_SRCBLEND, D3DBLEND_SRCALPHA),
-			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_STENCILENABLE, FALSE),
-			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_VERTEXBLEND, FALSE),
-			PossiblyScopedRS(m_pd3dDev.Get(), D3DRS_WRAP0, 0),
-		};
-
-		PossiblyScopedTSS scopedTextureStageStates[] =
-		{
-			PossiblyScopedTSS(m_pd3dDev.Get(), 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE),
-			PossiblyScopedTSS(m_pd3dDev.Get(), 0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE),
-			PossiblyScopedTSS(m_pd3dDev.Get(), 0, D3DTSS_ALPHAOP, D3DTOP_DISABLE),
-			PossiblyScopedTSS(m_pd3dDev.Get(), 0, D3DTSS_COLORARG1, D3DTA_TEXTURE),
-			PossiblyScopedTSS(m_pd3dDev.Get(), 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE),
-			PossiblyScopedTSS(m_pd3dDev.Get(), 0, D3DTSS_COLOROP, D3DTOP_MODULATE),
-			PossiblyScopedTSS(m_pd3dDev.Get(), 0, D3DTSS_TEXCOORDINDEX, 0),
-			PossiblyScopedTSS(m_pd3dDev.Get(), 0, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_COUNT2),
-			PossiblyScopedTSS(m_pd3dDev.Get(), 1, D3DTSS_ALPHAOP, D3DTOP_DISABLE),
-			PossiblyScopedTSS(m_pd3dDev.Get(), 1, D3DTSS_COLOROP, D3DTOP_DISABLE),
-#ifdef TOUHOU_ON_D3D8
-			PossiblyScopedTSS(m_pd3dDev.Get(), 0, D3DTSS_ADDRESSU, D3DTADDRESS_CLAMP),
-			PossiblyScopedTSS(m_pd3dDev.Get(), 0, D3DTSS_ADDRESSV, D3DTADDRESS_CLAMP),
-			PossiblyScopedTSS(m_pd3dDev.Get(), 0, D3DTSS_MAGFILTER, m_pEditorContext->GetFilterType()),
-			PossiblyScopedTSS(m_pd3dDev.Get(), 0, D3DTSS_MINFILTER, m_pEditorContext->GetFilterType()),
-			PossiblyScopedTSS(m_pd3dDev.Get(), 0, D3DTSS_MIPFILTER, m_pEditorContext->GetFilterType()),
-			PossiblyScopedTSS(m_pd3dDev.Get(), 0, D3DTSS_MAXMIPLEVEL, 0),
-			PossiblyScopedTSS(m_pd3dDev.Get(), 0, D3DTSS_MAXANISOTROPY, 0),
-			PossiblyScopedTSS(m_pd3dDev.Get(), 0, D3DTSS_MIPMAPLODBIAS, 0),
+		m_pd3dDev->SetTexture(0, m_pTex.Get());
+		m_pd3dDev->SetStreamSource(0, m_pSpriteVertexBuffer.Get(),
+#ifndef TOUHOU_ON_D3D8
+			0,
 #endif
-		};
+			sizeof(THRotatorSpriteVertex));
 
-		PossiblyScopedTex scopedTexture(m_pd3dDev.Get(), 0, m_pTex.Get());
-		PossiblyScopedStreamSource scopedStreamSource(m_pd3dDev.Get(), 0, m_pSpriteVertexBuffer.Get(), sizeof(THRotatorSpriteVertex));
-		PossiblyScopedFVF scopedFVF(m_pd3dDev.Get(), THRotatorSpriteVertex::FVF);
+#ifdef TOUHOU_ON_D3D8
+		m_pd3dDev->SetVertexShader(THRotatorSpriteVertex::FVF);
+#else
+		m_pd3dDev->SetFVF(THRotatorSpriteVertex::FVF);
+#endif
 
 		auto matrixProjection = DirectX::XMMatrixOrthographicOffCenterLH(
 			0.0f, static_cast<float>(m_d3dpp.BackBufferWidth),
@@ -2381,30 +2388,20 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 		auto matrixView = DirectX::XMMatrixLookAtLH(DirectX::XMVectorSet(0.5f, 0.5f, -1.0f, 1.0f),
 			DirectX::XMVectorSet(0.5f, 0.5f, 0.0f, 1.0f), DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
 
-		PossiblyScopedTransform scopedTransforms[] =
-		{
-			PossiblyScopedTransform(m_pd3dDev.Get(), D3DTS_PROJECTION, ToD3DMATRIX(matrixProjection)),
-			PossiblyScopedTransform(m_pd3dDev.Get(), D3DTS_VIEW, ToD3DMATRIX(matrixView)),
-			PossiblyScopedTransform(m_pd3dDev.Get(), D3DTS_WORLD),
-			PossiblyScopedTransform(m_pd3dDev.Get(), D3DTS_TEXTURE0),
-		};
+		m_pd3dDev->SetTransform(D3DTS_PROJECTION, &ToD3DMATRIX(matrixProjection));
+		m_pd3dDev->SetTransform(D3DTS_VIEW, &ToD3DMATRIX(matrixView));
 
 		EndSceneInternal();
 
-#ifndef TOUHOU_ON_D3D8
-		pStateBlock->Apply();
+#ifdef TOUHOU_ON_D3D8
+		m_pd3dDev->ApplyStateBlock(stateBlock);
+		m_pd3dDev->DeleteStateBlock(stateBlock);
+#else
+		stateBlock->Apply();
 #endif
 	}
 
-	// Dirty texture transform matrix glitches ImGui.
-	// Disabling texture transform matrix temporarily.
-	DWORD previousTextureTransformFlags;
-	m_pd3dDev->GetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, &previousTextureTransformFlags);
-	m_pd3dDev->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, FALSE);
-
 	m_pEditorContext->RenderAndUpdateEditor(!m_d3dpp.Windowed);
-
-	m_pd3dDev->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, previousTextureTransformFlags);
 
 #ifdef TOUHOU_ON_D3D8
 	m_pd3dDev->SetRenderTarget(m_pRenderTarget.Get(), m_pDepthStencil.Get());
