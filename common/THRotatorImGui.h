@@ -15,5 +15,5 @@ void THRotatorImGui_Shutdown();
 void THRotatorImGui_NewFrame();
 
 void THRotatorImGui_InvalidateDeviceObjects();
-void THRotatorImGui_CreateDeviceObjects();
+bool THRotatorImGui_CreateDeviceObjects();
 LRESULT THRotatorImGui_WindowProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);

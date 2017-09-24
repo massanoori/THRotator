@@ -15,6 +15,10 @@ typedef IDirect3DVertexBuffer8 Direct3DVertexBufferBase;
 typedef IDirect3DIndexBuffer8 Direct3DIndexBufferBase;
 typedef IDirect3DSwapChain8 Direct3DSwapChainBase;
 
+using LockedPointer = BYTE*;
+
+#define ARG_NULL_SHARED_HANDLE
+
 #else
 
 typedef IDirect3D9 Direct3DBase;
@@ -27,6 +31,11 @@ typedef IDirect3DBaseTexture9 Direct3DBaseTextureBase;
 typedef IDirect3DVertexBuffer9 Direct3DVertexBufferBase;
 typedef IDirect3DIndexBuffer9 Direct3DIndexBufferBase;
 typedef IDirect3DSwapChain9 Direct3DSwapChainBase;
+
+using LockedPointer = void*;
+
+#define ARG_NULL_SHARED_HANDLE , nullptr
+
 #endif
 
 // Structs for updating and restoring device states by RAII
@@ -265,6 +274,7 @@ DECLARE_POSSIBLY_SCOPED_STATE(Transform)
 DECLARE_POSSIBLY_SCOPED_STATE(StreamSource)
 DECLARE_POSSIBLY_SCOPED_STATE(Indices)
 DECLARE_POSSIBLY_SCOPED_STATE(FVF)
+DECLARE_POSSIBLY_SCOPED_STATE(VP)
 
 #undef DECLARE_POSSIBLY_SCOPED_STATE
 
@@ -291,6 +301,10 @@ struct PossiblyScopedTex
 	PossiblyScopedTex(Direct3DDeviceBase* inDevice, DWORD inTextureStage, Direct3DBaseTextureBase* texture)
 	{
 		inDevice->SetTexture(inTextureStage, texture);
+	}
+
+	PossiblyScopedTex(Direct3DDeviceBase* inDevice, DWORD inTextureStage)
+	{
 	}
 };
 
@@ -329,6 +343,14 @@ struct PossiblyScopedIndices
 		UNREFERENCED_PARAMETER(offset);
 
 		inDevice->SetIndices(indices);
+	}
+};
+
+struct PossiblyScopedVP
+{
+	PossiblyScopedVP(Direct3DDeviceBase* inDevice)
+	{
+		UNREFERENCED_PARAMETER(inDevice);
 	}
 };
 

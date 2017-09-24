@@ -5,20 +5,48 @@
 #include "THRotatorSystem.h"
 #include "EncodingUtils.h"
 #include "THRotatorLog.h"
+#include "Direct3DUtils.h"
 
-#ifdef TOUHOU_ON_D3D8
-#include "imgui_impl_dx8.h"
-#define ImGui_IMPLFUNC(suffix) ImGui_ImplDX8_ ## suffix 
-#else
-#include <imgui_impl_dx9.h>
-#define ImGui_IMPLFUNC(suffix) ImGui_ImplDX9_ ## suffix 
-#endif
+#include <DirectXMath.h>
 
 #define STB_TRUETYPE_IMPLEMENTATION
 #include <stb_truetype.h>
 
+using Microsoft::WRL::ComPtr;
+
 namespace
 {
+
+struct THRotatorImGui_UserData
+{
+	ComPtr<Direct3DDeviceBase> device;
+	ComPtr<Direct3DVertexBufferBase> vertexBuffer;
+	ComPtr<Direct3DIndexBufferBase> indexBuffer;
+	ComPtr<Direct3DTextureBase> fontTexture;
+	HWND hDeviceWindow;
+	LARGE_INTEGER previousTime;
+	LARGE_INTEGER ticksPerSecond;
+	std::int32_t vertexBufferCapacity, indexBufferCapacity;
+
+	THRotatorImGui_UserData(Direct3DDeviceBase* pDevice, HWND hWnd)
+		: device(pDevice)
+		, hDeviceWindow(hWnd)
+		, vertexBufferCapacity(5000)
+		, indexBufferCapacity(10000)
+	{
+		QueryPerformanceFrequency(&ticksPerSecond);
+		QueryPerformanceCounter(&previousTime);
+	}
+};
+
+struct THRotatorImGui_Vertex
+{
+	float pos[3];
+	DWORD col;
+	float uv[2];
+
+	enum : DWORD { FVF = D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1 };
+};
 
 // Successive offsets from codepoint 0x4E00 like the way imgui_draw.cpp does.
 // Generated from kanji from JMDict plus the following:
@@ -403,15 +431,256 @@ bool FindFirstJapaneseFont(HDC hdc, void*& outPointer, DWORD& outSize, int& outI
 	return false;
 }
 
+void THRotatorImGui_RenderDrawLists(ImDrawData* drawData)
+{
+	ImGuiIO& io = ImGui::GetIO();
+
+	// Avoid rendering when minimized
+	if (io.DisplaySize.x <= 0.0f || io.DisplaySize.y <= 0.0f)
+	{
+		return;
+	}
+
+	auto pUserData = static_cast<THRotatorImGui_UserData*>(io.UserData);
+
+	if (!pUserData->vertexBuffer || pUserData->vertexBufferCapacity < drawData->TotalVtxCount)
+	{
+		pUserData->vertexBuffer.Reset();
+		pUserData->vertexBufferCapacity = drawData->TotalVtxCount + 5000;
+		if (FAILED(pUserData->device->CreateVertexBuffer(pUserData->vertexBufferCapacity * sizeof(THRotatorImGui_Vertex),
+			D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, THRotatorImGui_Vertex::FVF, D3DPOOL_DEFAULT, &pUserData->vertexBuffer ARG_NULL_SHARED_HANDLE)))
+		{
+			return;
+		}
+	}
+
+	if (!pUserData->indexBuffer || pUserData->indexBufferCapacity < drawData->TotalIdxCount)
+	{
+		pUserData->indexBuffer.Reset();
+		pUserData->indexBufferCapacity = drawData->TotalIdxCount + 10000;
+		if (FAILED(pUserData->device->CreateIndexBuffer(pUserData->indexBufferCapacity * sizeof(ImDrawIdx),
+			D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, sizeof(ImDrawIdx) == 2 ? D3DFMT_INDEX16 : D3DFMT_INDEX32,
+			D3DPOOL_DEFAULT, &pUserData->indexBuffer ARG_NULL_SHARED_HANDLE)))
+		{
+			return;
+		}
+	}
+
+	// Updating vertex buffer content
+
+	THRotatorImGui_Vertex* pLockedVerticesData;
+	if (FAILED(pUserData->vertexBuffer->Lock(0, drawData->TotalVtxCount * sizeof(THRotatorImGui_Vertex), (LockedPointer*)&pLockedVerticesData,
+		D3DLOCK_DISCARD)))
+	{
+		return;
+	}
+
+	for (int n = 0; n < drawData->CmdListsCount; n++)
+	{
+		const ImDrawList* commandList = drawData->CmdLists[n];
+		const ImDrawVert* pSourceVerticesData = commandList->VtxBuffer.Data;
+		for (int i = 0; i < commandList->VtxBuffer.Size; i++)
+		{
+			pLockedVerticesData->pos[0] = pSourceVerticesData->pos.x;
+			pLockedVerticesData->pos[1] = pSourceVerticesData->pos.y;
+			pLockedVerticesData->pos[2] = 0.0f;
+			pLockedVerticesData->col = (pSourceVerticesData->col & 0xFF00FF00) | ((pSourceVerticesData->col & 0xFF0000) >> 16) | ((pSourceVerticesData->col & 0xFF) << 16);     // RGBA --> ARGB for DirectX9
+			pLockedVerticesData->uv[0] = pSourceVerticesData->uv.x;
+			pLockedVerticesData->uv[1] = pSourceVerticesData->uv.y;
+			pLockedVerticesData++;
+			pSourceVerticesData++;
+		}
+	}
+
+	pUserData->vertexBuffer->Unlock();
+
+	// Updating index buffer content
+
+	ImDrawIdx* pLockedIndicesData;
+	if (FAILED(pUserData->indexBuffer->Lock(0, drawData->TotalIdxCount * sizeof(ImDrawIdx), (LockedPointer*)&pLockedIndicesData,
+		D3DLOCK_DISCARD)))
+	{
+		return;
+	}
+
+	for (int n = 0; n < drawData->CmdListsCount; n++)
+	{
+		const ImDrawList* commandList = drawData->CmdLists[n];
+		memcpy(pLockedIndicesData, commandList->IdxBuffer.Data, commandList->IdxBuffer.Size * sizeof(ImDrawIdx));
+		pLockedIndicesData += commandList->IdxBuffer.Size;
+	}
+
+	pUserData->indexBuffer->Unlock();
+
+#ifndef TOUHOU_ON_D3D8
+	ComPtr<IDirect3DStateBlock9> stateBlock;
+	if (FAILED(pUserData->device->CreateStateBlock(D3DSBT_ALL, &stateBlock)))
+	{
+		return;
+	}
+#endif
+
+	auto rawDevice = pUserData->device.Get();
+
+	// State changes that need to be reset.
+	// On D3D8, states are reset in RAII way.
+	// On D3D9, states are reset by IDirect3DStateBlock.
+
+	PossiblyScopedStreamSource scopedSS(rawDevice, 0, pUserData->vertexBuffer.Get(), sizeof(THRotatorImGui_Vertex));
+	PossiblyScopedFVF scopedFVF(rawDevice, THRotatorImGui_Vertex::FVF);
+	PossiblyScopedVP scopedVP(rawDevice);
+	PossiblyScopedTex scopedTex(rawDevice, 0);
+
+	PossiblyScopedRS scopedRenderStates[] =
+	{
+		PossiblyScopedRS(rawDevice, D3DRS_CULLMODE, D3DCULL_NONE),
+		PossiblyScopedRS(rawDevice, D3DRS_LIGHTING, FALSE),
+		PossiblyScopedRS(rawDevice, D3DRS_ZENABLE, FALSE),
+		PossiblyScopedRS(rawDevice, D3DRS_ALPHABLENDENABLE, TRUE),
+		PossiblyScopedRS(rawDevice, D3DRS_ALPHATESTENABLE, FALSE),
+		PossiblyScopedRS(rawDevice, D3DRS_BLENDOP, D3DBLENDOP_ADD),
+		PossiblyScopedRS(rawDevice, D3DRS_SRCBLEND, D3DBLEND_SRCALPHA),
+		PossiblyScopedRS(rawDevice, D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA),
+#ifndef TOUHOU_ON_D3D8
+		PossiblyScopedRS(rawDevice, D3DRS_SCISSORTESTENABLE, TRUE),
+#endif
+	};
+
+	D3DMATRIX matIdentity;
+	DirectX::XMStoreFloat4x4(reinterpret_cast<DirectX::XMFLOAT4X4*>(&matIdentity), DirectX::XMMatrixIdentity());
+
+	PossiblyScopedTransform scopedTransforms[] =
+	{
+		PossiblyScopedTransform(rawDevice, D3DTS_WORLD, matIdentity),
+		PossiblyScopedTransform(rawDevice, D3DTS_VIEW, matIdentity),
+		PossiblyScopedTransform(rawDevice, D3DTS_PROJECTION),
+	};
+
+	PossiblyScopedTSS scopedTextureStageStates[] =
+	{
+		PossiblyScopedTSS(rawDevice, 0, D3DTSS_COLOROP, D3DTOP_MODULATE),
+		PossiblyScopedTSS(rawDevice, 0, D3DTSS_COLORARG1, D3DTA_TEXTURE),
+		PossiblyScopedTSS(rawDevice, 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE),
+		PossiblyScopedTSS(rawDevice, 0, D3DTSS_ALPHAOP, D3DTOP_MODULATE),
+		PossiblyScopedTSS(rawDevice, 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE),
+		PossiblyScopedTSS(rawDevice, 0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE),
+		PossiblyScopedTSS(rawDevice, 0, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_DISABLE),
+#ifdef TOUHOU_ON_D3D8
+		PossiblyScopedTSS(rawDevice, 0, D3DTSS_MINFILTER, D3DTEXF_LINEAR),
+		PossiblyScopedTSS(rawDevice, 0, D3DTSS_MAGFILTER, D3DTEXF_LINEAR),
+#endif
+	};
+
+#ifdef TOUHOU_ON_D3D8
+	ScopedPS scopedPS(rawDevice, 0);
+#else
+	rawDevice->SetIndices(pUserData->indexBuffer.Get());
+	rawDevice->SetPixelShader(nullptr);
+	rawDevice->SetVertexShader(nullptr);
+	rawDevice->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+	rawDevice->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+
+	// Setup viewport
+	D3DVIEWPORT9 vp;
+	vp.X = vp.Y = 0;
+	vp.Width = (DWORD)io.DisplaySize.x;
+	vp.Height = (DWORD)io.DisplaySize.y;
+	vp.MinZ = 0.0f;
+	vp.MaxZ = 1.0f;
+	rawDevice->SetViewport(&vp);
+#endif
+
+	D3DMATRIX matProjection;
+
+#ifndef TOUHOU_ON_D3D8
+	const float L = 0.5f, R = io.DisplaySize.x + 0.5f, T = 0.5f, B = io.DisplaySize.y + 0.5f;
+	DirectX::XMStoreFloat4x4(reinterpret_cast<DirectX::XMFLOAT4X4*>(&matProjection),
+		DirectX::XMMatrixOrthographicOffCenterLH(L, R, B, T, 0.0f, 1.0f));
+
+	rawDevice->SetTransform(D3DTS_PROJECTION, &matProjection);
+#endif
+
+	int vertexBufferOffset = 0;
+	int indexBufferOffset = 0;
+	for (int commandListIndex = 0; commandListIndex < drawData->CmdListsCount; commandListIndex++)
+	{
+		const ImDrawList* commandList = drawData->CmdLists[commandListIndex];
+		for (int commandIndex = 0; commandIndex < commandList->CmdBuffer.Size; commandIndex++)
+		{
+			const ImDrawCmd& command = commandList->CmdBuffer[commandIndex];
+			if (command.UserCallback)
+			{
+				command.UserCallback(commandList, &command);
+			}
+			else
+			{
+				rawDevice->SetTexture(0, static_cast<Direct3DTextureBase*>(command.TextureId));
+
+#ifdef TOUHOU_ON_D3D8
+				D3DVIEWPORT8 viewport;
+				viewport.X = static_cast<DWORD>(command.ClipRect.x);
+				viewport.Y = static_cast<DWORD>(command.ClipRect.y);
+				viewport.Width = static_cast<DWORD>(command.ClipRect.z - command.ClipRect.x);
+				viewport.Height = static_cast<DWORD>(command.ClipRect.w - command.ClipRect.y);
+				viewport.MinZ = 0.0f;
+				viewport.MaxZ = 1.0f;
+				rawDevice->SetViewport(&viewport);
+
+				const float L = 0.5f + viewport.X, R = viewport.Width + 0.5f + viewport.X;
+				const float T = 0.5f + viewport.Y, B = viewport.Height + 0.5f + viewport.Y;
+
+				DirectX::XMStoreFloat4x4(reinterpret_cast<DirectX::XMFLOAT4X4*>(&matProjection),
+					DirectX::XMMatrixOrthographicOffCenterLH(L, R, B, T, 0.0f, 1.0f));
+
+				rawDevice->SetTransform(D3DTS_PROJECTION, &matProjection);
+				rawDevice->SetIndices(pUserData->indexBuffer.Get(), vertexBufferOffset);
+				rawDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, (UINT)commandList->VtxBuffer.Size, indexBufferOffset, command.ElemCount / 3);
+#else
+				const RECT r = { (LONG)command.ClipRect.x, (LONG)command.ClipRect.y, (LONG)command.ClipRect.z, (LONG)command.ClipRect.w };
+				rawDevice->SetScissorRect(&r);
+				rawDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, vertexBufferOffset, 0, (UINT)commandList->VtxBuffer.Size, indexBufferOffset, command.ElemCount / 3);
+#endif
+			}
+
+			indexBufferOffset += command.ElemCount;
+		}
+
+		vertexBufferOffset += commandList->VtxBuffer.Size;
+	}
+
+#ifndef TOUHOU_ON_D3D8
+	stateBlock->Apply();
+#endif
+}
+
 }
 
 bool THRotatorImGui_Initialize(HWND hWnd, THRotatorImGui_D3DDeviceInterface* device)
 {
-	bool bInitSuccessful = ImGui_IMPLFUNC(Init)(hWnd, device);
-	if (!bInitSuccessful)
-	{
-		return false;
-	}
+	ImGuiIO& io = ImGui::GetIO();
+
+	io.KeyMap[ImGuiKey_Tab] = VK_TAB;                       // Keyboard mapping. ImGui will use those indices to peek into the io.KeyDown[] array that we will update during the application lifetime.
+	io.KeyMap[ImGuiKey_LeftArrow] = VK_LEFT;
+	io.KeyMap[ImGuiKey_RightArrow] = VK_RIGHT;
+	io.KeyMap[ImGuiKey_UpArrow] = VK_UP;
+	io.KeyMap[ImGuiKey_DownArrow] = VK_DOWN;
+	io.KeyMap[ImGuiKey_PageUp] = VK_PRIOR;
+	io.KeyMap[ImGuiKey_PageDown] = VK_NEXT;
+	io.KeyMap[ImGuiKey_Home] = VK_HOME;
+	io.KeyMap[ImGuiKey_End] = VK_END;
+	io.KeyMap[ImGuiKey_Delete] = VK_DELETE;
+	io.KeyMap[ImGuiKey_Backspace] = VK_BACK;
+	io.KeyMap[ImGuiKey_Enter] = VK_RETURN;
+	io.KeyMap[ImGuiKey_Escape] = VK_ESCAPE;
+	io.KeyMap[ImGuiKey_A] = 'A';
+	io.KeyMap[ImGuiKey_C] = 'C';
+	io.KeyMap[ImGuiKey_V] = 'V';
+	io.KeyMap[ImGuiKey_X] = 'X';
+	io.KeyMap[ImGuiKey_Y] = 'Y';
+	io.KeyMap[ImGuiKey_Z] = 'Z';
+
+	io.RenderDrawListsFn = THRotatorImGui_RenderDrawLists;
+	io.ImeWindowHandle = hWnd;
 
 	const std::vector<std::pair<std::wstring, std::wstring>> preferredFonts
 	{
@@ -440,7 +709,6 @@ bool THRotatorImGui_Initialize(HWND hWnd, THRotatorImGui_D3DDeviceInterface* dev
 
 	DeleteDC(hdc);
 
-	ImGuiIO& io = ImGui::GetIO();
 	io.IniFilename = nullptr; // Don't save imgui.ini
 
 	if (fontIndex == -1)
@@ -475,27 +743,112 @@ bool THRotatorImGui_Initialize(HWND hWnd, THRotatorImGui_D3DDeviceInterface* dev
 		fontDataSize = 0;
 	}
 
+	io.UserData = new THRotatorImGui_UserData(device, hWnd);
+
 	return true;
 }
 
 void THRotatorImGui_Shutdown()
 {
-	ImGui_IMPLFUNC(Shutdown)();
+	THRotatorImGui_InvalidateDeviceObjects();
+
+	ImGuiIO& io = ImGui::GetIO();
+
+	auto pUserData = static_cast<THRotatorImGui_UserData*>(io.UserData);
+	delete pUserData;
+
+	io.UserData = nullptr;
 }
 
 void THRotatorImGui_NewFrame()
 {
-	ImGui_IMPLFUNC(NewFrame)();
+	ImGuiIO& io = ImGui::GetIO();
+
+	auto pUserData = static_cast<THRotatorImGui_UserData*>(io.UserData);
+
+	if (!pUserData->fontTexture)
+	{
+		THRotatorImGui_CreateDeviceObjects();
+	}
+
+	// Setup display size (every frame to accommodate for window resizing)
+	RECT rect;
+	GetClientRect(pUserData->hDeviceWindow, &rect);
+	io.DisplaySize = ImVec2((float)(rect.right - rect.left), (float)(rect.bottom - rect.top));
+
+	// Setup time step
+	LARGE_INTEGER currentTime;
+	QueryPerformanceCounter(&currentTime);
+	io.DeltaTime = (float)(currentTime.QuadPart - pUserData->previousTime.QuadPart) / pUserData->ticksPerSecond.QuadPart;
+	pUserData->previousTime = currentTime;
+
+	// Read keyboard modifiers inputs
+	io.KeyCtrl = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
+	io.KeyShift = (GetKeyState(VK_SHIFT) & 0x8000) != 0;
+	io.KeyAlt = (GetKeyState(VK_MENU) & 0x8000) != 0;
+	io.KeySuper = false;
+	// io.KeysDown : filled by WM_KEYDOWN/WM_KEYUP events
+	// io.MousePos : filled by WM_MOUSEMOVE events
+	// io.MouseDown : filled by WM_*BUTTON* events
+	// io.MouseWheel : filled by WM_MOUSEWHEEL events
+
+	// Hide OS mouse cursor if ImGui is drawing it
+	if (io.MouseDrawCursor)
+		SetCursor(NULL);
+
+	// Start the frame
+	ImGui::NewFrame();
 }
 
 void THRotatorImGui_InvalidateDeviceObjects()
 {
-	ImGui_IMPLFUNC(InvalidateDeviceObjects)();
+	ImGuiIO& io = ImGui::GetIO();
+	auto pUserData = static_cast<THRotatorImGui_UserData*>(io.UserData);
+
+	pUserData->vertexBuffer.Reset();
+	pUserData->indexBuffer.Reset();
+	pUserData->fontTexture.Reset();
+
+	io.Fonts->TexID = nullptr;
 }
 
-void THRotatorImGui_CreateDeviceObjects()
+bool THRotatorImGui_CreateDeviceObjects()
 {
-	ImGui_IMPLFUNC(CreateDeviceObjects)();
+	// Build texture atlas
+	ImGuiIO& io = ImGui::GetIO();
+
+	auto pUserData = static_cast<THRotatorImGui_UserData*>(io.UserData);
+
+	unsigned char* pixels;
+	int width, height, bytes_per_pixel;
+	io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height, &bytes_per_pixel);
+
+	// Upload texture to graphics system
+	pUserData->fontTexture.Reset();
+	if (FAILED(pUserData->device->CreateTexture(
+		width, height, 1, D3DUSAGE_DYNAMIC, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,
+		&pUserData->fontTexture ARG_NULL_SHARED_HANDLE)))
+	{
+		return false;
+	}
+
+	D3DLOCKED_RECT tex_locked_rect;
+	if (FAILED(pUserData->fontTexture->LockRect(0, &tex_locked_rect, NULL, 0)))
+	{
+		return false;
+	}
+
+	for (int y = 0; y < height; y++)
+	{
+		memcpy((unsigned char *)tex_locked_rect.pBits + tex_locked_rect.Pitch * y, pixels + (width * bytes_per_pixel) * y, (width * bytes_per_pixel));
+	}
+
+	pUserData->fontTexture->UnlockRect(0);
+
+	// Store our identifier
+	io.Fonts->TexID = static_cast<ImTextureID>(pUserData->fontTexture.Get());
+
+	return true;
 }
 
 LRESULT THRotatorImGui_WindowProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
