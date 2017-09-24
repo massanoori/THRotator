@@ -381,6 +381,7 @@ public:
 	HRESULT InitResources();
 	void ReleaseResources();
 	void UpdateResolution(UINT Adapter);
+	void UpdateAndApplyFixedStatesForSpriteRendering();
 
 	ULONG WINAPI AddRef(VOID) override;
 	HRESULT WINAPI QueryInterface(REFIID riid, LPVOID* ppvObj) override;
@@ -2214,6 +2215,97 @@ void THRotatorDirect3DDevice::UpdateResolution(UINT Adapter)
 	}
 }
 
+void THRotatorDirect3DDevice::UpdateAndApplyFixedStatesForSpriteRendering()
+{
+#ifdef TOUHOU_ON_D3D8
+	if (m_spriteRenderingStateBlock != INVALID_STATE_BLOCK_HANDLE)
+	{
+		// Apply recorded device states for sprite rendering
+		m_pd3dDev->ApplyStateBlock(m_spriteRenderingStateBlock);
+		return;
+	}
+#else
+	if (m_spriteRenderingStateBlock)
+	{
+		// Apply recorded device states for sprite rendering
+		m_spriteRenderingStateBlock->Apply();
+		return;
+	}
+#endif
+
+
+	// If state block unavailable, record device states for sprite rendering
+	m_pd3dDev->BeginStateBlock();
+
+	m_pd3dDev->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+	m_pd3dDev->SetRenderState(D3DRS_ALPHAFUNC, D3DCMP_GREATER);
+	m_pd3dDev->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
+	m_pd3dDev->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
+	m_pd3dDev->SetRenderState(D3DRS_CLIPPING, TRUE);
+	m_pd3dDev->SetRenderState(D3DRS_CLIPPLANEENABLE, FALSE);
+	m_pd3dDev->SetRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_ALPHA | D3DCOLORWRITEENABLE_BLUE | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_RED);
+	m_pd3dDev->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+	m_pd3dDev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+	m_pd3dDev->SetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_COLOR1);
+	m_pd3dDev->SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
+	m_pd3dDev->SetRenderState(D3DRS_FOGENABLE, FALSE);
+	m_pd3dDev->SetRenderState(D3DRS_INDEXEDVERTEXBLENDENABLE, FALSE);
+	m_pd3dDev->SetRenderState(D3DRS_LIGHTING, FALSE);
+	m_pd3dDev->SetRenderState(D3DRS_RANGEFOGENABLE, FALSE);
+	m_pd3dDev->SetRenderState(D3DRS_SHADEMODE, D3DSHADE_GOURAUD);
+	m_pd3dDev->SetRenderState(D3DRS_SPECULARENABLE, FALSE);
+	m_pd3dDev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+	m_pd3dDev->SetRenderState(D3DRS_STENCILENABLE, FALSE);
+	m_pd3dDev->SetRenderState(D3DRS_VERTEXBLEND, FALSE);
+	m_pd3dDev->SetRenderState(D3DRS_WRAP0, 0);
+
+	m_pd3dDev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+	m_pd3dDev->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
+	m_pd3dDev->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
+	m_pd3dDev->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+	m_pd3dDev->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
+	m_pd3dDev->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
+	m_pd3dDev->SetTextureStageState(0, D3DTSS_TEXCOORDINDEX, 0);
+	m_pd3dDev->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_COUNT2);
+	m_pd3dDev->SetTextureStageState(1, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
+	m_pd3dDev->SetTextureStageState(1, D3DTSS_COLOROP, D3DTOP_DISABLE);
+
+#ifdef TOUHOU_ON_D3D8
+	m_pd3dDev->SetTextureStageState(0, D3DTSS_ADDRESSU, D3DTADDRESS_CLAMP);
+	m_pd3dDev->SetTextureStageState(0, D3DTSS_ADDRESSV, D3DTADDRESS_CLAMP);
+	m_pd3dDev->SetTextureStageState(0, D3DTSS_MAXMIPLEVEL, 0);
+	m_pd3dDev->SetTextureStageState(0, D3DTSS_MAXANISOTROPY, 0);
+	m_pd3dDev->SetTextureStageState(0, D3DTSS_MIPMAPLODBIAS, 0);
+
+#else
+	m_pd3dDev->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
+	m_pd3dDev->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
+	m_pd3dDev->SetSamplerState(0, D3DSAMP_MAXMIPLEVEL, 0);
+	m_pd3dDev->SetSamplerState(0, D3DSAMP_MAXANISOTROPY, 0);
+	m_pd3dDev->SetSamplerState(0, D3DSAMP_MIPMAPLODBIAS, 0);
+	m_pd3dDev->SetSamplerState(0, D3DSAMP_SRGBTEXTURE, 0);
+#endif
+
+	m_pd3dDev->SetTexture(0, m_pTex.Get());
+	m_pd3dDev->SetStreamSource(0, m_pSpriteVertexBuffer.Get(),
+#ifndef TOUHOU_ON_D3D8
+		0,
+#endif
+		sizeof(THRotatorSpriteVertex));
+
+#ifdef TOUHOU_ON_D3D8
+	m_pd3dDev->SetVertexShader(THRotatorSpriteVertex::FVF);
+#else
+	m_pd3dDev->SetFVF(THRotatorSpriteVertex::FVF);
+#endif
+
+	auto matrixView = DirectX::XMMatrixLookAtLH(DirectX::XMVectorSet(0.5f, 0.5f, -1.0f, 1.0f),
+		DirectX::XMVectorSet(0.5f, 0.5f, 0.0f, 1.0f), DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
+	m_pd3dDev->SetTransform(D3DTS_VIEW, &ToD3DMATRIX(matrixView));
+
+	m_pd3dDev->EndStateBlock(&m_spriteRenderingStateBlock);
+}
+
 ULONG WINAPI THRotatorDirect3DDevice::AddRef(VOID)
 {
 	return ++m_referenceCount;
@@ -2328,97 +2420,12 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 
 	if (!bGuiOnly)
 	{
-#ifdef TOUHOU_ON_D3D8
-		if (m_spriteRenderingStateBlock != INVALID_STATE_BLOCK_HANDLE)
-		{
-			// Apply recorded device states for sprite rendering
-			m_pd3dDev->ApplyStateBlock(m_spriteRenderingStateBlock);
-		}
-#else
-		if (m_spriteRenderingStateBlock)
-		{
-			m_spriteRenderingStateBlock->Apply();
-		}
-#endif
-		else
-		{
-			// If state block unavailable, record device states for sprite rendering
-			m_pd3dDev->BeginStateBlock();
-
-			m_pd3dDev->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-			m_pd3dDev->SetRenderState(D3DRS_ALPHAFUNC, D3DCMP_GREATER);
-			m_pd3dDev->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-			m_pd3dDev->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
-			m_pd3dDev->SetRenderState(D3DRS_CLIPPING, TRUE);
-			m_pd3dDev->SetRenderState(D3DRS_CLIPPLANEENABLE, FALSE);
-			m_pd3dDev->SetRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_ALPHA | D3DCOLORWRITEENABLE_BLUE | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_RED);
-			m_pd3dDev->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
-			m_pd3dDev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-			m_pd3dDev->SetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_COLOR1);
-			m_pd3dDev->SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
-			m_pd3dDev->SetRenderState(D3DRS_FOGENABLE, FALSE);
-			m_pd3dDev->SetRenderState(D3DRS_INDEXEDVERTEXBLENDENABLE, FALSE);
-			m_pd3dDev->SetRenderState(D3DRS_LIGHTING, FALSE);
-			m_pd3dDev->SetRenderState(D3DRS_RANGEFOGENABLE, FALSE);
-			m_pd3dDev->SetRenderState(D3DRS_SHADEMODE, D3DSHADE_GOURAUD);
-			m_pd3dDev->SetRenderState(D3DRS_SPECULARENABLE, FALSE);
-			m_pd3dDev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-			m_pd3dDev->SetRenderState(D3DRS_STENCILENABLE, FALSE);
-			m_pd3dDev->SetRenderState(D3DRS_VERTEXBLEND, FALSE);
-			m_pd3dDev->SetRenderState(D3DRS_WRAP0, 0);
-
-			m_pd3dDev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
-			m_pd3dDev->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
-			m_pd3dDev->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
-			m_pd3dDev->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
-			m_pd3dDev->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
-			m_pd3dDev->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
-			m_pd3dDev->SetTextureStageState(0, D3DTSS_TEXCOORDINDEX, 0);
-			m_pd3dDev->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_COUNT2);
-			m_pd3dDev->SetTextureStageState(1, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
-			m_pd3dDev->SetTextureStageState(1, D3DTSS_COLOROP, D3DTOP_DISABLE);
-
-#ifdef TOUHOU_ON_D3D8
-			m_pd3dDev->SetTextureStageState(0, D3DTSS_ADDRESSU, D3DTADDRESS_CLAMP);
-			m_pd3dDev->SetTextureStageState(0, D3DTSS_ADDRESSV, D3DTADDRESS_CLAMP);
-			m_pd3dDev->SetTextureStageState(0, D3DTSS_MAXMIPLEVEL, 0);
-			m_pd3dDev->SetTextureStageState(0, D3DTSS_MAXANISOTROPY, 0);
-			m_pd3dDev->SetTextureStageState(0, D3DTSS_MIPMAPLODBIAS, 0);
-
-#else
-			m_pd3dDev->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
-			m_pd3dDev->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
-			m_pd3dDev->SetSamplerState(0, D3DSAMP_MAXMIPLEVEL, 0);
-			m_pd3dDev->SetSamplerState(0, D3DSAMP_MAXANISOTROPY, 0);
-			m_pd3dDev->SetSamplerState(0, D3DSAMP_MIPMAPLODBIAS, 0);
-			m_pd3dDev->SetSamplerState(0, D3DSAMP_SRGBTEXTURE, 0);
-#endif
-
-			m_pd3dDev->SetTexture(0, m_pTex.Get());
-			m_pd3dDev->SetStreamSource(0, m_pSpriteVertexBuffer.Get(),
-#ifndef TOUHOU_ON_D3D8
-				0,
-#endif
-				sizeof(THRotatorSpriteVertex));
-
-#ifdef TOUHOU_ON_D3D8
-			m_pd3dDev->SetVertexShader(THRotatorSpriteVertex::FVF);
-#else
-			m_pd3dDev->SetFVF(THRotatorSpriteVertex::FVF);
-#endif
-
-			auto matrixView = DirectX::XMMatrixLookAtLH(DirectX::XMVectorSet(0.5f, 0.5f, -1.0f, 1.0f),
-				DirectX::XMVectorSet(0.5f, 0.5f, 0.0f, 1.0f), DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
-			m_pd3dDev->SetTransform(D3DTS_VIEW, &ToD3DMATRIX(matrixView));
-
-			m_pd3dDev->EndStateBlock(&m_spriteRenderingStateBlock);
-		}
+		UpdateAndApplyFixedStatesForSpriteRendering();
 
 #ifdef TOUHOU_ON_D3D8
 		m_pd3dDev->SetTextureStageState(0, D3DTSS_MAGFILTER, m_pEditorContext->GetFilterType());
 		m_pd3dDev->SetTextureStageState(0, D3DTSS_MINFILTER, m_pEditorContext->GetFilterType());
 		m_pd3dDev->SetTextureStageState(0, D3DTSS_MIPFILTER, m_pEditorContext->GetFilterType());
-
 #else
 		m_pd3dDev->SetSamplerState(0, D3DSAMP_MAGFILTER, m_pEditorContext->GetFilterType());
 		m_pd3dDev->SetSamplerState(0, D3DSAMP_MINFILTER, m_pEditorContext->GetFilterType());
