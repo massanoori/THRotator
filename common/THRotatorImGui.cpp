@@ -28,11 +28,20 @@ struct THRotatorImGui_UserData
 	LARGE_INTEGER ticksPerSecond;
 	std::int32_t vertexBufferCapacity, indexBufferCapacity;
 
+#ifdef TOUHOU_ON_D3D8
+	DWORD stateBlock;
+#else
+	ComPtr<IDirect3DStateBlock9> stateBlock;
+#endif
+
 	THRotatorImGui_UserData(Direct3DDeviceBase* pDevice, HWND hWnd)
 		: device(pDevice)
 		, hDeviceWindow(hWnd)
 		, vertexBufferCapacity(5000)
 		, indexBufferCapacity(10000)
+#ifdef TOUHOU_ON_D3D8
+		, stateBlock(INVALID_STATE_BLOCK_HANDLE)
+#endif
 	{
 		QueryPerformanceFrequency(&ticksPerSecond);
 		QueryPerformanceCounter(&previousTime);
@@ -431,6 +440,76 @@ bool FindFirstJapaneseFont(HDC hdc, void*& outPointer, DWORD& outSize, int& outI
 	return false;
 }
 
+void THRotatorImGui_UpdateAndApplyFixedStates(THRotatorImGui_UserData* pUserData)
+{
+	auto rawDevice = pUserData->device.Get();
+
+#ifdef TOUHOU_ON_D3D8
+	if (pUserData->stateBlock != INVALID_STATE_BLOCK_HANDLE)
+	{
+		// Apply recorded device states for sprite rendering
+		rawDevice->ApplyStateBlock(pUserData->stateBlock);
+		return;
+	}
+#else
+	if (pUserData->stateBlock)
+	{
+		// Apply recorded device states for sprite rendering
+		pUserData->stateBlock->Apply();
+		return;
+	}
+#endif
+
+	rawDevice->BeginStateBlock();
+
+#if TOUHOU_ON_D3D8
+	rawDevice->SetVertexShader(THRotatorImGui_Vertex::FVF);
+#else
+	rawDevice->SetFVF(THRotatorImGui_Vertex::FVF);
+#endif
+
+	rawDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+	rawDevice->SetRenderState(D3DRS_LIGHTING, FALSE);
+	rawDevice->SetRenderState(D3DRS_ZENABLE, FALSE);
+	rawDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+	rawDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
+	rawDevice->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
+	rawDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+	rawDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+#ifndef TOUHOU_ON_D3D8
+	rawDevice->SetRenderState(D3DRS_SCISSORTESTENABLE, TRUE);
+#endif
+
+	D3DMATRIX matIdentity;
+	DirectX::XMStoreFloat4x4(reinterpret_cast<DirectX::XMFLOAT4X4*>(&matIdentity), DirectX::XMMatrixIdentity());
+
+	rawDevice->SetTransform(D3DTS_WORLD, &matIdentity);
+	rawDevice->SetTransform(D3DTS_VIEW, &matIdentity);
+
+	rawDevice->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
+	rawDevice->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+	rawDevice->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
+	rawDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
+	rawDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+	rawDevice->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
+	rawDevice->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_DISABLE);
+#ifdef TOUHOU_ON_D3D8
+	rawDevice->SetTextureStageState(0, D3DTSS_MINFILTER, D3DTEXF_LINEAR);
+	rawDevice->SetTextureStageState(0, D3DTSS_MAGFILTER, D3DTEXF_LINEAR);
+#endif
+
+#ifdef TOUHOU_ON_D3D8
+	rawDevice->SetPixelShader(0);
+#else
+	rawDevice->SetPixelShader(nullptr);
+	rawDevice->SetVertexShader(nullptr);
+	rawDevice->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+	rawDevice->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+#endif
+
+	rawDevice->EndStateBlock(&pUserData->stateBlock);
+}
+
 void THRotatorImGui_RenderDrawLists(ImDrawData* drawData)
 {
 	ImGuiIO& io = ImGui::GetIO();
@@ -524,11 +603,9 @@ void THRotatorImGui_RenderDrawLists(ImDrawData* drawData)
 		return;
 	}
 
-	auto rawDevice = pUserData->device.Get();
+	THRotatorImGui_UpdateAndApplyFixedStates(pUserData);
 
-	// State changes that need to be reset.
-	// On D3D8, states are reset in RAII way.
-	// On D3D9, states are reset by IDirect3DStateBlock.
+	auto rawDevice = pUserData->device.Get();
 
 	rawDevice->SetStreamSource(0, pUserData->vertexBuffer.Get(),
 #ifndef TOUHOU_ON_D3D8
@@ -536,50 +613,14 @@ void THRotatorImGui_RenderDrawLists(ImDrawData* drawData)
 #endif
 		sizeof(THRotatorImGui_Vertex));
 
-#if TOUHOU_ON_D3D8
-	rawDevice->SetVertexShader(THRotatorImGui_Vertex::FVF);
-#else
-	rawDevice->SetFVF(THRotatorImGui_Vertex::FVF);
-#endif
-
-	rawDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
-	rawDevice->SetRenderState(D3DRS_LIGHTING, FALSE);
-	rawDevice->SetRenderState(D3DRS_ZENABLE, FALSE);
-	rawDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-	rawDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-	rawDevice->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
-	rawDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-	rawDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 #ifndef TOUHOU_ON_D3D8
-	rawDevice->SetRenderState(D3DRS_SCISSORTESTENABLE, TRUE);
-#endif
+	D3DMATRIX matProjection;
+	const float L = 0.5f, R = io.DisplaySize.x + 0.5f, T = 0.5f, B = io.DisplaySize.y + 0.5f;
+	DirectX::XMStoreFloat4x4(reinterpret_cast<DirectX::XMFLOAT4X4*>(&matProjection),
+		DirectX::XMMatrixOrthographicOffCenterLH(L, R, B, T, 0.0f, 1.0f));
 
-	D3DMATRIX matIdentity;
-	DirectX::XMStoreFloat4x4(reinterpret_cast<DirectX::XMFLOAT4X4*>(&matIdentity), DirectX::XMMatrixIdentity());
-
-	rawDevice->SetTransform(D3DTS_WORLD, &matIdentity);
-	rawDevice->SetTransform(D3DTS_VIEW, &matIdentity);
-
-	rawDevice->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
-	rawDevice->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
-	rawDevice->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
-	rawDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
-	rawDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
-	rawDevice->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
-	rawDevice->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_DISABLE);
-#ifdef TOUHOU_ON_D3D8
-	rawDevice->SetTextureStageState(0, D3DTSS_MINFILTER, D3DTEXF_LINEAR);
-	rawDevice->SetTextureStageState(0, D3DTSS_MAGFILTER, D3DTEXF_LINEAR);
-#endif
-
-#ifdef TOUHOU_ON_D3D8
-	rawDevice->SetPixelShader(0);
-#else
 	rawDevice->SetIndices(pUserData->indexBuffer.Get());
-	rawDevice->SetPixelShader(nullptr);
-	rawDevice->SetVertexShader(nullptr);
-	rawDevice->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-	rawDevice->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+	rawDevice->SetTransform(D3DTS_PROJECTION, &matProjection);
 
 	// Setup viewport
 	D3DVIEWPORT9 vp;
@@ -589,16 +630,6 @@ void THRotatorImGui_RenderDrawLists(ImDrawData* drawData)
 	vp.MinZ = 0.0f;
 	vp.MaxZ = 1.0f;
 	rawDevice->SetViewport(&vp);
-#endif
-
-	D3DMATRIX matProjection;
-
-#ifndef TOUHOU_ON_D3D8
-	const float L = 0.5f, R = io.DisplaySize.x + 0.5f, T = 0.5f, B = io.DisplaySize.y + 0.5f;
-	DirectX::XMStoreFloat4x4(reinterpret_cast<DirectX::XMFLOAT4X4*>(&matProjection),
-		DirectX::XMMatrixOrthographicOffCenterLH(L, R, B, T, 0.0f, 1.0f));
-
-	rawDevice->SetTransform(D3DTS_PROJECTION, &matProjection);
 #endif
 
 	int vertexBufferOffset = 0;
@@ -630,6 +661,7 @@ void THRotatorImGui_RenderDrawLists(ImDrawData* drawData)
 				const float L = 0.5f + viewport.X, R = viewport.Width + 0.5f + viewport.X;
 				const float T = 0.5f + viewport.Y, B = viewport.Height + 0.5f + viewport.Y;
 
+				D3DMATRIX matProjection;
 				DirectX::XMStoreFloat4x4(reinterpret_cast<DirectX::XMFLOAT4X4*>(&matProjection),
 					DirectX::XMMatrixOrthographicOffCenterLH(L, R, B, T, 0.0f, 1.0f));
 
@@ -812,6 +844,16 @@ void THRotatorImGui_InvalidateDeviceObjects()
 	pUserData->vertexBuffer.Reset();
 	pUserData->indexBuffer.Reset();
 	pUserData->fontTexture.Reset();
+
+#ifdef TOUHOU_ON_D3D8
+	if (pUserData->stateBlock != INVALID_STATE_BLOCK_HANDLE)
+	{
+		pUserData->device->DeleteStateBlock(pUserData->stateBlock);
+		pUserData->stateBlock = INVALID_STATE_BLOCK_HANDLE;
+	}
+#else
+	pUserData->stateBlock.Reset();
+#endif
 
 	io.Fonts->TexID = nullptr;
 }
