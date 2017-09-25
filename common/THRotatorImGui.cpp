@@ -650,10 +650,10 @@ void THRotatorImGui_RenderDrawLists(ImDrawData* drawData)
 
 #ifdef TOUHOU_ON_D3D8
 				D3DVIEWPORT8 viewport;
-				viewport.X = static_cast<DWORD>(command.ClipRect.x);
-				viewport.Y = static_cast<DWORD>(command.ClipRect.y);
-				viewport.Width = static_cast<DWORD>(command.ClipRect.z - command.ClipRect.x);
-				viewport.Height = static_cast<DWORD>(command.ClipRect.w - command.ClipRect.y);
+				viewport.X = static_cast<DWORD>((std::max)(0.0f, command.ClipRect.x));
+				viewport.Y = static_cast<DWORD>((std::max)(0.0f, command.ClipRect.y));
+				viewport.Width = static_cast<DWORD>((std::min)(io.DisplaySize.x, command.ClipRect.z - command.ClipRect.x));
+				viewport.Height = static_cast<DWORD>((std::min)(io.DisplaySize.y, command.ClipRect.w - command.ClipRect.y));
 				viewport.MinZ = 0.0f;
 				viewport.MaxZ = 1.0f;
 				rawDevice->SetViewport(&viewport);
