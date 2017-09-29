@@ -22,7 +22,7 @@
 namespace
 {
 
-const char* THROTATOR_VERSION_STRING = "2.0.3";
+const char THROTATOR_VERSION_STRING[] = "2.0.3";
 
 HHOOK ms_hHook;
 std::map<HWND, std::weak_ptr<THRotatorEditorContext>> ms_touhouWinToContext;
@@ -46,6 +46,33 @@ T Clamp(T value, T minValue, T maxValue)
 	return value;
 }
 
+}
+
+/**
+ * Get THRotator's version from external program.
+ * If destination pointer is valid, this function writes as many characters as possible to destination for given bufferSize.
+ *
+ * \param destination  Output pointer where the retruend version number string is written.
+ * \param bufferSize   Size of output buffer in number of characters including terminating null.
+ * 
+ * \return             If destination is null, this function returns the minimal buffer size
+ *                     that can contain all characters of version number string, incluing terminating null.
+ *                     If destination is a valid pointer, this function returns number of characters actually written to destination,
+ *                     including terminating null.
+ */
+extern "C" __declspec(dllexport) std::uint32_t THRotator_GetVersionString(char* destination, std::uint32_t bufferSize)
+{
+	if (destination == nullptr)
+	{
+		return _countof(THROTATOR_VERSION_STRING);
+	}
+	else if (bufferSize == 0)
+	{
+		return 0;
+	}
+	
+	strncpy_s(destination, bufferSize, THROTATOR_VERSION_STRING, _TRUNCATE);
+	return (std::min)(bufferSize, _countof(THROTATOR_VERSION_STRING));
 }
 
 THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
