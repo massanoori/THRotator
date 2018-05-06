@@ -3,6 +3,7 @@
 #pragma once
 
 #define BOOST_NO_EXCEPTIONS
+#define NOMINMAX
 
 #include <vector>
 #include <boost/filesystem.hpp>

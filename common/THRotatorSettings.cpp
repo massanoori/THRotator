@@ -5,10 +5,6 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
 
-// undef min and max macros defined in Windows.h to fix compilation error in json.hpp.
-#undef min
-#undef max
-
 #include <nlohmann/json.hpp>
 
 #include "THRotatorSettings.h"
