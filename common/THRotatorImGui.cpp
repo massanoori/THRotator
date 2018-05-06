@@ -693,6 +693,8 @@ void THRotatorImGui_RenderDrawLists(ImDrawData* drawData)
 
 bool THRotatorImGui_Initialize(HWND hWnd, THRotatorImGui_D3DDeviceInterface* device)
 {
+	ImGui::CreateContext();
+
 	ImGuiIO& io = ImGui::GetIO();
 
 	io.KeyMap[ImGuiKey_Tab] = VK_TAB;                       // Keyboard mapping. ImGui will use those indices to peek into the io.KeyDown[] array that we will update during the application lifetime.
@@ -794,6 +796,8 @@ void THRotatorImGui_Shutdown()
 	delete pUserData;
 
 	io.UserData = nullptr;
+
+	ImGui::DestroyContext();
 }
 
 void THRotatorImGui_NewFrame()
@@ -834,6 +838,11 @@ void THRotatorImGui_NewFrame()
 
 	// Start the frame
 	ImGui::NewFrame();
+}
+
+void THRotatorImGui_EndFrame()
+{
+	ImGui::EndFrame();
 }
 
 void THRotatorImGui_InvalidateDeviceObjects()

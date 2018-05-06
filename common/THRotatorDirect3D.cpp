@@ -2447,6 +2447,8 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 
 	m_pEditorContext->RenderAndUpdateEditor(!m_d3dpp.Windowed);
 
+	THRotatorImGui_EndFrame();
+
 	// Restore previous device states
 #ifdef TOUHOU_ON_D3D8
 	m_pd3dDev->ApplyStateBlock(stateBlock);
