@@ -2302,7 +2302,8 @@ void THRotatorDirect3DDevice::UpdateAndApplyFixedStatesForSpriteRendering()
 
 	auto matrixView = DirectX::XMMatrixLookAtLH(DirectX::XMVectorSet(0.5f, 0.5f, -1.0f, 1.0f),
 		DirectX::XMVectorSet(0.5f, 0.5f, 0.0f, 1.0f), DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
-	m_pd3dDev->SetTransform(D3DTS_VIEW, &ToD3DMATRIX(matrixView));
+	auto matrixViewD3D = ToD3DMATRIX(matrixView);
+	m_pd3dDev->SetTransform(D3DTS_VIEW, &matrixViewD3D);
 
 	m_pd3dDev->EndStateBlock(&m_spriteRenderingStateBlock);
 }
@@ -2438,7 +2439,8 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 			static_cast<float>(m_d3dpp.BackBufferHeight), 0.0f,
 			0.0f, 1.0f);
 
-		m_pd3dDev->SetTransform(D3DTS_PROJECTION, &ToD3DMATRIX(matrixProjection));
+		auto matrixProjectionD3D = ToD3DMATRIX(matrixProjection);
+		m_pd3dDev->SetTransform(D3DTS_PROJECTION, &matrixProjectionD3D);
 
 		EndSceneInternal();
 	}
@@ -2588,7 +2590,9 @@ void THRotatorDirect3DDevice::EndSceneInternal()
 
 		XMMATRIX spriteVertexScale = XMMatrixScaling(srcSize.cx * scaleFactorForSourceX, srcSize.cy * scaleFactorForSourceY, 1.0f);
 		finalTransform = spriteVertexScale * finalTransform;
-		m_pd3dDev->SetTransform(D3DTS_WORLD, &ToD3DMATRIX(finalTransform));
+
+		auto finalTransformD3D = ToD3DMATRIX(finalTransform);
+		m_pd3dDev->SetTransform(D3DTS_WORLD, &finalTransformD3D);
 
 		XMFLOAT4X4A textureMatrixScale;
 		XMStoreFloat4x4A(&textureMatrixScale, XMMatrixScaling(srcSize.cx * scaleFactorForSourceX / m_requestedWidth, srcSize.cy * scaleFactorForSourceY / m_requestedHeight, 1.0f));

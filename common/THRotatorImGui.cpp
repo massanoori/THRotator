@@ -900,6 +900,8 @@ bool THRotatorImGui_CreateDeviceObjects()
 
 LRESULT THRotatorImGui_WindowProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+	UNREFERENCED_PARAMETER(hWnd);
+
 	ImGuiIO& io = ImGui::GetIO();
 	switch (msg)
 	{

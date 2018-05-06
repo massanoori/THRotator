@@ -111,10 +111,8 @@ THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
 
 	static MessageHook messageHook;
 
-	double touhouSeriesNumber = GetTouhouSeriesNumber();
 
 	OutputLogMessagef(LogSeverity::Info, "Initializing THRotatorEditorContext");
-	
 
 	if (!LoadSettings())
 	{
