@@ -136,13 +136,14 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 	DWORD  fdwReason,
 	LPVOID /* lpReserved */)
 {
-	static HINSTANCE hOriginalDirect3DLibrary;
-
 	switch (fdwReason)
 	{
 	case DLL_PROCESS_ATTACH:
 		hTHRotatorModule = reinterpret_cast<HINSTANCE>(hModule);
-		InitializeExports();
+		if (!InitializeExports())
+		{
+			OutputLogMessage(LogSeverity::Error, "Failed to initialize exported function of Direct3D.");
+		}
 		break;
 
 	case DLL_THREAD_ATTACH:

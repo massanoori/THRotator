@@ -25,7 +25,13 @@ std::ostream& GetLogOutputStream()
 
 		if (!ofs.is_open())
 		{
-			ofs.open(CreateTHRotatorLogFilePath().generic_wstring());
+			auto logFilePath = CreateTHRotatorLogFilePath().generic_wstring();
+
+			// Calling CreateTHRotatorLogFilePath() may open ofs in a recurrent call, so re-check ofs's status.
+			if (!ofs.is_open())
+			{
+				ofs.open(logFilePath);
+			}
 		}
 
 		if (!ofs.is_open())
@@ -86,4 +92,5 @@ void OutputLogMessage(LogSeverity severity, const std::string& message)
 	}
 
 	logStream << message << std::endl;
+	logStream.flush();
 }

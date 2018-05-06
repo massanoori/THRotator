@@ -4,6 +4,7 @@
 
 #include <DirectXMath.h>
 
+#include "THRotatorDirect3D.h"
 #include "THRotatorEditor.h"
 #include "THRotatorSystem.h"
 #include "THRotatorExports.h"
@@ -12,7 +13,6 @@
 #include "resource.h"
 
 #include "THRotatorImGui.h"
-#include "Direct3DUtils.h"
 #include "ImageIO.h"
 
 #ifdef TOUHOU_ON_D3D8
@@ -2813,41 +2813,32 @@ HRESULT THRotatorDirect3DDevice::InternalReset(
 	return ret;
 }
 
-extern "C"
-{
 #ifndef TOUHOU_ON_D3D8
-	__declspec(dllexport) HRESULT WINAPI d_Direct3DCreate9Ex(UINT v, Direct3DExBase** pp)
+HRESULT THRotatorDirect3DCreateEx(UINT version, Direct3DExBase** ppD3D)
+{
+	auto pd3dEx = new THRotatorDirect3D();
+
+	HRESULT ret = pd3dEx->InitEx(version);
+	if (FAILED(ret))
 	{
-		auto pd3dEx = new THRotatorDirect3D();
-
-		HRESULT ret = pd3dEx->InitEx(v);
-		if (FAILED(ret))
-		{
-			pd3dEx->Release();
-			return ret;
-		}
-
-		*pp = pd3dEx;
+		pd3dEx->Release();
 		return ret;
 	}
+
+	*ppD3D = pd3dEx;
+	return ret;
+}
 #endif
 
-	__declspec(dllexport) Direct3DBase* WINAPI
-#ifdef TOUHOU_ON_D3D8
-		d_Direct3DCreate8
-#else
-		d_Direct3DCreate9
-#endif
-		(UINT v)
+Direct3DBase* THRotatorDirect3DCreate(UINT version)
+{
+	auto pd3d = new THRotatorDirect3D();
+
+	if (!pd3d->Init(version))
 	{
-		auto pd3d = new THRotatorDirect3D();
-
-		if (!pd3d->Init(v))
-		{
-			pd3d->Release();
-			return nullptr;
-		}
-
-		return pd3d;
+		pd3d->Release();
+		return nullptr;
 	}
+
+	return pd3d;
 }

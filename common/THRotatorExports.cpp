@@ -3,85 +3,104 @@
 #include "stdafx.h"
 
 #include "THRotatorExports.h"
+#include "THRotatorDirect3D.h"
+#include "THRotatorLog.h"
 
 namespace
 {
 
 HINSTANCE hOriginalDirect3DLibrary;
 
+enum ExportedFuncIndex
+{
 #ifdef TOUHOU_ON_D3D8
-
-IDirect3D8* (WINAPI * p_Direct3DCreate8)(UINT);
-
-FARPROC p_ValidatePixelShader;
-FARPROC p_ValidateVertexShader;
-FARPROC p_DebugSetMute;
-
+	ExportedFuncIndex_ValidatePixelShader,
+	ExportedFuncIndex_ValidateVertexShader,
+	ExportedFuncIndex_DebugSetMute,
+	ExportedFuncIndex_Direct3DCreate8,
 #else
-
-typedef IDirect3D9* (WINAPI * DIRECT3DCREATE9PROC)(UINT);
-typedef HRESULT(WINAPI * DIRECT3DCREATE9EXPROC)(UINT, IDirect3D9Ex**);
-
-FARPROC p_Direct3DShaderValidatorCreate9;
-FARPROC p_PSGPError;
-FARPROC p_PSGPSampleTexture;
-FARPROC p_D3DPERF_BeginEvent;
-FARPROC p_D3DPERF_EndEvent;
-FARPROC p_D3DPERF_GetStatus;
-FARPROC p_D3DPERF_QueryRepeatFrame;
-FARPROC p_D3DPERF_SetMarker;
-FARPROC p_D3DPERF_SetOptions;
-FARPROC p_D3DPERF_SetRegion;
-FARPROC p_DebugSetLevel;
-FARPROC p_DebugSetMute;
-DIRECT3DCREATE9PROC p_Direct3DCreate9;
-DIRECT3DCREATE9EXPROC p_Direct3DCreate9Ex;
-
+	ExportedFuncIndex_Direct3DShaderValidatorCreate9,
+	ExportedFuncIndex_PSGPError,
+	ExportedFuncIndex_PSGPSampleTexture,
+	ExportedFuncIndex_D3DPERF_BeginEvent,
+	ExportedFuncIndex_D3DPERF_EndEvent,
+	ExportedFuncIndex_D3DPERF_GetStatus,
+	ExportedFuncIndex_D3DPERF_QueryRepeatFrame,
+	ExportedFuncIndex_D3DPERF_SetMarker,
+	ExportedFuncIndex_D3DPERF_SetOptions,
+	ExportedFuncIndex_D3DPERF_SetRegion,
+	ExportedFuncIndex_DebugSetLevel,
+	ExportedFuncIndex_DebugSetMute,
+	ExportedFuncIndex_Direct3DCreate9,
+	ExportedFuncIndex_Direct3DCreate9Ex,
 #endif
+
+	NumExportedFuncIndices,
+};
+
+FARPROC exportedFunctions[NumExportedFuncIndices];
+
+void SetExportedFunction(UINT functionIndex, const char* functionName)
+{
+	exportedFunctions[functionIndex] = GetProcAddress(hOriginalDirect3DLibrary, functionName);
+}
+
+FARPROC GetExportedFunction(UINT functionIndex)
+{
+	return exportedFunctions[functionIndex];
+}
 
 } // anonymous-namespace
 
 bool InitializeExports()
 {
-	{
-		TCHAR systemDirectoryRaw[MAX_PATH];
-		GetSystemDirectory(systemDirectoryRaw, MAX_PATH);
-		boost::filesystem::path systemDirectory(systemDirectoryRaw);
+	TCHAR systemDirectoryRaw[MAX_PATH];
+	GetSystemDirectory(systemDirectoryRaw, MAX_PATH);
+	boost::filesystem::path originalDirect3DLibraryPath(systemDirectoryRaw);
 
 #ifdef TOUHOU_ON_D3D8
-		systemDirectory /= L"d3d8.dll";
+	originalDirect3DLibraryPath /= L"d3d8.dll";
 #else
-		systemDirectory /= L"d3d9.dll";
+	originalDirect3DLibraryPath /= L"d3d9.dll";
 #endif
-		hOriginalDirect3DLibrary = LoadLibraryW(systemDirectory.generic_wstring().c_str());
-	}
+
+	hOriginalDirect3DLibrary = LoadLibraryW(originalDirect3DLibraryPath.generic_wstring().c_str());
 
 	if (hOriginalDirect3DLibrary == NULL)
 	{
 		return false;
 	}
 
+#define SET_EXPORTED_FUNCTION_SHORTCUT(name) do { \
+	SetExportedFunction(ExportedFuncIndex_##name, #name); \
+	if (GetExportedFunction(ExportedFuncIndex_##name) == nullptr) \
+	{ \
+		OutputLogMessagef(LogSeverity::Warning, "\"{0}\" doesn't export \"{1}\"", originalDirect3DLibraryPath.generic_string().c_str(), #name); \
+	} } while(false)
+
 #ifdef TOUHOU_ON_D3D8
-	p_ValidatePixelShader = GetProcAddress(hOriginalDirect3DLibrary, "ValidatePixelShader");
-	p_ValidateVertexShader = GetProcAddress(hOriginalDirect3DLibrary, "ValidateVertexShader");
-	p_DebugSetMute = GetProcAddress(hOriginalDirect3DLibrary, "DebugSetMute");
-	p_Direct3DCreate8 = (IDirect3D8*(WINAPI*)(UINT))GetProcAddress(hOriginalDirect3DLibrary, "Direct3DCreate8");
+	SET_EXPORTED_FUNCTION_SHORTCUT(ValidatePixelShader);
+	SET_EXPORTED_FUNCTION_SHORTCUT(ValidateVertexShader);
+	SET_EXPORTED_FUNCTION_SHORTCUT(DebugSetMute);
+	SET_EXPORTED_FUNCTION_SHORTCUT(Direct3DCreate8);
 #else
-	p_Direct3DShaderValidatorCreate9 = GetProcAddress(hOriginalDirect3DLibrary, "Direct3DShaderValidatorCreate9");
-	p_PSGPError = GetProcAddress(hOriginalDirect3DLibrary, "PSGPError");
-	p_PSGPSampleTexture = GetProcAddress(hOriginalDirect3DLibrary, "PSGPSampleTexture");
-	p_D3DPERF_BeginEvent = GetProcAddress(hOriginalDirect3DLibrary, "D3DPERF_BeginEvent");
-	p_D3DPERF_EndEvent = GetProcAddress(hOriginalDirect3DLibrary, "D3DPERF_EndEvent");
-	p_D3DPERF_GetStatus = GetProcAddress(hOriginalDirect3DLibrary, "D3DPERF_GetStatus");
-	p_D3DPERF_QueryRepeatFrame = GetProcAddress(hOriginalDirect3DLibrary, "D3DPERF_QueryRepeatFrame");
-	p_D3DPERF_SetMarker = GetProcAddress(hOriginalDirect3DLibrary, "D3DPERF_SetMarker");
-	p_D3DPERF_SetOptions = GetProcAddress(hOriginalDirect3DLibrary, "D3DPERF_SetOptions");
-	p_D3DPERF_SetRegion = GetProcAddress(hOriginalDirect3DLibrary, "D3DPERF_SetRegion");
-	p_DebugSetLevel = GetProcAddress(hOriginalDirect3DLibrary, "DebugSetLevel");
-	p_DebugSetMute = GetProcAddress(hOriginalDirect3DLibrary, "DebugSetMute");
-	p_Direct3DCreate9 = reinterpret_cast<DIRECT3DCREATE9PROC>(GetProcAddress(hOriginalDirect3DLibrary, "Direct3DCreate9"));
-	p_Direct3DCreate9Ex = reinterpret_cast<DIRECT3DCREATE9EXPROC>(GetProcAddress(hOriginalDirect3DLibrary, "Direct3DCreate9Ex"));
+	SET_EXPORTED_FUNCTION_SHORTCUT(Direct3DShaderValidatorCreate9);
+	SET_EXPORTED_FUNCTION_SHORTCUT(PSGPError);
+	SET_EXPORTED_FUNCTION_SHORTCUT(PSGPSampleTexture);
+	SET_EXPORTED_FUNCTION_SHORTCUT(D3DPERF_BeginEvent);
+	SET_EXPORTED_FUNCTION_SHORTCUT(D3DPERF_EndEvent);
+	SET_EXPORTED_FUNCTION_SHORTCUT(D3DPERF_GetStatus);
+	SET_EXPORTED_FUNCTION_SHORTCUT(D3DPERF_QueryRepeatFrame);
+	SET_EXPORTED_FUNCTION_SHORTCUT(D3DPERF_SetMarker);
+	SET_EXPORTED_FUNCTION_SHORTCUT(D3DPERF_SetOptions);
+	SET_EXPORTED_FUNCTION_SHORTCUT(D3DPERF_SetRegion);
+	SET_EXPORTED_FUNCTION_SHORTCUT(DebugSetLevel);
+	SET_EXPORTED_FUNCTION_SHORTCUT(DebugSetMute);
+	SET_EXPORTED_FUNCTION_SHORTCUT(Direct3DCreate9);
+	SET_EXPORTED_FUNCTION_SHORTCUT(Direct3DCreate9Ex);
 #endif
+
+#undef SET_EXPORTED_FUNCTION_SHORTCUT
 
 	return true;
 }
@@ -96,41 +115,90 @@ void FinalizeExports()
 
 IDirect3D8* CallOriginalDirect3DCreate(UINT version)
 {
-	return p_Direct3DCreate8(version);
+	using Signature_Direct3DCreate8 = IDirect3D8 * (WINAPI*)(UINT);
+
+	if (auto pDirect3DCreate8 = reinterpret_cast<Signature_Direct3DCreate8>(GetExportedFunction(ExportedFuncIndex_Direct3DCreate8)))
+	{
+		return pDirect3DCreate8(version);
+	}
+	
+	OutputLogMessagef(LogSeverity::Error, "{0} is not callable because the original {1} exports {0}", "Direct3DCreate8", "d3d8.dll");
+	return nullptr;
 }
 
 #else
 
 IDirect3D9* CallOriginalDirect3DCreate(UINT version)
 {
-	return p_Direct3DCreate9(version);
+	using Signature_Direct3DCreate9 = IDirect3D9 * (WINAPI*)(UINT);
+
+	if (auto pDirect3DCreate9 = reinterpret_cast<Signature_Direct3DCreate9>(GetExportedFunction(ExportedFuncIndex_Direct3DCreate9)))
+	{
+		return pDirect3DCreate9(version);
+	}
+
+	OutputLogMessagef(LogSeverity::Error, "{0} is not callable because the original {1} exports {0}", "Direct3DCreate9", "d3d9.dll");
+	return nullptr;
 }
 
 HRESULT CallOriginalDirect3DCreate9Ex(UINT version, IDirect3D9Ex** direct3d)
 {
-	return p_Direct3DCreate9Ex(version, direct3d);
+	using Signature_Direct3DCreate9Ex = HRESULT(WINAPI*)(UINT, IDirect3D9Ex**);
+
+	if (auto pDirect3DCreate9Ex = reinterpret_cast<Signature_Direct3DCreate9Ex>(GetExportedFunction(ExportedFuncIndex_Direct3DCreate9Ex)))
+	{
+		return pDirect3DCreate9Ex(version, direct3d);
+	}
+
+	OutputLogMessagef(LogSeverity::Error, "{0} is not callable because the original {1} exports {0}", "Direct3DCreate9Ex", "d3d9.dll");
+	return D3DERR_NOTAVAILABLE;
 }
 
 #endif
 
-extern "C"
-{
+#define EXPORTED_FUNCTION_HEADER_BASE(name, declspec_arg, return_type) extern "C" __declspec(declspec_arg) return_type WINAPI d_##name
+
+#define DEFINE_EXPORTED_FUNCTION_PASSTHROUGH(name) EXPORTED_FUNCTION_HEADER_BASE(name, naked, void)() { _asm { jmp exportedFunctions[4 * ExportedFuncIndex_##name] } }
+#define EXPORTED_FUNCTION_HEADER(name, return_type) EXPORTED_FUNCTION_HEADER_BASE(name, dllexport, return_type)
+
 #ifdef TOUHOU_ON_D3D8
-	__declspec(naked) void WINAPI d_ValidatePixelShader() { _asm { jmp p_ValidatePixelShader } }
-	__declspec(naked) void WINAPI d_ValidateVertexShader() { _asm { jmp p_ValidateVertexShader } }
-	__declspec(naked) void WINAPI d_DebugSetMute() { _asm { jmp p_DebugSetMute } }
-#else
-	__declspec(naked) void WINAPI d_Direct3DShaderValidatorCreate9() { _asm { jmp p_Direct3DShaderValidatorCreate9 } }
-	__declspec(naked) void WINAPI d_PSGPError() { _asm { jmp p_PSGPError } }
-	__declspec(naked) void WINAPI d_PSGPSampleTexture() { _asm { jmp p_PSGPSampleTexture } }
-	__declspec(naked) void WINAPI d_D3DPERF_BeginEvent() { _asm { jmp p_D3DPERF_BeginEvent } }
-	__declspec(naked) void WINAPI d_D3DPERF_EndEvent() { _asm { jmp p_D3DPERF_EndEvent } }
-	__declspec(naked) void WINAPI d_D3DPERF_GetStatus() { _asm { jmp p_D3DPERF_GetStatus } }
-	__declspec(naked) void WINAPI d_D3DPERF_QueryRepeatFrame() { _asm { jmp p_D3DPERF_QueryRepeatFrame } }
-	__declspec(naked) void WINAPI d_D3DPERF_SetMarker() { _asm { jmp p_D3DPERF_SetMarker } }
-	__declspec(naked) void WINAPI d_D3DPERF_SetOptions() { _asm { jmp p_D3DPERF_SetOptions } }
-	__declspec(naked) void WINAPI d_D3DPERF_SetRegion() { _asm { jmp p_D3DPERF_SetRegion } }
-	__declspec(naked) void WINAPI d_DebugSetLevel() { _asm { jmp p_DebugSetLevel } }
-	__declspec(naked) void WINAPI d_DebugSetMute() { _asm { jmp p_DebugSetMute } }
-#endif
+
+// Exported function definitions for Direct3D 8
+
+DEFINE_EXPORTED_FUNCTION_PASSTHROUGH(ValidatePixelShader)
+DEFINE_EXPORTED_FUNCTION_PASSTHROUGH(ValidateVertexShader)
+DEFINE_EXPORTED_FUNCTION_PASSTHROUGH(DebugSetMute)
+
+EXPORTED_FUNCTION_HEADER(Direct3DCreate8, Direct3DBase*)(UINT version)
+{
+	return THRotatorDirect3DCreate(version);
 }
+
+#else
+
+// Exported function definitions for Direct3D 9
+
+DEFINE_EXPORTED_FUNCTION_PASSTHROUGH(Direct3DShaderValidatorCreate9)
+DEFINE_EXPORTED_FUNCTION_PASSTHROUGH(PSGPError)
+DEFINE_EXPORTED_FUNCTION_PASSTHROUGH(PSGPSampleTexture)
+DEFINE_EXPORTED_FUNCTION_PASSTHROUGH(D3DPERF_BeginEvent)
+DEFINE_EXPORTED_FUNCTION_PASSTHROUGH(D3DPERF_EndEvent)
+DEFINE_EXPORTED_FUNCTION_PASSTHROUGH(D3DPERF_GetStatus)
+DEFINE_EXPORTED_FUNCTION_PASSTHROUGH(D3DPERF_QueryRepeatFrame)
+DEFINE_EXPORTED_FUNCTION_PASSTHROUGH(D3DPERF_SetMarker)
+DEFINE_EXPORTED_FUNCTION_PASSTHROUGH(D3DPERF_SetOptions)
+DEFINE_EXPORTED_FUNCTION_PASSTHROUGH(D3DPERF_SetRegion)
+DEFINE_EXPORTED_FUNCTION_PASSTHROUGH(DebugSetLevel)
+DEFINE_EXPORTED_FUNCTION_PASSTHROUGH(DebugSetMute)
+
+EXPORTED_FUNCTION_HEADER(Direct3DCreate9, Direct3DBase*)(UINT version)
+{
+	return THRotatorDirect3DCreate(version);
+}
+
+EXPORTED_FUNCTION_HEADER(Direct3DCreate9Ex, HRESULT)(UINT version, Direct3DExBase** ppD3D)
+{
+	return THRotatorDirect3DCreateEx(version, ppD3D);
+}
+
+#endif
