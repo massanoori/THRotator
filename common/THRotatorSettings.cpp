@@ -9,7 +9,7 @@
 #undef min
 #undef max
 
-#include <json.hpp>
+#include <nlohmann/json.hpp>
 
 #include "THRotatorSettings.h"
 #include "EncodingUtils.h"

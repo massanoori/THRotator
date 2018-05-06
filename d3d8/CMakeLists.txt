@@ -8,7 +8,7 @@ target_include_directories(d3d8
 	PRIVATE "d3d8/include/"
 	PRIVATE "../common/"
 	PRIVATE ${BOOST_INCLUDE_DIR}
-	PRIVATE "../nlohmann-json/src/"
+	PRIVATE "../nlohmann-json/include/"
 	PRIVATE "../fmtlib/"
 	PRIVATE "../imgui/")
 
