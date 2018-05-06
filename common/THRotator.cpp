@@ -6,6 +6,7 @@
 
 #include "THRotatorEditor.h"
 #include "THRotatorSystem.h"
+#include "THRotatorExports.h"
 #include "StringResource.h"
 #include "THRotatorLog.h"
 #include "resource.h"
