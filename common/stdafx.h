@@ -2,6 +2,8 @@
 
 #pragma once
 
+#define BOOST_NO_EXCEPTIONS
+
 #include <vector>
 #include <boost/filesystem.hpp>
 #include <tchar.h>

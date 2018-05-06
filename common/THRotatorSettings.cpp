@@ -16,6 +16,12 @@
 #include "THRotatorLog.h"
 #include "THRotatorSystem.h"
 
+// User-defined exception handler for boost to suppress linker error.
+void boost::throw_exception(std::exception const& e)
+{
+	throw e;
+}
+
 namespace
 {
 
