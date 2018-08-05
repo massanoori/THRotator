@@ -23,7 +23,7 @@ double ExtractTouhouSeriesNumber(const boost::filesystem::path& exeFilename)
 
 	WCHAR dummy[128];
 
-	int numFilledFields = swscanf_s(exeFilenameNoExt.c_str(), L"th%lf%s", &touhouIndex, dummy, _countof(dummy));
+	int numFilledFields = swscanf_s(exeFilenameNoExt.c_str(), L"th%lf%s", &touhouIndex, dummy, static_cast<std::uint32_t>(_countof(dummy)));
 	if (numFilledFields < 1)
 	{
 		return 0.0;
@@ -70,7 +70,7 @@ private:
 		std::vector<WCHAR> exePathRaw;
 		exePathRaw.resize(MAX_PATH);
 
-		while (GetModuleFileNameW(NULL, exePathRaw.data(), exePathRaw.size()) == ERROR_INSUFFICIENT_BUFFER)
+		while (GetModuleFileNameW(NULL, exePathRaw.data(), static_cast<DWORD>(exePathRaw.size())) == ERROR_INSUFFICIENT_BUFFER)
 		{
 			exePathRaw.resize(exePathRaw.size() * 2);
 		}

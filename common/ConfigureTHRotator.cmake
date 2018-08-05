@@ -24,7 +24,15 @@ endforeach ()
 # Don't generate manifest since muirct emits errors
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /MANIFEST:NO")
 
-add_library(${throtator_target} SHARED ${throtator_source_files} ${throtator_other_files} ${imgui_source_files} ${imgui_header_files} "${throtator_dll_def}")
+set(throtator_files ${throtator_source_files} ${throtator_other_files} ${imgui_source_files} ${imgui_header_files} "${throtator_dll_def}")
+
+if ("${CMAKE_GENERATOR}" MATCHES "Win64")
+	file(GLOB export_asm_file "../${throtator_target}/x64/*.asm")
+	source_group("Source Files\\x64" FILES ${export_asm_file})
+	set(throtator_files ${throtator_files} ${export_asm_file})
+endif()
+
+add_library(${throtator_target} SHARED ${throtator_files})
 
 set(target_file \"\$\(OutDir\)$<TARGET_FILE_NAME:${throtator_target}>\")
 

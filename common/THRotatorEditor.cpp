@@ -72,7 +72,7 @@ extern "C" __declspec(dllexport) std::uint32_t THRotator_GetVersionString(char* 
 	}
 	
 	strncpy_s(destination, bufferSize, THROTATOR_VERSION_STRING, _TRUNCATE);
-	return (std::min)(bufferSize, _countof(THROTATOR_VERSION_STRING));
+	return (std::min)(bufferSize, static_cast<std::uint32_t>(_countof(THROTATOR_VERSION_STRING)));
 }
 
 THRotatorEditorContext::THRotatorEditorContext(HWND hTouhouWin)
@@ -867,7 +867,7 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 
 		ImGui::ListBox(labelRectList.c_str(), &m_GuiContext.selectedRectIndex,
 			m_GuiContext.rectListBoxItemBuffer.data(),
-			m_GuiContext.rectListBoxItemBuffer.size(), 4);
+			static_cast<int>(m_GuiContext.rectListBoxItemBuffer.size()), 4);
 		ShowPreviousItemTooltip(tooltipRectList.c_str());
 	}
 

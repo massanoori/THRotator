@@ -12,6 +12,9 @@
 !*.lib
 !*.rc
 
+# Assembly
+!*.asm
+
 # Build
 !*.cmake
 

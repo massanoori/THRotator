@@ -6,11 +6,6 @@
 #include "THRotatorDirect3D.h"
 #include "THRotatorLog.h"
 
-namespace
-{
-
-HINSTANCE hOriginalDirect3DLibrary;
-
 enum ExportedFuncIndex
 {
 #ifdef TOUHOU_ON_D3D8
@@ -38,16 +33,21 @@ enum ExportedFuncIndex
 	NumExportedFuncIndices,
 };
 
-FARPROC exportedFunctions[NumExportedFuncIndices];
+extern "C" UINT_PTR exportedFunctions[NumExportedFuncIndices]{};
+
+namespace
+{
+
+HINSTANCE hOriginalDirect3DLibrary;
 
 void SetExportedFunction(UINT functionIndex, const char* functionName)
 {
-	exportedFunctions[functionIndex] = GetProcAddress(hOriginalDirect3DLibrary, functionName);
+	exportedFunctions[functionIndex] = reinterpret_cast<UINT_PTR>(GetProcAddress(hOriginalDirect3DLibrary, functionName));
 }
 
 FARPROC GetExportedFunction(UINT functionIndex)
 {
-	return exportedFunctions[functionIndex];
+	return reinterpret_cast<FARPROC>(exportedFunctions[functionIndex]);
 }
 
 } // anonymous-namespace
@@ -158,7 +158,14 @@ HRESULT CallOriginalDirect3DCreate9Ex(UINT version, IDirect3D9Ex** direct3d)
 
 #define EXPORTED_FUNCTION_HEADER_BASE(name, declspec_arg, return_type) extern "C" __declspec(declspec_arg) return_type WINAPI d_##name
 
+#ifdef _WIN64
+// On x64, definitions are in .asm
+#define DEFINE_EXPORTED_FUNCTION_PASSTHROUGH(name) EXPORTED_FUNCTION_HEADER_BASE(name, , void)();
+#else
+// On x86, call directly
 #define DEFINE_EXPORTED_FUNCTION_PASSTHROUGH(name) EXPORTED_FUNCTION_HEADER_BASE(name, naked, void)() { _asm { jmp exportedFunctions[4 * ExportedFuncIndex_##name] } }
+#endif
+
 #define EXPORTED_FUNCTION_HEADER(name, return_type) EXPORTED_FUNCTION_HEADER_BASE(name, dllexport, return_type)
 
 #ifdef TOUHOU_ON_D3D8

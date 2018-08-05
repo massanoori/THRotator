@@ -4,9 +4,11 @@ if (NOT "${CMAKE_GENERATOR}" MATCHES "Visual Studio .+")
 	message(FATAL_ERROR "The only supported compiler is MSVC.")
 endif ()
 
-if ("${CMAKE_GENERATOR}" MATCHES "(Win64|ARM)")
-	message(FATAL_ERROR "ARM and x64 are not supported.")
+if ("${CMAKE_GENERATOR}" MATCHES "ARM")
+	message(FATAL_ERROR "ARM is not supported.")
 endif()
+
+enable_language(C CXX ASM_MASM)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /EHsc")
@@ -33,8 +35,17 @@ set(BOOST_LIB_DIR "" CACHE PATH "boost library directory")
 set_property(GLOBAL PROPERTY USE_FOLDERS ON) 
 
 add_subdirectory(fmtlib)
-add_subdirectory(d3d9)
-add_subdirectory(d3d8)
+
+if ("${CMAKE_GENERATOR}" MATCHES "Win64")
+	set(throtator_dll_targets d3d9)
+else()
+	set(throtator_dll_targets d3d8 d3d9)
+endif()
+
+foreach (throtator_dll_target ${throtator_dll_targets})
+	add_subdirectory(${throtator_dll_target})
+endforeach ()
+
 add_subdirectory(localization_en-US)
 
 install(DIRECTORY sample-config DESTINATION .)
