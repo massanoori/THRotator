@@ -10,7 +10,7 @@
 #include <DirectXMath.h>
 
 #define STB_TRUETYPE_IMPLEMENTATION
-#include <stb_truetype.h>
+#include <imstb_truetype.h>
 
 using Microsoft::WRL::ComPtr;
 
