@@ -33,7 +33,7 @@ set(BOOST_INCLUDE_DIR "" CACHE PATH "boost header file directory")
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON) 
 
-add_subdirectory(fmtlib)
+add_subdirectory(externals/fmtlib)
 
 if ("${CMAKE_GENERATOR}" MATCHES "Win64")
 	set(throtator_dll_targets d3d9)

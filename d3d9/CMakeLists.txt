@@ -7,6 +7,6 @@ include(../common/ConfigureTHRotator.cmake)
 target_include_directories(d3d9
 	PRIVATE "../common/"
 	PRIVATE ${BOOST_INCLUDE_DIR}
-	PRIVATE "../nlohmann-json/include/"
-	PRIVATE "../fmtlib/include/"
-	PRIVATE "../imgui/")
+	PRIVATE "../externals/json-hpp/include/"
+	PRIVATE "../externals/fmtlib/include/"
+	PRIVATE "../externals/imgui/")

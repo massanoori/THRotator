@@ -49,9 +49,9 @@ _build/
 !.gitattributes
 
 # Submodules
-!/nlohmann-json
-!/fmtlib
-!/imgui
+!/externals/json-hpp
+!/externals/fmtlib
+!/externals/imgui
 
 # Appveyor
 !appveyor.yml

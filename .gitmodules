@@ -1,9 +1,9 @@
-[submodule "json_hpp"]
-	path = nlohmann-json
-	url = https://github.com/nlohmann/json.git
-[submodule "fmtlib"]
-	path = fmtlib
+[submodule "externals/fmtlib"]
+	path = externals/fmtlib
 	url = https://github.com/fmtlib/fmt.git
-[submodule "imgui"]
-	path = imgui
+[submodule "externals/imgui"]
+	path = externals/imgui
 	url = https://github.com/ocornut/imgui.git
+[submodule "externals/json-hpp"]
+	path = externals/json-hpp
+	url = https://github.com/nlohmann/json.git
