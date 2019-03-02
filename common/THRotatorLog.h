@@ -19,7 +19,7 @@ void OutputLogMessagef(LogSeverity severity, const std::string& format, ArgsType
 	{
 		OutputLogMessage(severity, fmt::format(format, std::forward<ArgsType>(args)...));
 	}
-	catch (const fmt::FormatError&)
+	catch (const fmt::format_error&)
 	{
 		OutputLogMessage(LogSeverity::Error, "Failed to parse log string.");
 		OutputLogMessage(LogSeverity::Error,

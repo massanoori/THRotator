@@ -9,7 +9,7 @@ target_include_directories(d3d8
 	PRIVATE "../common/"
 	PRIVATE ${BOOST_INCLUDE_DIR}
 	PRIVATE "../nlohmann-json/include/"
-	PRIVATE "../fmtlib/"
+	PRIVATE "../fmtlib/include/"
 	PRIVATE "../imgui/")
 
 target_compile_definitions(d3d8
