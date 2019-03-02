@@ -10,8 +10,6 @@ set_source_files_properties(${CMAKE_CURRENT_LIST_DIR}/stdafx.cpp
 	PROPERTIES
 	COMPILE_FLAGS "/Ycstdafx.h")
 
-link_directories(${BOOST_LIB_DIR})
-
 foreach (source_file ${throtator_source_files})
 	if ("${source_file}" MATCHES "${CMAKE_CURRENT_LIST_DIR}/stdafx.cpp")
 		continue()
@@ -33,6 +31,8 @@ if ("${CMAKE_GENERATOR}" MATCHES "Win64")
 endif()
 
 add_library(${throtator_target} SHARED ${throtator_files})
+
+set_property(TARGET ${throtator_target} PROPERTY CXX_STANDARD 17)
 
 set(target_file \"\$\(OutDir\)$<TARGET_FILE_NAME:${throtator_target}>\")
 

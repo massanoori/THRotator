@@ -56,7 +56,7 @@ bool InitializeExports()
 {
 	TCHAR systemDirectoryRaw[MAX_PATH];
 	GetSystemDirectory(systemDirectoryRaw, MAX_PATH);
-	boost::filesystem::path originalDirect3DLibraryPath(systemDirectoryRaw);
+	std::filesystem::path originalDirect3DLibraryPath(systemDirectoryRaw);
 
 #ifdef TOUHOU_ON_D3D8
 	originalDirect3DLibraryPath /= L"d3d8.dll";

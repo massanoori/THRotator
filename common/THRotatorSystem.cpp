@@ -10,7 +10,7 @@
 namespace
 {
 
-double ExtractTouhouSeriesNumber(const boost::filesystem::path& exeFilename)
+double ExtractTouhouSeriesNumber(const std::filesystem::path& exeFilename)
 {
 	auto exeFilenameNoExt = exeFilename.stem().generic_wstring();
 
@@ -40,8 +40,8 @@ double ExtractTouhouSeriesNumber(const boost::filesystem::path& exeFilename)
 class TouhouProcessStats
 {
 public:
-	boost::filesystem::path exeFilePath, exeFilename;
-	boost::filesystem::path playerDataDir;
+	std::filesystem::path exeFilePath, exeFilename;
+	std::filesystem::path playerDataDir;
 	double touhouSeriesNumber;
 
 	static const TouhouProcessStats& Get()
@@ -87,12 +87,12 @@ private:
 		// Since Touhou 12.5, player's data is saved to C:\Users\<username>\AppData\Roaming\ShanghaiAlice\<application>
 		if (touhouSeriesNumber > 12.3 && resultOfGetEnv == 0 && retSize > 0)
 		{
-			playerDataDir = boost::filesystem::path(iniSavePathRaw) / L"ShanghaiAlice" / exeFilename.stem();
-			boost::filesystem::create_directory(playerDataDir);
+			playerDataDir = std::filesystem::path(iniSavePathRaw) / L"ShanghaiAlice" / exeFilename.stem();
+			std::filesystem::create_directory(playerDataDir);
 		}
 		else
 		{
-			playerDataDir = boost::filesystem::current_path();
+			playerDataDir = std::filesystem::current_path();
 		}
 	}
 };
@@ -106,17 +106,17 @@ double GetTouhouSeriesNumber()
 	return TouhouProcessStats::Get().touhouSeriesNumber;
 }
 
-boost::filesystem::path GetTouhouExecutableFilePath()
+std::filesystem::path GetTouhouExecutableFilePath()
 {
 	return TouhouProcessStats::Get().exeFilePath;
 }
 
-boost::filesystem::path GetTouhouExecutableFilename()
+std::filesystem::path GetTouhouExecutableFilename()
 {
 	return TouhouProcessStats::Get().exeFilename;
 }
 
-boost::filesystem::path GetTouhouPlayerDataDirectory()
+std::filesystem::path GetTouhouPlayerDataDirectory()
 {
 	return TouhouProcessStats::Get().playerDataDir;
 }

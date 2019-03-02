@@ -24,17 +24,17 @@ double GetTouhouSeriesNumber();
 /**
  * Get full path of executable.
  */
-boost::filesystem::path GetTouhouExecutableFilePath();
+std::filesystem::path GetTouhouExecutableFilePath();
 
 /**
  * Get filename of executable. Directory is excluded.
  */
-boost::filesystem::path GetTouhouExecutableFilename();
+std::filesystem::path GetTouhouExecutableFilename();
 
 /**
  * Get directory where player's data is saved.
  */
-boost::filesystem::path GetTouhouPlayerDataDirectory();
+std::filesystem::path GetTouhouPlayerDataDirectory();
 
 /**
  * Returns true if current Touhou doesn't support native screen capture.

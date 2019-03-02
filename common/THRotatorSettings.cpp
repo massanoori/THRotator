@@ -47,12 +47,12 @@ std::string GenerateIniAppName()
 	return ConvertFromUnicodeToSjis(std::wstring(L"THRotator_") + GetTouhouExecutableFilename().stem().generic_wstring());
 }
 
-boost::filesystem::path CreateIniFilePath()
+std::filesystem::path CreateIniFilePath()
 {
 	return GetTouhouPlayerDataDirectory() / L"throt.ini";
 }
 
-boost::filesystem::path CreateJsonFilePath()
+std::filesystem::path CreateJsonFilePath()
 {
 	auto jsonPath = GetTouhouPlayerDataDirectory() / GetTouhouExecutableFilename();
 	jsonPath += L".throtator";

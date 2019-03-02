@@ -5,7 +5,7 @@
 #define NOMINMAX
 
 #include <vector>
-#include <boost/filesystem.hpp>
+#include <filesystem>
 #include <tchar.h>
 #include <cstdint>
 #include <string>

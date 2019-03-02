@@ -2694,7 +2694,7 @@ HRESULT THRotatorDirect3DDevice::InternalPresent(CONST RECT *pSourceRect,
 		D3DLOCKED_RECT lockedRect;
 		if (SUCCEEDED(m_pRenderTarget->LockRect(&lockedRect, nullptr, D3DLOCK_READONLY)))
 		{
-			namespace fs = boost::filesystem;
+			namespace fs = std::filesystem;
 
 			auto snapshotDirectory = GetTouhouPlayerDataDirectory() / L"snapshot";
 

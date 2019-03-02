@@ -7,11 +7,12 @@
 
 #include <sstream>
 #include <iostream>
+#include <fstream>
 
 namespace
 {
 
-boost::filesystem::path CreateTHRotatorLogFilePath()
+std::filesystem::path CreateTHRotatorLogFilePath()
 {
 	return GetTouhouPlayerDataDirectory() / L"throtator-log.txt";
 }
