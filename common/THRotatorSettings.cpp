@@ -2,8 +2,9 @@
 
 #include "stdafx.h"
 
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/ini_parser.hpp>
+#include <regex>
+#include <fstream>
+#include <unordered_map>
 
 #include <nlohmann/json.hpp>
 
@@ -15,19 +16,124 @@
 namespace
 {
 
-// Template for retrieving underlying type of enum of T if T is enum, otherwise T.
-template <typename T, typename IsEnum = typename std::is_enum<typename std::remove_reference<T>::type>::type>
-struct RawTypeOfEnum
+template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+void ReadIniValue(const std::unordered_map<std::string, std::string>& valueMap, const std::string& key, T& out)
 {
-	typedef typename std::remove_reference<T>::type type;
-};
+	try
+	{
+		const auto& value = valueMap.at(key);
+		try
+		{
+			std::size_t numConvertedChars = 0u;
+			out = static_cast<T>(std::stoi(value, &numConvertedChars));
 
-// Specialization for T of enum.
-template <typename T>
-struct RawTypeOfEnum<T, std::true_type>
+			if (numConvertedChars < value.size())
+			{
+				throw std::invalid_argument("");
+			}
+		}
+		catch (const std::invalid_argument&)
+		{
+			OutputLogMessagef(LogSeverity::Warning, "Value '{0}' at key '{1}' cannot be converted to integer, parameter is initialized with default value", value, key);
+		}
+	}
+	catch (const std::out_of_range&)
+	{
+		OutputLogMessagef(LogSeverity::Warning, "Key '{0}' not found, parameter is initialized with default value", key);
+	}
+}
+
+void ReadIniValue(const std::unordered_map<std::string, std::string>& valueMap, const std::string& key, std::string& out)
 {
-	typedef typename std::underlying_type<typename std::remove_reference<T>::type>::type type;
-};
+	try
+	{
+		const auto& value = valueMap.at(key);
+		out = value;
+	}
+	catch (const std::out_of_range&)
+	{
+		OutputLogMessagef(LogSeverity::Warning, "Key '{0}' not found, parameter is initialized with default value", key);
+	}
+}
+
+void ReadIniValue(const std::unordered_map<std::string, std::string>& valueMap, const std::string& key, RotationAngle& out)
+{
+	try
+	{
+		const auto& value = valueMap.at(key);
+		try
+		{
+			std::size_t numConvertedChars = 0u;
+			auto candidate = static_cast<RotationAngle>(std::stoi(value, &numConvertedChars));
+
+			if (numConvertedChars < value.size())
+			{
+				throw std::invalid_argument("");
+			}
+
+			if (candidate < Rotation_Num)
+			{
+				out = candidate;
+			}
+			else
+			{
+				OutputLogMessagef(LogSeverity::Warning, "Value '{0}' at key '{1}' is not in valid range [0, 3], parameter is initialized with default value", value, key);
+			}
+			
+		}
+		catch (const std::invalid_argument&)
+		{
+			OutputLogMessagef(LogSeverity::Warning, "Value '{0}' at key '{1}' cannot be converted to integer, parameter is initialized with default value", value, key);
+		}
+	}
+	catch (const std::out_of_range&)
+	{
+		OutputLogMessagef(LogSeverity::Warning, "Key '{0}' not found, parameter is initialized with default value", key);
+	}
+}
+
+void ReadIniValue(const std::unordered_map<std::string, std::string>& valueMap, const std::string& key, D3DTEXTUREFILTERTYPE& out)
+{
+	try
+	{
+		const auto& value = valueMap.at(key);
+		try
+		{
+			std::size_t numConvertedChars = 0u;
+			auto candidate = static_cast<D3DTEXTUREFILTERTYPE>(std::stoi(value, &numConvertedChars));
+
+			if (numConvertedChars < value.size())
+			{
+				throw std::invalid_argument("");
+			}
+
+			if (candidate == D3DTEXF_NONE || candidate == D3DTEXF_LINEAR)
+			{
+				out = candidate;
+			}
+			else
+			{
+				OutputLogMessagef(LogSeverity::Warning, "Value '{0}' at key '{1}' must be {2} or {3}, parameter is initialized with default value", value, key,
+					static_cast<std::underlying_type_t<D3DTEXTUREFILTERTYPE>>(D3DTEXF_NONE),
+					static_cast<std::underlying_type_t<D3DTEXTUREFILTERTYPE>>(D3DTEXF_LINEAR));
+			}
+		}
+		catch (const std::invalid_argument&)
+		{
+			OutputLogMessagef(LogSeverity::Warning, "Value '{0}' at key '{1}' cannot be converted to integer (given value: {1}), parameter is initialized with default value", value, key);
+		}
+	}
+	catch (const std::out_of_range&)
+	{
+		OutputLogMessagef(LogSeverity::Warning, "Key '{0}' not found, parameter is initialized with default value", key);
+	}
+}
+
+template <typename T>
+void ReadIndexedIniValue(const std::unordered_map<std::string, std::string>& valueMap, const std::string& key, uint32_t index, T& out)
+{
+	ReadIniValue(valueMap, fmt::format("{0}{1}", key, index), out);
+}
 
 template <typename T>
 void ReadJsonObjectValue(const nlohmann::json& j, const std::string& key, T& out)
@@ -260,90 +366,111 @@ void to_json(BasicJsonType& j, const THRotatorSetting& setting)
 
 void THRotatorSetting::LoadIniFormat(THRotatorSetting& outSetting)
 {
-	namespace proptree = boost::property_tree;
-
 	auto filename = CreateIniFilePath();
+
 	OutputLogMessagef(LogSeverity::Info, "Loading {0}", ConvertFromUnicodeToUtf8(filename.generic_wstring()));
 
-	proptree::basic_ptree<std::string, std::string> tree;
-	try
+	std::ifstream ifs;
+	ifs.open(filename.generic_wstring());
+
+	if (ifs.fail() || ifs.bad())
 	{
-		proptree::read_ini(filename.generic_string(), tree);
-	}
-	catch (const proptree::ini_parser_error& e)
-	{
-		OutputLogMessagef(LogSeverity::Error, "Ini parse error ({0})", e.message());
-		return;
+		OutputLogMessagef(LogSeverity::Error, "Failed to load {0}", ConvertFromUnicodeToUtf8(filename.generic_wstring()));
+		throw std::ios::failure("");
 	}
 
-	auto appName = GenerateIniAppName(); // Referenced by READ_INI_PARAM macro
+	static std::regex sectionPattern("\\s*\\[\\s*(.*)\\s*\\]\\s*");
+	static std::regex keyValuePattern("\\s*(\\w+)\\s*=\\s*(.*)\\s*");
 
-#define READ_INI_PARAM(destination, name) \
-	do { \
-		auto rawValue = tree.get_optional<RawTypeOfEnum<decltype(destination)>::type>(appName + "." + name); \
-		if (rawValue) (destination) = static_cast<decltype(destination)>(*rawValue); \
-	} while(false)
+	auto throtatorSectionName = GenerateIniAppName(); // Referenced by READ_INI_PARAM macro
 
-#define READ_INDEXED_INI_PARAM(destination, name, index) \
-	do { \
-		std::ostringstream ss(std::ios::ate); \
-		ss.str(name); \
-		ss << (index); \
-		READ_INI_PARAM(destination, ss.str()); \
-	} while(false)
+	std::string line;
+	bool bInTHRotatorSection = false;
+	std::unordered_map<std::string, std::string> valueMap;
+	while (std::getline(ifs, line))
+	{
+		if (!bInTHRotatorSection)
+		{
+			std::smatch match;
+			if (!std::regex_match(line, match, sectionPattern))
+			{
+				continue;
+			}
 
-	READ_INI_PARAM(outSetting.judgeThreshold, "JC");
-	READ_INI_PARAM(outSetting.mainScreenTopLeft.x, "PL");
-	READ_INI_PARAM(outSetting.mainScreenTopLeft.y, "PT");
-	READ_INI_PARAM(outSetting.mainScreenSize.cx, "PW");
-	READ_INI_PARAM(outSetting.mainScreenSize.cy, "PH");
-	READ_INI_PARAM(outSetting.yOffset, "YOffset");
+			const auto& sectionName = match.str(1);
+
+			if (sectionName == throtatorSectionName)
+			{
+				bInTHRotatorSection = true;
+			}
+
+			continue;
+		}
+
+		std::smatch match;
+		if (!std::regex_match(line, match, keyValuePattern))
+		{
+			if (std::regex_match(line, match, sectionPattern))
+			{
+				break;
+			}
+		}
+
+		const auto& key = match.str(1);
+		const auto& value = match.str(2);
+
+		valueMap[key] = value;
+	}
+
+	ReadIniValue(valueMap, "JC", outSetting.judgeThreshold);
+	ReadIniValue(valueMap, "PL", outSetting.mainScreenTopLeft.x);
+	ReadIniValue(valueMap, "PT", outSetting.mainScreenTopLeft.y);
+	ReadIniValue(valueMap, "PW", outSetting.mainScreenSize.cx);
+	ReadIniValue(valueMap, "PH", outSetting.mainScreenSize.cy);
+	ReadIniValue(valueMap, "YOffset", outSetting.yOffset);
 
 	BOOL bVisibleTemp = FALSE;
-	READ_INI_PARAM(bVisibleTemp, "Visible");
+	ReadIniValue(valueMap, "Visible", bVisibleTemp);
 	outSetting.bVisible = bVisibleTemp != FALSE;
 
 	BOOL bVerticallyLongWindowTemp = FALSE;
-	READ_INI_PARAM(bVerticallyLongWindowTemp, "PivRot");
+	ReadIniValue(valueMap, "PivRot", bVerticallyLongWindowTemp);
 	outSetting.bVerticallyLongWindow = bVerticallyLongWindowTemp != FALSE;
 
-	READ_INI_PARAM(outSetting.rotationAngle, "Rot");
-	READ_INI_PARAM(outSetting.filterType, "Filter");
+	ReadIniValue(valueMap, "Rot", outSetting.rotationAngle);
+	ReadIniValue(valueMap, "Filter", outSetting.filterType);
 
 	outSetting.rectTransfers.clear();
 
 	BOOL bHasNext = FALSE;
-	READ_INI_PARAM(bHasNext, "ORHas0");
+	ReadIniValue(valueMap, "ORHas0", bHasNext);
 	int rectIndex = 0;
 	while (bHasNext)
 	{
 		RectTransferData rectData;
 
 		std::string rectName;
-		READ_INDEXED_INI_PARAM(rectName, "Name", rectIndex);
+		ReadIndexedIniValue(valueMap, "Name", rectIndex, rectName);
 
 		rectData.name = ConvertFromSjisToUtf8(rectName);
 
-		READ_INDEXED_INI_PARAM(rectData.sourcePosition.x, "OSL", rectIndex);
-		READ_INDEXED_INI_PARAM(rectData.sourcePosition.y, "OST", rectIndex);
-		READ_INDEXED_INI_PARAM(rectData.sourceSize.cx, "OSW", rectIndex);
-		READ_INDEXED_INI_PARAM(rectData.sourceSize.cy, "OSH", rectIndex);
+		ReadIndexedIniValue(valueMap, "OSL", rectIndex, rectData.sourcePosition.x);
+		ReadIndexedIniValue(valueMap, "OST", rectIndex, rectData.sourcePosition.y);
+		ReadIndexedIniValue(valueMap, "OSW", rectIndex, rectData.sourceSize.cx);
+		ReadIndexedIniValue(valueMap, "OSH", rectIndex, rectData.sourceSize.cy);
 
-		READ_INDEXED_INI_PARAM(rectData.destPosition.x, "ODL", rectIndex);
-		READ_INDEXED_INI_PARAM(rectData.destPosition.y, "ODT", rectIndex);
-		READ_INDEXED_INI_PARAM(rectData.destSize.cx, "ODW", rectIndex);
-		READ_INDEXED_INI_PARAM(rectData.destSize.cy, "ODH", rectIndex);
+		ReadIndexedIniValue(valueMap, "ODL", rectIndex, rectData.destPosition.x);
+		ReadIndexedIniValue(valueMap, "ODT", rectIndex, rectData.destPosition.y);
+		ReadIndexedIniValue(valueMap, "ODW", rectIndex, rectData.destSize.cx);
+		ReadIndexedIniValue(valueMap, "ODH", rectIndex, rectData.destSize.cy);
 
-		READ_INDEXED_INI_PARAM(rectData.rotation, "OR", rectIndex);
+		ReadIndexedIniValue(valueMap, "OR", rectIndex, rectData.rotation);
 
 		outSetting.rectTransfers.push_back(rectData);
 		rectIndex++;
 
-		READ_INDEXED_INI_PARAM(bHasNext, "ORHas", rectIndex);
+		ReadIndexedIniValue(valueMap, "ORHas", rectIndex, bHasNext);
 	}
-
-#undef READ_INDEXED_INI_PARAM
-#undef READ_INI_PARAM
 }
 
 void THRotatorSetting::LoadJsonFormat(THRotatorSetting& outSetting,

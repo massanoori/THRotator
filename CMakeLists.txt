@@ -29,8 +29,6 @@ if (USE_UNICODE)
 	add_definitions(-D_UNICODE -DUNICODE)
 endif ()
 
-set(BOOST_INCLUDE_DIR "" CACHE PATH "boost header file directory")
-
 set_property(GLOBAL PROPERTY USE_FOLDERS ON) 
 
 add_subdirectory(externals/fmtlib)
