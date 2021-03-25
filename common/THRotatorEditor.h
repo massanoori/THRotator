@@ -62,6 +62,8 @@ public:
 		return m_bHUDRearrangeForced;
 	}
 
+	bool IsBorderlessWindow() const;
+
 	void RenderAndUpdateEditor(bool bFullscreen);
 
 	/**

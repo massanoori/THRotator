@@ -510,6 +510,21 @@ bool DragInt2_SIZE(const char* label, SIZE& inoutSize,
 	return bRet;
 }
 
+bool THRotatorEditorContext::IsBorderlessWindow() const
+{
+	RECT rcWindow;
+	GetWindowRect(m_hTouhouWin, &rcWindow);
+
+	if (rcWindow.right == GetSystemMetrics(SM_CXSCREEN) && rcWindow.bottom == GetSystemMetrics(SM_CYSCREEN) &&
+		rcWindow.left == 0 && rcWindow.top == 0)
+	{
+		// Window is borderless
+		return true;
+	}
+
+	return false;
+}
+
 void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 {
 	auto errorMessagePtr = GetErrorMessage();
@@ -949,6 +964,12 @@ void THRotatorEditorContext::UpdateWindowResolution(int requestedWidth, int requ
 	RECT rcClient, rcWindow;
 	GetClientRect(m_hTouhouWin, &rcClient);
 	GetWindowRect(m_hTouhouWin, &rcWindow);
+
+	if (IsBorderlessWindow())
+	{
+		// Window is borderless
+		return;
+	}
 
 	// Detect the application modified the window size.
 	// If detected, update original client size.

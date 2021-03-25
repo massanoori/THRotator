@@ -404,7 +404,7 @@ public:
 #endif
 
 	HRESULT WINAPI EndScene(VOID) override;
-	void EndSceneInternal();
+	void EndSceneInternal(const D3DVIEWPORT9& sourceViewport);
 
 	HRESULT WINAPI Reset(D3DPRESENT_PARAMETERS* pPresentationParameters) override;
 
@@ -2367,12 +2367,23 @@ HRESULT WINAPI THRotatorDirect3DDevice::SetViewport(
 
 HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 {
+	D3DVIEWPORT9 sourceViewport;
+	m_pd3dDev->GetViewport(&sourceViewport);
+
 #ifdef TOUHOU_ON_D3D8
 	m_pd3dDev->SetRenderTarget(m_pBackBuffer.Get(), nullptr);
 #else
 	m_pd3dDev->SetRenderTarget(0, m_pBackBuffer.Get());
 	m_pd3dDev->SetDepthStencilSurface(nullptr);
 #endif
+
+	D3DVIEWPORT9 destinationViewport = sourceViewport;
+	destinationViewport.X = m_d3dpp.BackBufferWidth * sourceViewport.X / m_requestedWidth;
+	destinationViewport.Y = m_d3dpp.BackBufferHeight * sourceViewport.Y / m_requestedHeight;
+	destinationViewport.Width = m_d3dpp.BackBufferWidth * sourceViewport.Width / m_requestedWidth;
+	destinationViewport.Height = m_d3dpp.BackBufferHeight * sourceViewport.Height / m_requestedHeight;
+
+	m_pd3dDev->SetViewport(&destinationViewport);
 
 	{
 		// Copying surface from dummy target to texture as surface
@@ -2435,14 +2446,14 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 #endif
 
 		auto matrixProjection = DirectX::XMMatrixOrthographicOffCenterLH(
-			0.0f, static_cast<float>(m_d3dpp.BackBufferWidth),
-			static_cast<float>(m_d3dpp.BackBufferHeight), 0.0f,
+			0.0f, static_cast<float>(destinationViewport.Width),
+			static_cast<float>(destinationViewport.Height), 0.0f,
 			0.0f, 1.0f);
 
 		auto matrixProjectionD3D = ToD3DMATRIX(matrixProjection);
 		m_pd3dDev->SetTransform(D3DTS_PROJECTION, &matrixProjectionD3D);
 
-		EndSceneInternal();
+		EndSceneInternal(sourceViewport);
 	}
 
 	m_pEditorContext->RenderAndUpdateEditor(!m_d3dpp.Windowed);
@@ -2467,39 +2478,42 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 	return m_pd3dDev->EndScene();
 }
 
-void THRotatorDirect3DDevice::EndSceneInternal()
+void THRotatorDirect3DDevice::EndSceneInternal(const D3DVIEWPORT9& sourceViewport)
 {
+	D3DVIEWPORT9 destinationViewport;
+	m_pd3dDev->GetViewport(&destinationViewport);
+
 	auto rotationAngle = m_pEditorContext->GetRotationAngle();
 
 	bool aspectLessThanRequested;
 	if (rotationAngle % 2 == 0)
 	{
-		aspectLessThanRequested = m_d3dpp.BackBufferWidth * m_requestedHeight < m_d3dpp.BackBufferHeight * m_requestedWidth;
+		aspectLessThanRequested = destinationViewport.Width * sourceViewport.Height < destinationViewport.Height * sourceViewport.Width;
 	}
 	else
 	{
-		aspectLessThanRequested = m_d3dpp.BackBufferHeight * m_requestedHeight < m_d3dpp.BackBufferWidth * m_requestedWidth;
+		aspectLessThanRequested = destinationViewport.Height * sourceViewport.Height < destinationViewport.Width * sourceViewport.Width;
 	}
 
 	// To show enemy's mark, extend screen size.
 
 	POINT mainScreenTopLeft = m_pEditorContext->GetMainScreenTopLeft();
 	SIZE mainScreenSize = m_pEditorContext->GetMainScreenSize();
-	if (mainScreenSize.cx * m_requestedWidth < mainScreenSize.cy * m_requestedHeight)
+	if (mainScreenSize.cx * sourceViewport.Width < mainScreenSize.cy * sourceViewport.Height)
 	{
-		mainScreenTopLeft.x -= (mainScreenSize.cy * m_requestedHeight / m_requestedWidth - mainScreenSize.cx) / 2;
-		mainScreenSize.cx = mainScreenSize.cy * m_requestedHeight / m_requestedWidth;
+		mainScreenTopLeft.x -= (mainScreenSize.cy * sourceViewport.Height / sourceViewport.Width - mainScreenSize.cx) / 2;
+		mainScreenSize.cx = mainScreenSize.cy * sourceViewport.Height / sourceViewport.Width;
 	}
-	else if (mainScreenSize.cx * m_requestedWidth > mainScreenSize.cy * m_requestedHeight)
+	else if (mainScreenSize.cx * sourceViewport.Width > mainScreenSize.cy * sourceViewport.Height)
 	{
-		mainScreenTopLeft.y -= (mainScreenSize.cx * m_requestedWidth / m_requestedHeight - mainScreenSize.cy) / 2;
-		mainScreenSize.cy = mainScreenSize.cx * m_requestedWidth / m_requestedHeight;
+		mainScreenTopLeft.y -= (mainScreenSize.cx * sourceViewport.Width / sourceViewport.Height - mainScreenSize.cy) / 2;
+		mainScreenSize.cy = mainScreenSize.cx * sourceViewport.Width / sourceViewport.Height;
 	}
 
 	mainScreenTopLeft.y -= m_pEditorContext->GetYOffset();
 
-	UINT correctedBaseScreenWidth = (std::max)(BASE_SCREEN_WIDTH, BASE_SCREEN_HEIGHT * m_requestedWidth / m_requestedHeight);
-	UINT correctedBaseScreenHeight = (std::max)(BASE_SCREEN_HEIGHT, BASE_SCREEN_WIDTH * m_requestedHeight / m_requestedWidth);
+	UINT correctedBaseScreenWidth = std::max<UINT>(BASE_SCREEN_WIDTH, BASE_SCREEN_HEIGHT * sourceViewport.Width / sourceViewport.Height);
+	UINT correctedBaseScreenHeight = std::max<UINT>(BASE_SCREEN_HEIGHT, BASE_SCREEN_WIDTH * sourceViewport.Height / sourceViewport.Width);
 
 	bool bNeedsRearrangeHUD = m_pEditorContext->IsHUDRearrangeForced()
 		|| aspectLessThanRequested && m_pEditorContext->IsViewportSetCountOverThreshold();
@@ -2530,7 +2544,7 @@ void THRotatorDirect3DDevice::EndSceneInternal()
 	XMMATRIX preRectTransform;
 	{
 		// step 1
-		XMMATRIX baseSrcScale = XMMatrixScaling(correctedBaseScreenWidth / static_cast<float>(m_requestedWidth), correctedBaseScreenHeight / static_cast<float>(m_requestedHeight), 1.0f);
+		XMMATRIX baseSrcScale = XMMatrixScaling(correctedBaseScreenWidth / static_cast<float>(sourceViewport.Width), correctedBaseScreenHeight / static_cast<float>(sourceViewport.Height), 1.0f);
 
 		preRectTransform = baseSrcScale;
 	}
@@ -2538,18 +2552,18 @@ void THRotatorDirect3DDevice::EndSceneInternal()
 	XMMATRIX postRectTransform;
 	{
 		float baseDestScaleScalar = rotationAngle % 2 == 0 ?
-			(std::min)(m_d3dpp.BackBufferWidth / static_cast<float>(baseDestRectWidth), m_d3dpp.BackBufferHeight / static_cast<float>(baseDestRectHeight)) :
-			(std::min)(m_d3dpp.BackBufferWidth / static_cast<float>(baseDestRectHeight), m_d3dpp.BackBufferHeight / static_cast<float>(baseDestRectWidth));
+			(std::min)(destinationViewport.Width / static_cast<float>(baseDestRectWidth), destinationViewport.Height / static_cast<float>(baseDestRectHeight)) :
+			(std::min)(destinationViewport.Width / static_cast<float>(baseDestRectHeight), destinationViewport.Height / static_cast<float>(baseDestRectWidth));
 		XMMATRIX baseDestScale = XMMatrixScaling(baseDestScaleScalar, baseDestScaleScalar, 1.0f);
 
 		XMMATRIX rotation = XMMatrixRotationZ(RotationAngleToRadian(rotationAngle));
 
-		XMMATRIX baseDestTranslation = XMMatrixTranslation(0.5f * m_d3dpp.BackBufferWidth, 0.5f * m_d3dpp.BackBufferHeight, 0.0f);
+		XMMATRIX baseDestTranslation = XMMatrixTranslation(0.5f * destinationViewport.Width, 0.5f * destinationViewport.Height, 0.0f);
 
 		postRectTransform = baseDestScale * rotation * baseDestTranslation;
 	}
 
-	auto rectDrawer = [this, &preRectTransform, &postRectTransform, correctedBaseScreenWidth, correctedBaseScreenHeight](
+	auto rectDrawer = [this, &preRectTransform, &postRectTransform, &sourceViewport, correctedBaseScreenWidth, correctedBaseScreenHeight](
 		const POINT& srcPos,
 		const SIZE& srcSize,
 		const POINT& destPos,
@@ -2583,8 +2597,8 @@ void THRotatorDirect3DDevice::EndSceneInternal()
 			* postRectTransform;
 
 		RECT scaledSourceRect;
-		float scaleFactorForSourceX = static_cast<float>(m_requestedWidth) / correctedBaseScreenWidth;
-		float scaleFactorForSourceY = static_cast<float>(m_requestedHeight) / correctedBaseScreenHeight;
+		float scaleFactorForSourceX = static_cast<float>(sourceViewport.Width) / correctedBaseScreenWidth;
+		float scaleFactorForSourceY = static_cast<float>(sourceViewport.Height) / correctedBaseScreenHeight;
 		scaledSourceRect.left = static_cast<LONG>(srcPos.x * scaleFactorForSourceX);
 		scaledSourceRect.right = static_cast<LONG>((srcPos.x + srcSize.cx) * scaleFactorForSourceX);
 		scaledSourceRect.top = static_cast<LONG>(srcPos.y * scaleFactorForSourceY);
@@ -2598,8 +2612,8 @@ void THRotatorDirect3DDevice::EndSceneInternal()
 
 		XMFLOAT4X4A textureMatrixScale;
 		XMStoreFloat4x4A(&textureMatrixScale, XMMatrixScaling(srcSize.cx * scaleFactorForSourceX / m_requestedWidth, srcSize.cy * scaleFactorForSourceY / m_requestedHeight, 1.0f));
-		textureMatrixScale.m[2][0] = srcPos.x * scaleFactorForSourceX / m_requestedWidth;
-		textureMatrixScale.m[2][1] = srcPos.y * scaleFactorForSourceY / m_requestedHeight;
+		textureMatrixScale.m[2][0] = (srcPos.x * scaleFactorForSourceX + sourceViewport.X) / m_requestedWidth;
+		textureMatrixScale.m[2][1] = (srcPos.y * scaleFactorForSourceY + sourceViewport.Y) / m_requestedHeight;
 
 		m_pd3dDev->SetTransform(D3DTS_TEXTURE0, reinterpret_cast<const D3DMATRIX*>(&textureMatrixScale));
 
