@@ -527,6 +527,21 @@ bool THRotatorEditorContext::IsBorderlessWindow() const
 
 void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 {
+	struct ImGuiRenderOnReturn
+	{
+		ImGuiRenderOnReturn() : cancel(false) {}
+		~ImGuiRenderOnReturn()
+		{
+			if (!cancel)
+			{
+				ImGui::Render();
+				THRotatorImGui_RenderDrawLists(ImGui::GetDrawData());
+			}
+		}
+		bool cancel;
+	};
+	ImGuiRenderOnReturn renderOnReturn;
+
 	auto errorMessagePtr = GetErrorMessage();
 
 	// when windowed: cursor from OS
@@ -561,19 +576,16 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 
 	if (!m_bEditorShown)
 	{
-		if (errorMessagePtr)
-		{
-			ImGui::Render();
-		}
+		renderOnReturn.cancel = errorMessagePtr == nullptr;
 		return;
 	}
 
 	const ImVec2 initialTHRotatorWindowSize(320.0f, 0.0f);
-	if (!ImGui::Begin("THRotator", nullptr, initialTHRotatorWindowSize))
+	ImGui::SetNextWindowSize(initialTHRotatorWindowSize, ImGuiCond_FirstUseEver);
+	if (!ImGui::Begin("THRotator", nullptr))
 	{
 		// Early out if the window is collapsed, as an optimization.
 		ImGui::End();
-		ImGui::Render();
 		return;
 	}
 
@@ -949,8 +961,6 @@ void THRotatorEditorContext::RenderAndUpdateEditor(bool bFullscreen)
 	}
 
 	ImGui::End();
-
-	ImGui::Render();
 
 	if (bPreviousVerticalWindow != m_bVerticallyLongWindow)
 	{

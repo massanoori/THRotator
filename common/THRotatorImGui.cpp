@@ -510,6 +510,8 @@ void THRotatorImGui_UpdateAndApplyFixedStates(THRotatorImGui_UserData* pUserData
 	rawDevice->EndStateBlock(&pUserData->stateBlock);
 }
 
+}
+
 void THRotatorImGui_RenderDrawLists(ImDrawData* drawData)
 {
 	ImGuiIO& io = ImGui::GetIO();
@@ -689,6 +691,9 @@ void THRotatorImGui_RenderDrawLists(ImDrawData* drawData)
 #endif
 }
 
+void THRotatorImGui_EndFrame()
+{
+	ImGui::EndFrame();
 }
 
 bool THRotatorImGui_Initialize(HWND hWnd, THRotatorImGui_D3DDeviceInterface* device)
@@ -717,7 +722,6 @@ bool THRotatorImGui_Initialize(HWND hWnd, THRotatorImGui_D3DDeviceInterface* dev
 	io.KeyMap[ImGuiKey_Y] = 'Y';
 	io.KeyMap[ImGuiKey_Z] = 'Z';
 
-	io.RenderDrawListsFn = THRotatorImGui_RenderDrawLists;
 	io.ImeWindowHandle = hWnd;
 
 	const std::vector<std::pair<std::wstring, std::wstring>> preferredFonts
@@ -838,11 +842,6 @@ void THRotatorImGui_NewFrame()
 
 	// Start the frame
 	ImGui::NewFrame();
-}
-
-void THRotatorImGui_EndFrame()
-{
-	ImGui::EndFrame();
 }
 
 void THRotatorImGui_InvalidateDeviceObjects()

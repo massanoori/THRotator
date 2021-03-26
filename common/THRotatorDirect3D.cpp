@@ -22,6 +22,12 @@
 
 #endif
 
+#ifdef TOUHOU_ON_D3D8
+using D3DViewportType = D3DVIEWPORT8;
+#else
+using D3DViewportType = D3DVIEWPORT9;
+#endif
+
 using Microsoft::WRL::ComPtr;
 
 static float RotationAngleToRadian(RotationAngle rotation)
@@ -404,7 +410,7 @@ public:
 #endif
 
 	HRESULT WINAPI EndScene(VOID) override;
-	void EndSceneInternal(const D3DVIEWPORT9& sourceViewport);
+	void EndSceneInternal(const D3DViewportType& sourceViewport);
 
 	HRESULT WINAPI Reset(D3DPRESENT_PARAMETERS* pPresentationParameters) override;
 
@@ -2367,7 +2373,7 @@ HRESULT WINAPI THRotatorDirect3DDevice::SetViewport(
 
 HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 {
-	D3DVIEWPORT9 sourceViewport;
+	D3DViewportType sourceViewport;
 	m_pd3dDev->GetViewport(&sourceViewport);
 
 #ifdef TOUHOU_ON_D3D8
@@ -2377,7 +2383,7 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 	m_pd3dDev->SetDepthStencilSurface(nullptr);
 #endif
 
-	D3DVIEWPORT9 destinationViewport = sourceViewport;
+	D3DViewportType destinationViewport = sourceViewport;
 	destinationViewport.X = m_d3dpp.BackBufferWidth * sourceViewport.X / m_requestedWidth;
 	destinationViewport.Y = m_d3dpp.BackBufferHeight * sourceViewport.Y / m_requestedHeight;
 	destinationViewport.Width = m_d3dpp.BackBufferWidth * sourceViewport.Width / m_requestedWidth;
@@ -2478,9 +2484,9 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 	return m_pd3dDev->EndScene();
 }
 
-void THRotatorDirect3DDevice::EndSceneInternal(const D3DVIEWPORT9& sourceViewport)
+void THRotatorDirect3DDevice::EndSceneInternal(const D3DViewportType& sourceViewport)
 {
-	D3DVIEWPORT9 destinationViewport;
+	D3DViewportType destinationViewport;
 	m_pd3dDev->GetViewport(&destinationViewport);
 
 	auto rotationAngle = m_pEditorContext->GetRotationAngle();
