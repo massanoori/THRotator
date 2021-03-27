@@ -3,6 +3,7 @@
 #include "stdafx.h"
 
 #include <DirectXMath.h>
+#include <optional>
 
 #include "THRotatorDirect3D.h"
 #include "THRotatorEditor.h"
@@ -348,6 +349,7 @@ private:
 	D3DPRESENT_PARAMETERS m_d3dpp;
 	UINT m_requestedWidth, m_requestedHeight;
 	D3DDEVTYPE m_deviceType;
+	std::optional<D3DViewportType> m_boundingViewport;
 
 
 	/****************************************
@@ -2367,14 +2369,40 @@ HRESULT WINAPI THRotatorDirect3DDevice::SetViewport(
 	CONST D3DVIEWPORT9* pViewport)
 #endif
 {
+	if (pViewport == nullptr)
+	{
+		return E_INVALIDARG;
+	}
+
 	m_pEditorContext->AddViewportSetCount();
+	if (!m_boundingViewport)
+	{
+		m_boundingViewport = *pViewport;
+	}
+	else
+	{
+		auto& boundingViewport = *m_boundingViewport;
+
+		if (boundingViewport.Width <= pViewport->Width && boundingViewport.Height <= pViewport->Height)
+		{
+			boundingViewport = *pViewport;
+		}
+	}
 	return m_pd3dDev->SetViewport(pViewport);
 }
 
 HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 {
 	D3DViewportType sourceViewport;
-	m_pd3dDev->GetViewport(&sourceViewport);
+	if (m_boundingViewport)
+	{
+		sourceViewport = *m_boundingViewport;
+		m_boundingViewport.reset();
+	}
+	else
+	{
+		m_pd3dDev->GetViewport(&sourceViewport);
+	}
 
 #ifdef TOUHOU_ON_D3D8
 	m_pd3dDev->SetRenderTarget(m_pBackBuffer.Get(), nullptr);
