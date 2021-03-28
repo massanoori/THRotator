@@ -1,5 +1,5 @@
 version: '{build}'
-image: Visual Studio 2017
+image: Visual Studio 2019
 configuration: Release
 platform: x86
 before_build:
@@ -13,7 +13,7 @@ before_build:
     cd build
 
 
-    set THR_CMAKE_CONFIG=-DCMAKE_INSTALL_PREFIX=../install-2017 -G "Visual Studio 15 2017"
+    set THR_CMAKE_CONFIG=-DCMAKE_INSTALL_PREFIX=../install-2019 -G "Visual Studio 16 2019"
 
 
     cmake ../ %THR_CMAKE_BOOST_CONFIG% %THR_CMAKE_CONFIG%
@@ -22,5 +22,5 @@ build:
   parallel: true
   verbosity: minimal
 artifacts:
-- path: .\install-2017
+- path: .\install-2019
   name: THRotator-${APPVEYOR_REPO_COMMIT}

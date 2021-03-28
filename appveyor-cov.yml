@@ -1,5 +1,5 @@
 version: '{build}'
-image: Visual Studio 2017
+image: Visual Studio 2019
 configuration: Debug
 platform: x86
 build_script:
@@ -13,10 +13,10 @@ build_script:
     cd build
 
 
-    set THR_CMAKE_CONFIG=-DCMAKE_INSTALL_PREFIX=../install-2017 -G "Visual Studio 15 2017" -DCMAKE_BUILD_TYPE=Debug
+    set THR_CMAKE_CONFIG=-DCMAKE_INSTALL_PREFIX=../install-2019 -G "Visual Studio 16 2019" -DCMAKE_BUILD_TYPE=Debug
 
 
-    "C:/Program Files (x86)/Microsoft Visual Studio/2017/Community/VC/Auxiliary/Build/vcvars32.bat"
+    "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Auxiliary/Build/vcvars32.bat"
 
 
     cmake ../ %THR_CMAKE_BOOST_CONFIG% %THR_CMAKE_CONFIG%
