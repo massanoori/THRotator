@@ -12,7 +12,7 @@ using THRotatorImGui_D3DDeviceInterface = IDirect3DDevice9;
 
 bool THRotatorImGui_Initialize(HWND hWnd, THRotatorImGui_D3DDeviceInterface* device);
 void THRotatorImGui_Shutdown();
-void THRotatorImGui_NewFrame();
+void THRotatorImGui_NewFrame(float cursorPositionScaleX, float cursorPositionScaleY);
 void THRotatorImGui_RenderDrawLists(ImDrawData* drawData);
 void THRotatorImGui_EndFrame();
 

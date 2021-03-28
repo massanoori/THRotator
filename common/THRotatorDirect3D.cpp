@@ -2411,6 +2411,17 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 	m_pd3dDev->SetDepthStencilSurface(nullptr);
 #endif
 
+#ifdef _DEBUG
+	// Shows only GUI of THRotator.
+	// Useful when capturing screen for user's manual without any material from orignal Touhou.
+	static bool bGuiOnly = false;
+#else
+	constexpr bool bGuiOnly = false;
+#endif
+	DWORD colorForClear = bGuiOnly ? 0x00BFBFBF : 0x00000000;
+
+	m_pd3dDev->Clear(0, NULL, D3DCLEAR_TARGET, colorForClear, 1.f, 0);
+
 	D3DViewportType destinationViewport = sourceViewport;
 	destinationViewport.X = m_d3dpp.BackBufferWidth * sourceViewport.X / m_requestedWidth;
 	destinationViewport.Y = m_d3dpp.BackBufferHeight * sourceViewport.Y / m_requestedHeight;
@@ -2436,27 +2447,6 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 		m_pd3dDev->StretchRect(m_pRenderTarget.Get(), nullptr, m_pTexSurface.Get(), nullptr, D3DTEXF_NONE);
 #endif
 	}
-
-	THRotatorImGui_NewFrame();
-
-#ifdef _DEBUG
-	// Shows only GUI of THRotator.
-	// Useful when capturing screen for user's manual without any material from orignal Touhou.
-	static bool bGuiOnly = false;
-	if (ImGui::Begin("THRotator GUI only"))
-	{
-		ImGui::Checkbox("GUI only", &bGuiOnly);
-	}
-
-	ImGui::End();
-
-	DWORD colorForClear = bGuiOnly ? 0x00BFBFBF : 0x00000000;
-#else
-	const bool bGuiOnly = false;
-	const DWORD colorForClear = 0x00000000;
-#endif
-
-	m_pd3dDev->Clear(0, NULL, D3DCLEAR_TARGET, colorForClear, 1.f, 0);
 
 #ifdef TOUHOU_ON_D3D8
 	DWORD stateBlock;
@@ -2489,6 +2479,21 @@ HRESULT WINAPI THRotatorDirect3DDevice::EndScene(VOID)
 
 		EndSceneInternal(sourceViewport);
 	}
+
+	RECT clientRect;
+	GetClientRect(m_pEditorContext->GetTouhouWindow(), &clientRect);
+	THRotatorImGui_NewFrame(static_cast<float>(m_d3dpp.BackBufferWidth) / clientRect.right, static_cast<float>(m_d3dpp.BackBufferHeight) / clientRect.bottom);
+
+#ifdef _DEBUG
+	// Shows only GUI of THRotator.
+	// Useful when capturing screen for user's manual without any material from orignal Touhou.
+	if (ImGui::Begin("THRotator GUI only"))
+	{
+		ImGui::Checkbox("GUI only", &bGuiOnly);
+	}
+
+	ImGui::End();
+#endif
 
 	m_pEditorContext->RenderAndUpdateEditor(!m_d3dpp.Windowed);
 

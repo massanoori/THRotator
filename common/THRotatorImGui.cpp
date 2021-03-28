@@ -27,6 +27,8 @@ struct THRotatorImGui_UserData
 	LARGE_INTEGER previousTime;
 	LARGE_INTEGER ticksPerSecond;
 	std::int32_t vertexBufferCapacity, indexBufferCapacity;
+	float cursorPositionScaleX;
+	float cursorPositionScaleY;
 
 #ifdef TOUHOU_ON_D3D8
 	DWORD stateBlock;
@@ -39,6 +41,8 @@ struct THRotatorImGui_UserData
 		, hDeviceWindow(hWnd)
 		, vertexBufferCapacity(5000)
 		, indexBufferCapacity(10000)
+		, cursorPositionScaleX(1.0f)
+		, cursorPositionScaleY(1.0f)
 #ifdef TOUHOU_ON_D3D8
 		, stateBlock(INVALID_STATE_BLOCK_HANDLE)
 #endif
@@ -804,7 +808,7 @@ void THRotatorImGui_Shutdown()
 	ImGui::DestroyContext();
 }
 
-void THRotatorImGui_NewFrame()
+void THRotatorImGui_NewFrame(float cursorPositionScaleX, float cursorPositionScaleY)
 {
 	ImGuiIO& io = ImGui::GetIO();
 
@@ -814,6 +818,9 @@ void THRotatorImGui_NewFrame()
 	{
 		THRotatorImGui_CreateDeviceObjects();
 	}
+
+	pUserData->cursorPositionScaleX = cursorPositionScaleX;
+	pUserData->cursorPositionScaleY = cursorPositionScaleY;
 
 	// Setup display size (every frame to accommodate for window resizing)
 	RECT rect;
@@ -942,10 +949,12 @@ LRESULT THRotatorImGui_WindowProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPA
 		return TRUE;
 
 	case WM_MOUSEMOVE:
-		io.MousePos.x = (signed short)(lParam);
-		io.MousePos.y = (signed short)(lParam >> 16);
+	{
+		const auto& userData = *static_cast<THRotatorImGui_UserData*>(io.UserData);
+		io.MousePos.x = userData.cursorPositionScaleX * (signed short)(lParam);
+		io.MousePos.y = userData.cursorPositionScaleY * (signed short)(lParam >> 16);
 		return TRUE;
-
+	}
 	case WM_KEYDOWN:
 		if (wParam < 256)
 			io.KeysDown[wParam] = 1;
