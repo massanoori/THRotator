@@ -13,8 +13,6 @@ before_build:
     cd build
 
 
-    set THR_CMAKE_BOOST_CONFIG=-DBOOST_INCLUDE_DIR=C:\Libraries\boost_1_67_0 -DBOOST_LIB_DIR=C:\Libraries\boost_1_67_0\lib32-msvc-14.1
-
     set THR_CMAKE_CONFIG=-DCMAKE_INSTALL_PREFIX=../install-2017 -G "Visual Studio 15 2017"
 
 
