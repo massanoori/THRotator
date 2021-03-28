@@ -24,7 +24,8 @@ set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /MANIFEST:NO")
 
 set(throtator_files ${throtator_source_files} ${throtator_other_files} ${imgui_source_files} ${imgui_header_files} "${throtator_dll_def}")
 
-if ("${CMAKE_GENERATOR}" MATCHES "Win64")
+check_symbol_exists("_WIN64" "" x64_architecture)
+if (x64_architecture)
 	file(GLOB export_asm_file "../${throtator_target}/x64/*.asm")
 	source_group("Source Files\\x64" FILES ${export_asm_file})
 	set(throtator_files ${throtator_files} ${export_asm_file})

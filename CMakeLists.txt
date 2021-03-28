@@ -33,7 +33,8 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 add_subdirectory(externals/fmtlib)
 
-if ("${CMAKE_GENERATOR}" MATCHES "Win64")
+check_symbol_exists("_WIN64" "" x64_architecture)
+if (x64_architecture)
 	set(throtator_dll_targets d3d9)
 else()
 	set(throtator_dll_targets d3d8 d3d9)
